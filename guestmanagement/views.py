@@ -365,14 +365,14 @@ def manage(request,target_type=None,target_object=None):
                 for i in filter_list]
             # Run the query just created and return distinct entries
             object_list = base_table.objects.filter(*args).distinct().order_by('id')
+            # list comprehension to iterate over the objects returned from the filter and list_display
+            # and create a list of lists of viewable fields
+            object_list = [[getattr(i,a) if not callable(getattr(i,a)) else getattr(i,a)() for a in list_display] for i in object_list if testPermission(i,request.user)]
             # Limits search results to 50
             if len(object_list)>50:
                 # Notify User of Truncation
                 messages.add_message(request, messages.INFO, 'Results limited to 50 of %s. Please narrow search'%len(object_list))
                 object_list = object_list[:50]
-            # list comprehension to iterate over the objects returned from the filter and list_display
-            # and create a list of lists of viewable fields
-            object_list = [[getattr(i,a) if not callable(getattr(i,a)) else getattr(i,a)() for a in list_display] for i in object_list if testPermission(i,request.user)]
             # Put the search results into the context
             context.update({'object_list':object_list,
                             'table_header_html':mark_safe(table_header_html),
