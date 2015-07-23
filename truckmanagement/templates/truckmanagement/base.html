@@ -1,0 +1,89 @@
+{% load staticfiles %}{% load i18n %}<!DOCTYPE html>
+<html lang="{{ LANGUAGE_CODE|default:"en-us" }}" {% if LANGUAGE_BIDI %}dir="rtl"{% endif %}>
+<head>
+<title>{% block title %}{% trans 'UGM Truck Management' %}{% endblock %}</title>
+<link rel="stylesheet" type="text/css" href="{% block stylesheet %}{% static "truckmanagement/css/base.css" %}{% endblock %}" />
+{% block extrastyle %}{% endblock %}
+<!--[if lte IE 7]><link rel="stylesheet" type="text/css" href="{% block stylesheet_ie %}{% static "truckmanagement/css/ie.css" %}{% endblock %}" /><![endif]-->
+{% if LANGUAGE_BIDI %}<link rel="stylesheet" type="text/css" href="{% block stylesheet_rtl %}{% static "truckmanagement/css/rtl.css" %}{% endblock %}" />{% endif %}
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+<script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.9.2/jquery-ui.min.js"></script>
+<link rel="stylesheet" href="//code.jquery.com/ui/1.11.0/themes/smoothness/jquery-ui.css">
+{% block extrahead %}{% endblock %}
+{% block blockbots %}<meta name="robots" content="NONE,NOARCHIVE" />{% endblock %}
+</head>
+<script type="text/javascript" src="{% static "truckmanagement/media/js/jquery-ui-timepicker-0.3.3/jquery.ui.timepicker.js" %}"></script>
+<script type="text/javascript" src="{% static "truckmanagement/media/js/datepicker.js" %}"></script>
+<script type="text/javascript" src="{% static "truckmanagement/media/js/timepicker.js" %}"></script>
+<script type="text/javascript" src="{% static "truckmanagement/media/js/collapsiblesegments.js" %}"></script>
+
+<body class="{% if is_popup %}popup {% endif %}{% block bodyclass %}{% endblock %}">
+
+<!-- Container -->
+<div id="container">
+
+	{% if not is_popup %}
+	<!-- Header -->
+	<div id="header">
+		<div id="branding">
+		<h1>{% block branding %}UGM Truck Management{% endblock %}</h1>
+		</div>
+		{% if user.is_authenticated %}
+		<div id="user-tools">
+			{% block welcome-msg %}
+				{% trans 'Welcome,' %}
+				<strong>{% firstof user.get_short_name user.get_username %}</strong>.
+			{% endblock %}
+			{% block userlinks %}
+				{% if user.has_usable_password %}
+				<a href="{% url 'admin:password_change' %}">{% trans 'Change password' %}</a> /
+				{% endif %}
+				<a href="/truckmanagement/logout/">{% trans 'Log out' %}</a>
+			{% endblock %}
+		</div>
+		{% endif %}
+		{% block nav-global %}{% endblock %}
+	</div>
+	<!-- END Header -->
+	{% block breadcrumbs %}
+	<div class="breadcrumbs">
+	{% if user.is_authenticated and user.is_active%}
+		<a href="/truckmanagement/">{% trans 'Home' %}</a> |
+		<a href="{% url 'schedule' %}">{% trans 'Schedule' %}</a> | 
+	{% else %}
+		<a href="/admin/login/?next=/truckmanagement/">{% trans 'Login' %}</a>  | 
+		<a href="{% url 'schedule' %}">{% trans 'Home' %}</a> |
+	{% endif %}
+	<a href="{% url 'admin:index' %}">{% trans 'Admin' %}</a> | 
+	<a href='/admin/report_builder/'>{% trans 'Reports' %}</a>
+	{% if title %} &rsaquo; {{ title }}{% endif %}
+	</div>
+	{% endblock %}
+	{% endif %}
+	{% block messages %}
+		{% if messages %}
+		<ul class="messagelist">{% for message in messages %}
+		  <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message|capfirst }}</li>
+		{% endfor %}</ul>
+		{% endif %}
+	{% endblock messages %}
+
+	<!-- Content -->
+	<div id="content" class="{% block coltype %}colM{% endblock %}">
+		{% block pretitle %}{% endblock %}
+		{% block content_title %}{% if title %}<h1>{{ title }}</h1>{% endif %}{% endblock %}
+		{% block content %}
+		{% block object-tools %}{% endblock %}
+		{{ content }}
+		{% endblock %}
+		{% block sidebar %}{% endblock %}
+		<br class="clear" />
+	</div>
+	<!-- END Content -->
+
+	{% block footer %}<div id="footer"></div>{% endblock %}
+</div>
+<!-- END Container -->
+
+</body>
+</html>

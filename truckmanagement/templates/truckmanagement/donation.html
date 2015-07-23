@@ -1,0 +1,30 @@
+{% extends "truckmanagement/base.html" %}{% load i18n %}
+{% block pretitle %}
+	<h1>{{ page_title }}</h1>
+{% endblock %}
+{% block content %}
+	{% if user.is_authenticated and user.is_active%}
+		<a href='/admin/truckmanagement/donor/{{ forward_donor }}/' target="_blank">View Donor Record</a><br/>
+		Donor Phone Numbers {{ target_donor.home_phone }} {{ target_donor.business_phone }} {{ target_donor.mobile_phone }}
+		<form action='.' method='post'>
+			{% csrf_token %}
+			{{ form }}
+			{% if button_value == 'Update' %}Update Series? <input type="checkbox" name="update_series" value="update_series">{% endif %}<input id="submit" type='submit' value='{{ button_value }}'>
+		</form>
+		{% if button_value == 'Update' %}
+			<form action='.' method='post'>
+				{% csrf_token %}
+				<input id='delete' type='text' name='delete' value='delete' hidden>
+				Delete Series? <input type="checkbox" name="delete_series" value="delete_series">
+				<input id="submit" type='submit' value='Delete'>
+			</form>
+			<form action='.' method='post'>
+				{% csrf_token %}
+				<input id='refresh' type='text' name='refresh' value='refresh' hidden>
+				<input id="submit" type='submit' value='Refresh Donor'>
+			</form>
+		{% endif %}	
+	{% else %}
+		Go Away
+	{% endif %}
+{% endblock %}

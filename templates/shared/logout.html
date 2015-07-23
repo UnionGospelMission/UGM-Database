@@ -1,0 +1,19 @@
+{% extends "shared/base.html" %}
+{% load i18n %}
+{% block title %}
+	{% if base_site == 'guestmanagement' %}
+		{% trans 'UGM Guest Database Logout' %}
+	{% else %}
+		{% trans 'UGM Truck Management Logout' %}
+	{% endif %}
+{% endblock %}
+{% block branding %}
+	{% if base_site == 'guestmanagement' %}
+		{% trans 'UGM Guest Database Logout' %}
+	{% else %}
+		{% trans 'UGM Truck Management Logout' %}
+	{% endif %}
+{% endblock %}
+{% block authenticationoverride %}
+	<h3>You are logged out</h3>
+{% endblock %}

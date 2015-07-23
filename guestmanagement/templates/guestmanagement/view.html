@@ -1,0 +1,106 @@
+{% extends "shared/base.html" %}{% load i18n %}
+{% block pretitle %}
+	<h1>{% trans 'View' %} {{ target_type.capitalize }} {{ target_object.name }}{% if target_object.label %} (aka {{ target_object.label }}){% endif %}:</h1><br/>
+	<a href='/guestmanagement/manage/{{ target_type }}/{{ target_object.id }}/'>Manage {{ target_type }} {{ target_object.name }}</a></br>
+{% endblock %}
+{% block content %}
+	{{ view_image }}</br>
+	{% if target_type == 'guest' %}
+		<table>
+			<tr><th>Form Name</th></tr>
+			{% for i in form_list %}
+				<tr>
+					<td>{{ i.0 }}</td>
+					{% if user.is_authenticated or i.1 != 'Completed' or not i.2 %}
+						<td><a href='/guestmanagement/view/form/{{ i.0.id }}/{{ target_object.id }}/?next={{ nexturl }}'>Complete Form</a></td>
+					{% endif %}
+					{% if user.is_authenticated %}
+						<td><a href='/guestmanagement/view/form/{{ i.0.id }}/?next={{ nexturl }}'>Edit Form</a></td>
+					{% endif %}
+					<td>{{ i.1 }}</td>
+					{% if i.3 %}
+						<td>{{ i.3 }}%</td>
+					{% endif %}
+					{% if user.is_authenticated and i.2 and i.1 == 'Completed' %}
+						<td><a href='/guestmanagement/unsetcomplete/{{ i.0.id }}/{{ target_object.id }}/?next={{ nexturl }}'>Set Incomplete</a></td>
+					{% endif %}
+					{% if user.is_authenticated and i.4 %}
+						<td><a href='/guestmanagement/setscore/{{ i.0.id }}/{{ target_object.id }}/?next={{ nexturl }}'>Set Score</a></td>
+					{% endif %}
+                    {% if perms.guestmanagement.change_guesttimedata %}
+                        <td><a href='/guestmanagement/edit/{{ target_object.id }}/{{ i.0.id }}/'>Edit Past Form</a></td>
+                    {% endif %}
+				</tr>
+			{% endfor %}
+		</table>
+
+	{% elif target_type == 'form' %}
+		{% if second_object %}
+			<form action='.' method='post' enctype="multipart/form-data">
+				{% csrf_token %}
+				{{ form }}
+				{% if user.is_authenticated %}
+					<input type='submit' value='Submit' name='submit_form'/>
+				{% endif %}
+				<input type='submit' value='Submit and Continue' name='submit_form'/>
+			</form>
+		{% else %}
+			<table>
+				<tr><th>Field Name</th><th>Field Order</th></tr>
+				{% for i in field_list %}
+					<tr>
+						<td><a href='/guestmanagement/view/field/{{ i.id }}/'>{{ i.label }}</a></td>
+						<td>{{ i.order }}</td>
+						<td>
+							<form action='.' method='post'>
+								{% csrf_token %}
+								<input id='move_type' type='text' name='move_type' value='up' hidden>
+								<input id='move_field' type='text' name='move_field' value='{{ i.id }}' hidden>
+								<input id='search' type='submit' value='Up'>
+							</form>
+						</td>
+						<td>
+							<form action='.' method='post'>
+								{% csrf_token %}
+								<input id='move_type' type='text' name='move_type' value='down' hidden>
+								<input id='move_field' type='text' name='move_field' value='{{ i.id }}' hidden>
+								<input id='search' type='submit' value='Down'>
+							</form>
+						</td>
+						<td>
+							<form action='.' method='post'>
+								{% csrf_token %}
+								<input id='move_type' type='text' name='move_type' value='top' hidden>
+								<input id='move_field' type='text' name='move_field' value='{{ i.id }}' hidden>
+								<input id='search' type='submit' value='Top'>
+							</form>
+						</td>
+						<td>
+							<form action='.' method='post'>
+								{% csrf_token %}
+								<input id='move_type' type='text' name='move_type' value='bottom' hidden>
+								<input id='move_field' type='text' name='move_field' value='{{ i.id }}' hidden>
+								<input id='search' type='submit' value='Bottom'>
+							</form>
+						</td>
+					</tr>
+				{% endfor %}
+			</table>
+		{% endif %}
+	{% elif target_type == 'report' %}
+		{{ target_object.description }}</br>
+		<a href='/guestmanagement/runreport/{{ target_object.id }}/'>Run Report</a>
+	{% endif %}
+	{% if link_list %}
+		{% for i in link_list %}
+			<h5>{{ i.0 }}</h5></br>
+			{% for a in i.2 %}
+				{% if i.1 != 'nolink' %}
+					<a href='/guestmanagement/view/{{ i.1 }}/{{ a.id }}/'>{{ a }}</a></br>
+				{% else %}
+					{{ a }}</br>
+				{% endif %}
+			{% endfor %}
+		{% endfor %}
+	{% endif %}
+{% endblock %}

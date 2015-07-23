@@ -1,0 +1,11 @@
+{% extends "truckmanagement/base.html" %}
+{% load i18n %}
+{% block title %}{% trans 'UGM Truck Management Login' %}{% endblock %}
+{% block branding %}UGM Truck Management Login{% endblock %}
+{% block breadcrumbs %}{% endblock %}
+{% block content %}
+	<form action='/login/' method='post'>{% csrf_token %}
+		{{ form }}
+		<input type='submit' value='Login' method='POST'>
+	</form>
+{% endblock %}

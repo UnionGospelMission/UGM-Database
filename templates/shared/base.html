@@ -1,0 +1,288 @@
+{% load staticfiles %}{% load i18n %}<!DOCTYPE html>
+<html lang="{{ LANGUAGE_CODE|default:"en-us" }}" {% if LANGUAGE_BIDI %}dir="rtl"{% endif %}>
+<head>
+<title>
+	{% block title %}
+		{% if base_site == 'guestmanagement' %}
+			{% trans 'UGM Guest Database' %}
+        {% elif base_site == 'purchaseorder' %}
+            {% trans 'Purchase Order System' %}
+		{% else %}
+			{% trans 'UGM Truckmanagement' %}
+		{% endif %}
+	{% endblock %}
+</title>
+{% block stylesheets %}
+<link rel="stylesheet" type="text/css" href="{% static "shared/css/base.css" %}" />
+<link rel="stylesheet" type="text/css" href="{% static "shared/css/menu.css" %}" />
+{% endblock %}
+
+{% block extrastyle %}{% endblock %}
+<!--[if lte IE 7]><link rel="stylesheet" type="text/css" href="{% block stylesheet_ie %}{% static "shared/css/ie.css" %}{% endblock %}" /><![endif]-->
+{% if LANGUAGE_BIDI %}<link rel="stylesheet" type="text/css" href="{% block stylesheet_rtl %}{% static "shared/css/rtl.css" %}{% endblock %}" />{% endif %}
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+<script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.9.2/jquery-ui.min.js"></script>
+<link rel="stylesheet" href="//code.jquery.com/ui/1.11.0/themes/smoothness/jquery-ui.css">
+{% block extrahead %}{% endblock %}
+{% block blockbots %}<meta name="robots" content="NONE,NOARCHIVE" />{% endblock %}
+</head>
+<script type="text/javascript" src="{% static "shared/js/jquery-ui-timepicker-0.3.3/jquery.ui.timepicker.js" %}"></script>
+<script type="text/javascript" src="{% static "shared/js/datepicker.js" %}"></script>
+<script type="text/javascript" src="{% static "shared/js/timepicker.js" %}"></script>
+{% if base_site == 'truckmanagement' %}
+	<script type="text/javascript" src="{% static "truckmanagement/js/collapsiblesegments.js" %}"></script>
+{% else %}
+	<script type="text/javascript" src="{% static "guestmanagement/ace/src-noconflict/ace.js" %}" charset="utf-8"></script>
+{% endif %}
+
+<body class="{% if is_popup %}popup {% endif %}{% block bodyclass %}{% endblock %}">
+
+<!-- Container -->
+<div id="container">
+
+	{% if not is_popup %}
+	<!-- Header -->
+	<div id="header">
+		<div id="branding">
+			{% block branding %}
+				{% if base_site == 'guestmanagement' %}
+					<h1>UGM Guest Database</h1>
+                {% elif base_site == 'purchaseorder' %}
+                    <h1>UGM Purchase Order System</h1>
+				{% else %}
+					<h1>UGM Truck Management</h1>
+				{% endif %}
+			{% endblock %}
+		</div>
+		{% if user.is_authenticated %}
+		<div id="user-tools">
+			{% block welcome-msg %}
+				{% trans 'Welcome,' %}
+				<strong>{% firstof user.get_short_name user.get_username %}</strong>.
+			{% endblock %}
+			{% block userlinks %}
+				{% if user.has_usable_password %}
+				<a href="{% url 'admin:password_change' %}">{% trans 'Change password' %}</a> /
+				{% endif %}
+				<a href="/{{ base_site }}/logout/">{% trans 'Log out' %}</a>
+			{% endblock %}
+		</div>
+		{% endif %}
+		{% block nav-global %}{% endblock %}
+	</div>
+	<!-- END Header -->
+	{% block breadcrumbs %}
+	<div class="breadcrumbs">
+	{% if user.is_authenticated and user.is_active%}
+		<a href="/{{ base_site }}/">{% trans 'Home' %}</a> |
+		<a href="/{{ base_site }}/manage/">{% trans 'Manage' %}</a> |
+	{% else %}
+		<a href="/admin/login/?next=/{{ base_site }}/">{% trans 'Staff Login' %}</a>  | 
+		{% if base_site == 'guestmanagement' %}
+			<a href="/guestmanagement/guestlogin/">{% trans 'Guest Login' %}</a> |
+		{% endif %}
+	{% endif %}
+	<a href="{% url 'admin:index' %}">{% trans 'Admin' %}</a> | 
+	{% if title %} &rsaquo; {{ title }}{% endif %}
+	</div>
+	{% endblock %}
+	{% endif %}
+	{% block messages %}
+		{% if messages or broadcast_message %}
+			<ul class="messagelist">
+				{% for message in messages %}
+						<li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message|capfirst }}</li>
+				{% endfor %}
+				<li>{{ broadcast_message }}</li>
+			</ul>
+		{% endif %}
+	{% endblock messages %}
+
+	<!-- Content -->
+	<div id="content" class="{% block coltype %}colM{% endblock %}">
+		{% block authenticationoverride %}
+			{% if user.is_authenticated or guest_logged_in %}
+				{% block pretitle %}{% endblock %}
+				{% block content_title %}{% if title %}<h1>{{ title }}</h1>{% endif %}{% endblock %}
+				{% block content %}
+					{% block object-tools %}{% endblock %}
+					{{ content }}
+				{% endblock %}
+			{% else %}
+				{% if base_site == 'guestmanagement' %}
+					{% trans 'Are you ' %} <a href='/admin/login/?next={{ nexturl }}'>{% trans 'Staff' %}</a> or <a href='/guestmanagement/guestlogin/'>{% trans 'Guest' %}</a>?
+                {% elif base_site == 'purchaseorder' %}
+                    <a href='/admin/login/?next=/purchaseorder/'>{% trans 'Login' %}</a>
+				{% else %}
+					{% trans 'Would you like to' %} <a href='/admin/login/?next=/truckmanagement/'>{% trans 'login' %}</a> or <a href='/truckmanagement/schedule/'>{% trans 'schedule' %}</a>?
+				{% endif %}
+			{% endif %}
+		{% endblock %}
+		{% block sidebar %}{% endblock %}
+		<br class="clear" />
+	</div>
+	<!-- END Content -->
+	{% if user.is_authenticated and base_site == 'guestmanagement' %}
+		{% block footer %}
+            <br /><br /><br /><br />
+            <div id="menu">
+                <div id="dropdowns">
+                    <ul>
+                        {% if perms.guestmanagement.manage_guest or perms.guestmanagement.add_guest %}
+                            <li id="menutitle">
+                                <a href="#">Guests</a>
+                                <ul id="submenu">
+                                    {% if perms.guestmanagement.manage_guest %}
+                                        <li>
+                                            <a href='/guestmanagement/manage/guest/?next={{ nexturl }}' {% if target_object %}target='_blank'{% endif %}>Manage Guest</a>
+                                        </li>
+                                    {% endif %}
+                                    {% if perms.guestmanagement.add_guest %}
+                                        <li>
+                                            <a href='/guestmanagement/manage/guest/new/?next={{ nexturl }}' {% if target_object %}target='_blank'{% endif %}>Create Guest</a>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </li>
+                        {% endif %}
+
+                        {% if perms.guestmanagement.manage_program or perms.guestmanagement.add_program %}
+                            <li id="menutitle">
+                                <a href="#">Programs</a>
+                                <ul id="submenu">
+                                    {% if perms.guestmanagement.manage_program %}
+                                        <li>
+                        				    <a href='/guestmanagement/manage/program/?next={{ nexturl }}' {% if target_object %}target='_blank'{% endif %}>Manage Program</a>
+                                        </li>
+                                    {% endif %}
+                                    {% if perms.guestmanagement.add_program %}
+                                        <li>
+                        				    <a href='/guestmanagement/manage/program/new/?next={{ nexturl }}' {% if target_object %}target='_blank'{% endif %}>Create Program</a>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </li>
+                        {% endif %}
+                        {% if perms.guestmanagement.manage_form or perms.guestmanagement.add_form %}
+                            <li id="menutitle">
+                                <a href="#">Forms</a>
+                                <ul id="submenu">
+                                    {% if perms.guestmanagement.manage_form %}
+                                        <li>
+                        				    <a href='/guestmanagement/manage/form/?next={{ nexturl }}' {% if target_object %}target='_blank'{% endif %}>Manage Form</a>
+                                        </li>
+                                    {% endif %}
+                                    {% if perms.guestmanagement.add_form %}
+                                        <li>
+                        				    <a href='/guestmanagement/manage/form/new/?next={{ nexturl }}' {% if target_object %}target='_blank'{% endif %}>Create Form</a>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </li>
+                        {% endif %}
+                        {% if perms.guestmanagement.manage_field or perms.guestmanagement.add_field %}
+                            <li id="menutitle">
+                                <a href="#">Fields</a>
+                                <ul id="submenu">
+                                    {% if perms.guestmanagement.manage_field %}
+                                        <li>
+                        				    <a href='/guestmanagement/manage/field/?next={{ nexturl }}' {% if target_object %}target='_blank'{% endif %}>Manage Fields</a>
+                                        </li>
+                                    {% endif %}
+                                    {% if perms.guestmanagement.add_field %}
+                                        <li>
+                        				    <a href='/guestmanagement/manage/field/new/?next={{ nexturl }}' {% if target_object %}target='_blank'{% endif %}>Create Field</a>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </li>
+                        {% endif %}
+                        {% if perms.guestmanagement.manage_prerequisite or perms.guestmanagement.add_prerequisite %}
+                            <li id="menutitle">
+                                <a href="#">Prerequisites</a>
+                                <ul id="submenu">
+                                    {% if perms.guestmanagement.manage_prerequisite %}
+                                        <li>
+                        				    <a href='/guestmanagement/manage/prerequisite/?next={{ nexturl }}' {% if target_object %}target='_blank'{% endif %}>Manage Prerequisites</a>
+                                        </li>
+                                    {% endif %}
+                                    {% if perms.guestmanagement.add_prerequisite %}
+                                        <li>
+                        				    <a href='/guestmanagement/manage/prerequisite/new/?next={{ nexturl }}' {% if target_object %}target='_blank'{% endif %}>Create Prerequisite</a>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </li>
+                        {% endif %}
+                        {% if perms.guestmanagement.manage_permission or perms.guestmanagement.add_permission %}
+                            <li id="menutitle">
+                                <a href="#">Permissions</a>
+                                <ul id="submenu">
+                                    {% if perms.guestmanagement.manage_permission %}
+                                        <li>
+                        				    <a href='/guestmanagement/manage/permission/?next={{ nexturl }}' {% if target_object %}target='_blank'{% endif %}>Manage Permission</a>
+                                        </li>
+                                    {% endif %}
+                                    {% if perms.guestmanagement.add_permission %}
+                                        <li>
+                        				    <a href='/guestmanagement/manage/permission/new/?next={{ nexturl }}' {% if target_object %}target='_blank'{% endif %}>Create Permission</a>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </li>
+                        {% endif %}
+                        {% if perms.guestmanagement.manage_report or perms.guestmanagement.add_report %}
+                            <li id="menutitle">
+                                <a href="#">Reports</a>
+                                <ul id="submenu">
+                                    {% if perms.guestmanagement.manage_report %}
+                                        <li>
+                        				    <a href='/guestmanagement/manage/report/?next={{ nexturl }}' {% if target_object %}target='_blank'{% endif %}>Manage Reports</a>
+                                        </li>
+                                    {% endif %}
+                                    {% if perms.guestmanagement.add_report %}
+                                        <li>
+                        				    <a href='/guestmanagement/manage/report/new/?next={{ nexturl }}' {% if target_object %}target='_blank'{% endif %}>Create Report</a>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </li>
+                        {% endif %}
+                        {% if perms.guestmanagement.manage_attachment or perms.guestmanagement.add_attachment %}
+                            <li id="menutitle">
+                                <a href="#">Attachments</a>
+                                <ul id="submenu">
+                                    {% if perms.guestmanagement.manage_attachment %}
+                                        <li>
+                        				    <a href='/guestmanagement/manage/attachment/?next={{ nexturl }}' {% if target_object %}target='_blank'{% endif %}>Manage Attachment</a>
+                                        </li>
+                                    {% endif %}
+                                    {% if perms.guestmanagement.add_attachment %}
+                                        <li>
+                        				    <a href='/guestmanagement/manage/attachment/new/?next={{ nexturl }}' {% if target_object %}target='_blank'{% endif %}>Create Attachment</a>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </li>
+                        {% endif %}
+                        {% if perms.guestmanagement.manage_permission %}
+                            <li id="menutitle">
+                                <a href="#">User Permissions</a>
+                                <ul id="submenu">
+                                    <li>
+                    				    <a href='/guestmanagement/manage/user_permission_setting/?next={{ nexturl }}' {% if target_object %}target='_blank'{% endif %}>Manage User Permissions</a>
+                                    </li>
+                                </ul>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+		{% endblock %}
+	{% endif %}
+	
+</div>
+<!-- END Container -->
+
+</body>
+</html>

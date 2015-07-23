@@ -1,0 +1,16 @@
+{% extends "truckmanagement/base.html" %}{% load i18n %}
+{% block pretitle %}
+	<h1>Reports</h1>
+{% endblock %}
+{% block content %}
+	{% if user.is_authenticated and user.is_active%}
+		{% if not report %}
+			<a href='/reports/new'>Create Report</a><hr/>
+			{% for i in report_list %}
+				<a href='/reports/{{ i }}'>Show Report {{ i }}</a>
+			{% endfor %}
+		{% endif %}
+	{% else %}
+		Go Away
+	{% endif %}
+{% endblock %}

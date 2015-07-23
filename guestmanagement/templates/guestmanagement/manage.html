@@ -1,0 +1,112 @@
+{% extends "shared/base.html" %}{% load i18n %}{% load staticfiles %}
+{% block extrastyle %}
+	<link rel="stylesheet" type="text/css" href="{% static "guestmanagement/css/code_editor_style.css" %}" />
+{% endblock %}
+{% block pretitle %}
+	<h1>{% trans 'Manage' %}{% if target_type %} {% endif %}{{ target_type.capitalize }}{% if target_type %}s{% endif %}:</h1><br/>
+	{% if target_object and not target_object == 'new' %}<a href='/guestmanagement/view/{{ target_type.split|join:"_" }}/{{ target_object.id }}/'>View {{ target_object.name }}</a>{% endif %}</br>
+{% endblock %}
+{% block content %}
+	{% if not target_type %}
+		{% if perms.guestmanagement.manage_guest %}<a href='/guestmanagement/manage/guest/'>Guests</a><br/>{% endif %}
+		{% if perms.guestmanagement.manage_form %}<a href='/guestmanagement/manage/form/'>Forms</a><br/>{% endif %}
+		{% if perms.guestmanagement.manage_field %}<a href='/guestmanagement/manage/field/'>Fields</a><br/>{% endif %}
+		{% if perms.guestmanagement.manage_program %}<a href='/guestmanagement/manage/program/'>Programs</a><br/>{% endif %}
+		{% if perms.guestmanagement.manage_prerequisite %}<a href='/guestmanagement/manage/prerequisite/'>Prerequisites</a><br/>{% endif %}
+		{% if perms.guestmanagement.manage_permission %}<a href='/guestmanagement/manage/permission/'>Permissions</a><br/>{% endif %}
+		{% if perms.guestmanagement.manage_report %}<a href='/guestmanagement/manage/report/'>Reports</a><br/>{% endif %}
+		{% if perms.guestmanagement.manage_attachment %}<a href='/guestmanagement/manage/attachment/'>Attachments</a><br/>{% endif %}
+		{% if perms.guestmanagement.manage_permission %}<a href='/guestmanagement/manage/user_permission_setting/'>Set User Permissions</a><br/>{% endif %}
+	{% elif not target_object %}
+		<a href='/guestmanagement/manage/{{ target_type.split|join:"_" }}/new/'>Create {{ target_type.capitalize }}</a><br/>
+		<h5>Search for {{ target_type }}:</h5>
+		<form action='.' method='post'>
+			{% csrf_token %}
+			{{ search_html }}
+			<input id='search' type='submit' value='Search'>
+		</form><br/>
+		<table>
+			<tr>
+				{{ table_header_html }}
+			</tr>
+			{% for i in object_list %}
+				<tr>
+					{% for a in i %}
+						{% if not forloop.last %}
+							<td>{{ a }}</td>
+						{% else %}
+							<td><a href='/guestmanagement/manage/{{ target_type.split|join:"_" }}/{{ a }}/'>Edit {{ target_type.capitalize }}</a></td>
+							{% if target_type == 'guest' %}
+								<td>
+									<form action='.' method='post'>
+										{% csrf_token %}
+										<input id='set_guest' type='text' name='set_guest' value='{{ a }}' hidden>
+										<input id='search' type='submit' value='Set Guest'>
+									</form>
+								</td>
+							{% else %}
+								<td>
+									<a href='/guestmanagement/view/{{ target_type.split|join:"_" }}/{{ a }}/'>View {{ target_type }}</a>
+								</td>
+							{% endif %}
+						{% endif %}
+					{% endfor %}
+					
+				</tr>
+			{% endfor %}
+		</table>
+	{% else %}
+		<h5>{{ create_or_edit }} {{ target_type }}:</h5>
+		{% if create_or_edit == 'Modify' %}
+			<form action='.' method='post'>
+				{% csrf_token %}
+				<input id='delete_{{ target_type }}' type='text' name='delete_{{ target_type }}' value='delete_{{ target_type }}' hidden>
+				<input id='search' type='submit' value='Delete {{ target_type.capitalize }}'>
+			</form>
+		{% endif %}
+		<form action='.' method='post' enctype="multipart/form-data" {% if target_type == 'report' %}onsubmit='onSubmit()' {% endif %}>
+			{% csrf_token %}
+			{{ form }}
+		{% if target_type == 'report' %}
+			<div class="code_commands">
+				<h3>Code Commands</h3><br/>
+				<div class='target_code_command' code_command='undo'>Undo</div><div class='inline_div'> / </div>
+				<div class='target_code_command' code_command='redo'>Redo</div><div class='inline_div'> / </div>
+				<div class='target_code_command' code_command='clear'>Code Clear</div><div class='inline_div'> / </div>
+				<div class='target_code_command' code_command='reset_help'>Reset Helper</div>
+				<div id='code_command_viewer'>
+					<div class='target_code_command' code_command='Database_Query'>Database Query</div></br>
+					<div class='target_code_command' code_command='Set_Variable'>Set Variable</div></br>
+				</div>
+			</div>
+			<div class="database_viewer" field_dict='{{ all_field_dict }}' id='database_viewer'>
+				<h3>Database Forms</h3><br/>
+				<ul>
+				{% for i in all_forms_list %}
+					<li targetform='{{ i.name }}' class='target_form_choice'>{{ i.name }}</li><br/>
+				{% endfor %}
+				</ul>
+			</div>
+			<div class="form_viewer_parent">
+				<div class="form_viewer_name" id='form_viewer_name'>
+					
+				</div>
+				<div class="form_viewer_type" id='form_viewer_type'>
+					
+				</div>
+			</div>
+			<textarea name='code' id='code' hidden></textarea>
+			<pre id="editor">{% if target_object.code %}{{ target_object.code }}{% else %}
+					function foo(items) {
+						var i;
+						for (i = 0; i &lt; items.length; i++) {
+							alert("Ace Rocks " + items[i]);
+						}
+					}{% endif %}</pre>
+			<script type="text/javascript" src="{% static "guestmanagement/js/code_edit_page.js" %}" charset="utf-8"></script>
+			<input id='save' type='submit' name='save_report' value='Save'>
+		{% endif %}
+			<input id='search' type='submit' value='Submit'>
+		</form>
+	{% endif %}
+{% endblock %}

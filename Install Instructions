@@ -1,0 +1,21 @@
+* Install dependencies (sudo apt-get install python postgresql python-pip python-twisted python-psycopg2 python-dateutil python-openpyxl authbind python-ldap subversion cython gcc python2.7-dev pytz)
+* cython -a scheme/symbol.pyx
+* gcc -shared -pthread -fPIC -fwrapv -O2 -Wall -fno-strict-aliasing -I/usr/include/python2.7 -o scheme/symbol.so scheme/symbol.c
+* cython -a scheme/processer.pyx
+* gcc -shared -pthread -fPIC -fwrapv -O2 -Wall -fno-strict-aliasing -I/usr/include/python2.7 -o scheme/processer.so scheme/processer.c
+*Start postgresql server (sudo /etc/init.d/postgresql start)
+*Checkout django 1.8 [development version as of 8/2014] (svn checkout https://github.com/django/django.git/branches/stable/1.8.x ./django)
+*Install django (sudo pip install -e django/)
+*Configure authbind [see the authbind manual for instructions]
+*create database in postgresql (sudo -u <postgresql_user_name> psql
+	CREATE DATABASE <database_name>;
+	CREATE ROLE <database_username> WITH LOGIN SUPERUSER ENCRYPTED PASSWORD '<database_user_password>';
+	)
+*Install first function in postgres (sudo -u postgres psql < firstsql)
+*set database_name, database_username, database_user_password in settings.conf
+*Apply migrations (python manage.py migrate)
+*Create admin user (python manage.py createsuperuser)
+** [Migrate old databases]
+*start webserver (./startserver)
+
+
