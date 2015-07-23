@@ -364,15 +364,23 @@ def manage(request,target_type=None,target_object=None):
                   Q(**{'{0}__{1}__{2}'.format(i[0],i[2],i[3]):request.POST[i[0]]})
                 for i in filter_list]
             # Run the query just created and return distinct entries
-            object_list = base_table.objects.filter(*args).distinct().order_by('id')
-            # list comprehension to iterate over the objects returned from the filter and list_display
+            raw_object_list = base_table.objects.filter(*args).distinct().order_by('id')
+            object_list = []
+            # for loop to iterate over the objects returned from the filter and list_display
             # and create a list of lists of viewable fields
-            object_list = [[getattr(i,a) if not callable(getattr(i,a)) else getattr(i,a)() for a in list_display] for i in object_list if testPermission(i,request.user)]
-            # Limits search results to 50
-            if len(object_list)>50:
-                # Notify User of Truncation
-                messages.add_message(request, messages.INFO, 'Results limited to 50 of %s. Please narrow search'%len(object_list))
-                object_list = object_list[:50]
+            for i in raw_object_list:
+                if testPermission(i,request.user):
+                    b = []
+                    for a in list_display:
+                        if not callable(getattr(i,a)):
+                            b.append(getattr(i,a))
+                        else:
+                            b.append(getattr(i,a)())
+                    object_list.append(b)
+                # Limits search results to 50
+                if len(object_list)>=50:
+                    messages.add_message(request, messages.INFO, 'Results limited to 50 of %s. Please narrow search'%len(raw_object_list))
+                    break
             # Put the search results into the context
             context.update({'object_list':object_list,
                             'table_header_html':mark_safe(table_header_html),
