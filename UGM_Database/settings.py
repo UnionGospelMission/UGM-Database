@@ -65,18 +65,13 @@ if MYSETTINGS.get("LDAP",'').get("SERVER",''):
     
 # Application definition
 
-INSTALLED_APPS = (
+INSTALLED_APPS = tuple([
 	'django.contrib.admin',
 	'django.contrib.auth',
 	'django.contrib.contenttypes',
 	'django.contrib.sessions',
 	'django.contrib.messages',
-	'django.contrib.staticfiles',
-	'truckmanagement',
-	'report_builder',
-	'guestmanagement',
-    'purchaseorder',
-)
+	'django.contrib.staticfiles'] + MYSETTINGS['APPS'])
 
 MIDDLEWARE_CLASSES = (
 	'django.contrib.sessions.middleware.SessionMiddleware',
@@ -113,7 +108,7 @@ PORT = MYSETTINGS['PORT']
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = None
+TIME_ZONE = 'US/Pacific'
 
 USE_I18N = True
 
