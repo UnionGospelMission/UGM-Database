@@ -1,0 +1,20 @@
+{% extends "shared/base.html" %}{% load i18n %}{% load staticfiles %}
+{% block extrastyle %}
+	<link rel="stylesheet" type="text/css" href="{% static "purchaseorder/css/upload.css" %}" />
+{% endblock %}
+{% block content %}
+    {{ revision }}
+    <datalist id="vendor_list"></datalist>
+    <input hidden readonly value="{{ user.username }}" id="current_username">
+    <input hidden readonly value="{{ JSONvendors }}" id="JSONvendors">
+    <input hidden readonly value="{{ JSONdepartments }}" id="JSONdepartments">
+    <input hidden readonly value="{{ JSONcategories }}" id="JSONcategories">
+    <input hidden readonly value="{{ JSONpos }}" id="JSONpos">
+    <form action='.' id="form" method='post' enctype="multipart/form-data">
+        {% csrf_token %}
+        <div id="pos"></div><br /> <br />
+
+        <input type='button' onclick="preCheck();" value='Create'>
+    </form>
+    <script type="text/javascript" src="{% static "purchaseorder/js/purchaseorder.js" %}" charset="utf-8"></script>
+{% endblock %}
