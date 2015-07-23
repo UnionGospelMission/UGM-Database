@@ -55,3 +55,21 @@ docs/_build/
 
 # PyBuilder
 target/
+
+
+#From sourceforge
+
+*pyc
+media
+SECRETKEY.py
+*.t
+*.crt
+settings.conf
+productionsettings.conf
+mydatabase
+*.pem
+migrations
+.idea
+twistd.pid
+twistd.log
+
