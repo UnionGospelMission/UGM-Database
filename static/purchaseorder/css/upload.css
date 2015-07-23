@@ -1,0 +1,61 @@
+
+
+.file_upload {
+    border-style: solid;
+    border-width: 1px;
+}
+
+.po {
+    margin-top: 20px;
+    border-style: solid;
+    border-width: 1px;
+}
+
+.detail {
+    margin-left: 20px;
+    border-style: solid;
+    border-width: .5px;
+}
+
+.detailgroup {
+    position: relative;
+    margin-left: 40px;
+    border-style: solid;
+    border-width: .5px;
+}
+
+.highlight {
+    outline: none;
+    border-color: red;
+    box-shadow: 0 0 10px red;
+}
+
+.large_input {
+    width: 40em;
+    height: 10em;
+    text-wrap:unrestricted;
+}
+
+.signblock {
+	position: absolute;
+	top: 40%;
+	left: 50%;
+	float: right;
+	width: 15%;
+    border-style: solid;
+    border-width: 1px;
+    border-color: red;
+}
+
+.hidden{
+    display: hidden;
+}
+
+.locked{
+    border-color: red;
+    border-width: 3px;
+}
+
+.locked h1{
+    color: red;
+}
