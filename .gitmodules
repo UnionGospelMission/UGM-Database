@@ -1,0 +1,6 @@
+[submodule "externals/scheme"]
+	path = externals/scheme
+	url = https://github.com/lperkin1/schemepy.git/
+[submodule "externals/sqlparse"]
+	path = externals/sqlparse
+	url = https://github.com/andialbrecht/sqlparse.git/
