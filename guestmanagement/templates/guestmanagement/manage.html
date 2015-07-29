@@ -60,8 +60,10 @@
 		{% if create_or_edit == 'Modify' %}
 			<form action='.' method='post'>
 				{% csrf_token %}
-				<input id='delete_{{ target_type }}' type='text' name='delete_{{ target_type }}' value='delete_{{ target_type }}' hidden>
-				<input id='search' type='submit' value='Delete {{ target_type.capitalize }}'>
+                {% if "guestmanagement.delete_{{ target_type }}" in perms %}
+    				<input id='delete_{{ target_type }}' type='text' name='delete_{{ target_type }}' value='delete_{{ target_type }}' hidden>
+    				<input id='search' type='submit' value='Delete {{ target_type.capitalize }}'>
+                {% endif %}
 			</form>
 		{% endif %}
 		<form action='.' method='post' enctype="multipart/form-data" {% if target_type == 'report' %}onsubmit='onSubmit()' {% endif %}>
