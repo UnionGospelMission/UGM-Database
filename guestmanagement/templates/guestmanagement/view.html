@@ -40,7 +40,7 @@
 				{% csrf_token %}
 				{{ form }}
 				{% if user.is_authenticated %}
-					<input type='submit' value='Submit' name='submit_form'/>
+					<input type='submit' value='Update' name='submit_form' class="floating_button"/>
 				{% endif %}
 				<input type='submit' value='Submit and Continue' name='submit_form'/>
 			</form>

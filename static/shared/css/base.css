@@ -896,3 +896,10 @@ border:1px solid black;
     text-decoration: underline;
 
 }
+
+.floating_button {
+	position: fixed;
+	top: 40%;
+	left: 50%;
+	float: right;
+}

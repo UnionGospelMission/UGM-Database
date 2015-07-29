@@ -716,7 +716,7 @@ def view(request,target_type,target_object,second_object=None):
                                 b.save()
                             request.session['active']=True
                     # If save, return to viewing form, if save and continue, return to guest view
-                    if request.POST.get('submit_form','')=='Submit':
+                    if request.POST.get('submit_form','')=='Update':
                         return redirect('/guestmanagement/view/form/%s/%s/'%(target_object.id,second_object.id))
                     else:
                         a=GuestFormsCompleted.objects.get_or_create(guest=second_object,form=target_object)[0]
