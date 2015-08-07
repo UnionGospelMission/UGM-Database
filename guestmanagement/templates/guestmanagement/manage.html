@@ -60,7 +60,7 @@
 		{% if create_or_edit == 'Modify' %}
 			<form action='.' method='post' autocomplete="off" name="DeleteForm">
 				{% csrf_token %}
-                {% if "guestmanagement.delete_{{ target_type }}" in perms %}
+                {% if "guestmanagement.delete_"|add:target_type in perms %}
     				<input id='delete_{{ target_type }}' type='text' name='delete_{{ target_type }}' value='delete_{{ target_type }}' hidden>
     				<input id='search' type='button' value='Delete {{ target_type.capitalize }}' onclick="formSubmitConfirm('DeleteForm','Confirm Delete {{ target_type.capitalize }}')">
                 {% endif %}
