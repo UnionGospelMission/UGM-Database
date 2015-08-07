@@ -13,7 +13,7 @@ class NewGuestForm(forms.ModelForm):
 	class Meta:
 		model=Guest
 		exclude=[]
-		widgets = {'password': forms.PasswordInput()}
+		#widgets = {'password': forms.PasswordInput()}
 		list_filter = [['first_name','icontains'],['last_name','icontains'],['ssn','endswith'],['program','many','name','icontains']]
 		list_display = ['id','first_name','last_name','last_4_ssn','program_list','image_tag']
 

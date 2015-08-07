@@ -20,7 +20,7 @@
 	{% elif not target_object %}
 		<a href='/guestmanagement/manage/{{ target_type.split|join:"_" }}/new/'>Create {{ target_type.capitalize }}</a><br/>
 		<h5>Search for {{ target_type }}:</h5>
-		<form action='.' method='post'>
+		<form action='.' method='post' autocomplete="off">
 			{% csrf_token %}
 			{{ search_html }}
 			<input id='search' type='submit' value='Search'>
@@ -58,15 +58,15 @@
 	{% else %}
 		<h5>{{ create_or_edit }} {{ target_type }}:</h5>
 		{% if create_or_edit == 'Modify' %}
-			<form action='.' method='post'>
+			<form action='.' method='post' autocomplete="off" name="DeleteForm">
 				{% csrf_token %}
                 {% if "guestmanagement.delete_{{ target_type }}" in perms %}
     				<input id='delete_{{ target_type }}' type='text' name='delete_{{ target_type }}' value='delete_{{ target_type }}' hidden>
-    				<input id='search' type='submit' value='Delete {{ target_type.capitalize }}'>
+    				<input id='search' type='button' value='Delete {{ target_type.capitalize }}' onclick="formSubmitConfirm('DeleteForm','Confirm Delete {{ target_type.capitalize }}')">
                 {% endif %}
 			</form>
 		{% endif %}
-		<form action='.' method='post' enctype="multipart/form-data" {% if target_type == 'report' %}onsubmit='onSubmit()' {% endif %}>
+		<form action='.' method='post' autocomplete="off" enctype="multipart/form-data" {% if target_type == 'report' %}onsubmit='onSubmit()' {% endif %}>
 			{% csrf_token %}
 			{{ form }}
 		{% if target_type == 'report' %}
@@ -111,4 +111,5 @@
 			<input id='search' type='submit' value='Submit'>
 		</form>
 	{% endif %}
+
 {% endblock %}
