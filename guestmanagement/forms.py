@@ -54,12 +54,11 @@ class NewPermissionsForm(forms.ModelForm):
 		list_display = ['name','user_list']
 
 class NewReportForm(forms.ModelForm):
-	code = forms.CharField(widget=forms.Textarea(attrs=dict(style="display:none;")),required=False)
 	description = forms.CharField(widget=forms.Textarea(),required=False)
 	class Meta:
 		model=ReportCode
 		exclude=[]
-		fields=['name','users','description','code']
+		fields=['name','users','description']
 		list_filter = [['name','icontains']]
 		list_display = ['name','user_list']
 

@@ -793,12 +793,7 @@ def runreport(request,report_id):
     '''
     View for executing and displaying reports
     '''
-    import ReportProcesser
-    target_report = ReportCode.objects.get(pk=report_id)
-    if request.user not in target_report.users.all():
-        return beGone('missing permission to view report')
     context=baseContext(request)
-    context.update({'report_html':mark_safe(ReportProcesser.process(target_report.code, request))})
     return render(request,'guestmanagement/report.html',context)
 
 def logout(request):
