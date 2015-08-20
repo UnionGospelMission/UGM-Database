@@ -607,7 +607,7 @@ def manage(request,target_type=None,target_object=None):
         # Pull all fields from the database which the user is allowed to see
         all_field_dict = {i.name:[[a.name.replace('(',''),a.field_type] for a in Field.objects.filter(form=i).distinct() if testPermission(a,request.user)] for i in all_forms_list}
         # Put the list of fields and forms into the context
-        context.update({'all_forms_list':all_forms_list,'all_field_dict':json.dumps(all_field_dict)})
+        context.update({'all_forms_list':json.dumps(all_forms_list),'all_field_dict':json.dumps(all_field_dict)})
     # Add the form and instance to the context
     context.update({'form':form.as_p(),'target_object':target_object})
     # Serve up the page :)

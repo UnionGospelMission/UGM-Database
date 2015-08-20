@@ -75,9 +75,23 @@
                    	<link rel="stylesheet" type="text/css" href="{% static "guestmanagement/css/report.css" %}" />
                     <div id='report_form'>
                         <input hidden id='loaded_report' value='{{ loaded_report }}'/>
+                        <input hidden id='loaded_fields' value='{{ all_field_dict }}'/>
                         <div id='report_title'>title</div>
-                        <div id='field_select'>helloc</div>
-                        <div id='report_builder'></div>
+                        <div id='field_select'>
+							<div id='form_select'>
+								<h1>Select Form</h1>
+								<ul>
+									{% for i in all_forms_list %}
+										<li onclick='selectForm(this)'>{{ i.name }}</li>
+									{% endfor %}
+								</ul>
+							</div>
+							<div id='fields'>
+								<h1>Select Fields</h1>
+								<table></table>
+							</div>
+						</div>
+                        <div id='report_builder'><div><h1 class='report_viewer_column'>Type</h1><h1 class='report_viewer_column'>Filter/Text</h1><h1 class='report_viewer_column'>Field</h1></div></div>
                         <div id='function_select'>hellob</div>
                     </div>
                 {% endif %}

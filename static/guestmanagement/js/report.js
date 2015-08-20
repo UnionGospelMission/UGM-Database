@@ -1,9 +1,7 @@
-
-
 window.onload=function (){
+    // Report Viewer
     window.report_viewer = document.getElementById('report_builder');
     if (document.getElementById('loaded_report').value!=''){
-        alert(document.getElementById('loaded_report').value);
         var loaded_report = JSON.parse(document.getElementById('loaded_report').value);
     } else {
         var loaded_report = [];
@@ -12,7 +10,21 @@ window.onload=function (){
         newRow(loaded_report[i][0],loaded_report[i][1],loaded_report[i][2]);
     }
     newRow();
+    
+    // Field Select
+    if (document.getElementById('loaded_fields').value!=''){
+        window.loaded_fields = JSON.parse(document.getElementById('loaded_fields').value);
+    } else {
+        window.loaded_fields = [];
+    }
+    window.field_viewer = document.getElementById('fields');
+    window.previous_element = undefined;
+    
 }
+
+
+// Report Viewer Functions
+
 
 function newRow(type,value1,value2){
     if (! window.last_row) {
@@ -34,7 +46,6 @@ function newRow(type,value1,value2){
             }
             new_type.name = 'code' + String(new_row.line_number) + '-0';
             new_type.onchange = typeChange;
-            new_type.onblur = setTarget;
 	
         if (value1){
             var new_filter = new_row.appendChild(document.createElement('input'));
@@ -104,4 +115,37 @@ function toggleReportView() {
         report_form.style.zIndex='-1';
         document.getElementById('report_view_toggle').value = 'Report Builder';
     }
+}
+
+
+// Field Select Functions
+
+function selectForm(t) {
+    field_viewer.removeChild(field_viewer.children[1]);
+    var selected_form = loaded_fields[t.innerHTML];
+    var new_field_list = field_viewer.appendChild(document.createElement('table'));
+    var new_header = new_field_list.createTHead();
+    var header_row = new_header.insertRow();
+    var header_cell = header_row.insertCell();
+    header_cell.appendChild(document.createTextNode('Field Name'));
+    header_cell.className += ' field_list_header';
+    var header_cell = header_row.insertCell();
+    header_cell.appendChild(document.createTextNode('Field Type'));
+    header_cell.className += ' field_list_header';
+    for (var i=0;i<selected_form.length;i++){
+        var new_row = new_field_list.insertRow();
+        var new_cell = new_row.insertCell();
+        new_cell.appendChild(document.createTextNode(selected_form[i][0]));
+        new_cell.onclick = insertField;
+        var new_cell = new_row.insertCell();
+        new_cell.appendChild(document.createTextNode(selected_form[i][1]));
+    }
+}
+
+function insertField(){
+    if (! previous_element){
+        alert('Click where you want a field inserted, then click your field again');
+        return;
+    }
+    previous_element.value = 'field.' + this.innerHTML;
 }

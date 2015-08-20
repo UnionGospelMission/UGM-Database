@@ -19,33 +19,59 @@
 
 #report_title{
     background: yellow;
-    height: 10%;
-    width: 10%;
+    height: 20%;
+    width: 20%;
     position: absolute;
 }
 
 #report_builder{
     position: relative;
     background: red;
-    height: 90%;
-    width: 90%;
+    height: 80%;
+    width: 80%;
     float: right;
 }
 #function_select{
     position: absolute;
     background: green;
-    height: 90%;
-    width: 10%;
+    height: 80%;
+    width: 20%;
     bottom: 0;
 }
 #field_select{
     position: relative;
     background: blue;
-    height: 10%;
-    width: 90%;
+    height: 20%;
+    width: 80%;
     float: right;
+}
+
+#form_select{
+    position: relative;
+    background: purple;
+    width: 50%;
+    height: 100%;
+    float: left;
+    overflow-y: scroll;
+}
+
+#fields{
+    position: relative;
+    background: brown;
+    width: 50%;
+    height: 100%;
+    margin-left: 50%;
+    overflow-y: scroll;
 }
 
 #standard_form{
     z-index: 0;
+}
+
+.report_viewer_column {
+	width: 120px;
+}
+
+.field_list_header {
+	font-weight: bold;
 }
