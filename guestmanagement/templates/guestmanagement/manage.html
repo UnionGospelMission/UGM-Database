@@ -74,9 +74,10 @@
                     <script type="text/javascript" src="{% static "guestmanagement/js/report.js" %}"></script>
                    	<link rel="stylesheet" type="text/css" href="{% static "guestmanagement/css/report.css" %}" />
                     <div id='report_form'>
+                        <input hidden id='loaded_report' value='{{ loaded_report }}'/>
                         <div id='report_title'>title</div>
                         <div id='field_select'>helloc</div>
-                        <div id='report_builder'>helloa</div>
+                        <div id='report_builder'></div>
                         <div id='function_select'>hellob</div>
                     </div>
                 {% endif %}

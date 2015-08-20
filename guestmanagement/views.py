@@ -26,7 +26,7 @@ target_type_dict = {# Reference dictionary for matching the correct new form to 
                     'prerequisite':[NewPrerequisiteForm,Prerequisite,'name'],
                     'permission':[NewPermissionsForm,Permission,'name'],
                     'report':[NewReportForm,ReportCode,'name'],
-					'attachment':[NewAttachmentForm,Attachment,'name'],
+                    'attachment':[NewAttachmentForm,Attachment,'name'],
                     'user_permission_setting':[NewUser_Permission_Setting,User_Permission_Setting,'user'],
                 }
 
@@ -80,7 +80,7 @@ def createForm(field_list,user,request=None,second_object=None,error_flags={}):
                         'list':"<select multiple='multiple' id='%s' name='%s' value='%s'>\n%s</select></br>",
                         'date':"<input class='datePicker' id='%s' name='%s' readonly='true' type='text' value='%s'></br>\n%s",
                         'url':'<iframe %s%s width="560" height="345" src="%s?rel=0" frameborder="0" allowfullscreen>%s</iframe></br>',
-						'attachment':'<a %s%s href="%s">%s</a></br>',
+                        'attachment':'<a %s%s href="%s">%s</a></br>',
                         'file':'</br>&nbsp;&nbsp;&nbsp;&nbsp;Change File: <input id="%s" name="%s" type="file" /></br>&nbsp;&nbsp;&nbsp;&nbsp;<a href="%s">%s</a></br>',
                         }
     # return html string for display in template.
@@ -93,13 +93,13 @@ def createForm(field_list,user,request=None,second_object=None,error_flags={}):
                                     field_type_options[i.field_type]%(
                                         i.name,
                                         i.name,
-										i.attachment.attachment.url
-								            if i.field_type=='attachment' else i.external_url
+                                        i.attachment.attachment.url
+                                            if i.field_type=='attachment' else i.external_url
                                             if i.field_type=='url' else GuestData.objects.get_or_create(guest=second_object,field=i)[0].value
                                             if not request else request.POST.get(i.name,'')
                                             if i.field_type != 'boolean' else "checked='checked'"
                                             if request.POST.get(i.name,'')=='on' else '',
-										i.name if i.field_type=='attachment' else '%s %s: %s'%(second_object.first_name,second_object.last_name,i.label)
+                                        i.name if i.field_type=='attachment' else '%s %s: %s'%(second_object.first_name,second_object.last_name,i.label)
                                         if i.field_type=='file' and GuestData.objects.get_or_create(guest=second_object,field=i)[0].value else
                                         ''.join(
                                             [
@@ -416,6 +416,9 @@ def manage(request,target_type=None,target_object=None):
         # Store the current form associate with the target field if applicable
         if target_type == 'field':
             currentform=target_object.form
+        # If loading a report, attach current code to context
+        if target_type == 'report':
+            context.update({'loaded_report':target_object.code})
         # Set wording to appear on webpage
         create_or_edit = 'Modify'
     # Add wording to context
@@ -543,6 +546,43 @@ def manage(request,target_type=None,target_object=None):
                 # Update all affected permissions
                 for i in target_object.permissions.all():
                     i.users.add(target_object.user)
+            # Special processing for reports
+            if target_type=='report':
+                request_dict = dict(request.POST)
+                report_code = []
+                report_row_counter = '0'
+                while isinstance(report_row_counter, str):
+                    report_code_row = []
+                    report_col_counter = '0'
+                    while isinstance(report_col_counter,str):
+                        report_code_row.append(request_dict['code'+report_row_counter+'-'+report_col_counter][0])
+
+                        found_next = False
+                        for k,v in request_dict.iteritems():
+                            if k.find('code'+report_row_counter+'-'+str(int(report_col_counter)+1)) > -1:
+                                found_next = True
+                                break
+                        if found_next:
+                            report_col_counter = str(int(report_col_counter)+1)
+                        else:
+                            report_col_counter = False
+                    
+                    if report_code_row[0] != u'':
+                        report_code.append(report_code_row)
+                    
+                    found_next = False
+                    for k,v in request_dict.iteritems():
+                        if k.find('code'+str(int(report_row_counter)+1)) > -1:
+                            found_next = True
+                            break
+                    if found_next:
+                        report_row_counter = str(int(report_row_counter)+1)
+                    else:
+                        report_row_counter = False
+                    
+                myobject.code = json.dumps(report_code)
+                myobject.save()
+                            
             # if user wants to save a report but continue modifying it
             if request.POST.get('save_report',''):
                 # Add the form to the context
@@ -559,6 +599,9 @@ def manage(request,target_type=None,target_object=None):
         form = target_type_dict[target_type][0](request.POST or None,instance=target_instance)
     # Special processing for reports
     if target_type == 'report':
+        # Bind current code
+        if target_instance:
+            context.update({'loaded_report':target_instance.code})
         # Pull all the forms from the database which the user is allowed to see
         all_forms_list = [i for i in Form.objects.all() if testPermission(i,request.user)]
         # Pull all fields from the database which the user is allowed to see
