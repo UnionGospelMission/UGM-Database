@@ -64,8 +64,8 @@
 			</form>
 		{% endif %}
         <div class='form_container'>
-    		<form action='.' method='post' autocomplete="off" enctype="multipart/form-data" {% if target_type == 'report' %}onsubmit='submitReport()' {% endif %}>
-                {% if target_type == 'report' %}<input type='button' value='Report Builder' onclick="toggleReportView()" id="report_view_toggle" /><input id='search' type='submit' value='Submit'>{% endif %}
+    		<form action='.' method='post' autocomplete="off" enctype="multipart/form-data">
+                {% if target_type == 'report' %}<input type='button' value='Report Builder' onclick="toggleReportView()" id="report_view_toggle" /><input id='search' type='submit' value='Submit'><input type='button' value='Submit and Continue Editing' onclick='submitAndContinue()'>{% endif %}
                 <div id="standard_form">
      	    		{% csrf_token %}
            	    	{{ form }}
@@ -81,18 +81,31 @@
 							<div id='form_select'>
 								<h1>Select Form</h1>
 								<ul>
+									<li onclick='selectForm(this)'>guest</li>
 									{% for i in all_forms_list %}
 										<li onclick='selectForm(this)'>{{ i.name }}</li>
 									{% endfor %}
 								</ul>
 							</div>
 							<div id='fields'>
-								<h1>Select Fields</h1>
+								<h1>Select Field</h1>
 								<table></table>
 							</div>
 						</div>
-                        <div id='report_builder'><div><h1 class='report_viewer_column'>Type</h1><h1 class='report_viewer_column'>Filter/Text</h1><h1 class='report_viewer_column'>Field</h1></div></div>
-                        <div id='function_select'>hellob</div>
+                        <div id='report_builder'><div><h1 class='report_viewer_column'>Type</h1><h1 class='report_viewer_column'>Filter/Text</h1><h1 class='report_viewer_column'>Field</h1><h1 class='report_viewer_column'>Time Series</h1></div></div>
+                        <div id='function_select'>
+							<h5>Operators</h5>
+							<ul>
+								<li onclick='addOperator(this)'>Equals</li>
+								<li onclick='addOperator(this)'>Greater Than</li>
+								<li onclick='addOperator(this)'>Less Than</li>
+								<li onclick='addOperator(this)'>Greater Than or Equals</li>
+								<li onclick='addOperator(this)'>Less Than or Equals</li>
+								<li onclick='addOperator(this)'>And</li>
+								<li onclick='addOperator(this)'>Or</li>
+								<li onclick='addOperator(this)'>Field Change</li>
+							</ul>
+                        </div>
                     </div>
                 {% endif %}
        		{% if target_type != 'report' %}<input id='search' type='submit' value='Submit'>{% endif %}

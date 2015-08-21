@@ -1,6 +1,6 @@
 from random import randint
 import hashlib,datetime,json
-import os
+import os,re
 from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from django.core.context_processors import csrf
@@ -606,8 +606,9 @@ def manage(request,target_type=None,target_object=None):
         all_forms_list = [i for i in Form.objects.all() if testPermission(i,request.user)]
         # Pull all fields from the database which the user is allowed to see
         all_field_dict = {i.name:[[a.name.replace('(',''),a.field_type] for a in Field.objects.filter(form=i).distinct() if testPermission(a,request.user)] for i in all_forms_list}
+        all_field_dict.update({'guest':[['first_name','text_field'],['middle_name','text_field'],['last_name','text_field'],['ssn','text_field'],['program','list']]})
         # Put the list of fields and forms into the context
-        context.update({'all_forms_list':json.dumps(all_forms_list),'all_field_dict':json.dumps(all_field_dict)})
+        context.update({'all_forms_list':all_forms_list,'all_field_dict':json.dumps(all_field_dict)})
     # Add the form and instance to the context
     context.update({'form':form.as_p(),'target_object':target_object})
     # Serve up the page :)
@@ -837,6 +838,37 @@ def runreport(request,report_id):
     View for executing and displaying reports
     '''
     context=baseContext(request)
+    report_code = json.loads(ReportCode.objects.get(pk=report_id).code)
+    report = ''
+    for i in report_code:
+        Print(i)
+        if i[0] == 'text':
+            report = report + i[1]
+        else:
+            operator_list = i[1].split('::')
+            field_list = i[2].split('::')
+            for a in range(0,len(operator_list)):
+                operator_list[a] = operator_list.split(' ',1)
+                operator_list[a][0] = operator_list[a][0].replace('=','exact').replace('>','gt').replace('<','lt').replace('>=','gte').replace('<=','lte')
+                operator_list[a][1] = operator_list[a][0].replace('True',"checked='checked'")
+            
+            kwargs = {'field__name':i[2].split('.')[1],'value__'+operator:value}
+            if len(i)<4:
+                filter_list = GuestData.objects.filter(**kwargs).distinct()
+            else:
+                filter_list = GuestTimeData.objects.filter(**kwargs).distinct()
+            if i[0] == 'count':
+                report = report + str(len(filter_list))
+            if i[0] == 'sum':
+                s=0
+                for i in filter_list:
+                    try:
+                        s+=float(i.value)
+                    except:
+                        pass
+                report = report + str(s)
+                
+    context.update({'report':mark_safe(report)})
     return render(request,'guestmanagement/report.html',context)
 
 def logout(request):
