@@ -13,6 +13,7 @@ from django.forms.formsets import formset_factory
 from guestmanagement.models import Guest,GuestmanagementUserSettings,Program,Form,Field,Prerequisite,GuestData,GuestFormsCompleted,Permission,GuestTimeData,ReportCode,Attachment,DynamicFilePermissions,User_Permission_Setting
 from forms import NewGuestForm,NewProgramForm,NewFormForm,NewFieldForm,NewPrerequisiteForm,NewPermissionsForm,NewReportForm,NewAttachmentForm,NewUser_Permission_Setting
 from django.core.exceptions import MultipleObjectsReturned
+from cStringIO import StringIO
 
 # Common reference dictionaries
 
@@ -30,7 +31,109 @@ target_type_dict = {# Reference dictionary for matching the correct new form to 
                     'user_permission_setting':[NewUser_Permission_Setting,User_Permission_Setting,'user'],
                 }
 
+#Report method class
+
+class ReportProcessor():
+
+    def __init__(self):
+        self.functions = {  'add':self.add,
+                            'subtract':self.subtract,
+                        }
+        self._functions = { 
+                            'do':self.do,
+                            'newline': self.newline,
+                            'text': self.text,
+                            'function':self.function,
+                            }
+        
+    class Env(dict):
+        def __init__(self,parent):
+            self.parent=parent
+        def __getitem__(self,item):
+            if item in self:
+                return super(Env, self).__get__(item)
+            return self.parent[item]
+        def __setitem__(self,item,value):
+            if item not in self:
+                p = self.parent
+                while True:
+                    if item in p:
+                        p[item]=value
+                        return
+                    if isinstance(p,Env):
+                        p=p.parent
+                    else:
+                        break
+            super(Env, self).__setitem__(item,value)
+
+    # external functions
+    def add(self,env,value1,value2):
+        return str(float(value1) + float(value2))
+
+    def subtract(self,env,value1,value2):
+        return str(float(value1) - float(value2))
+
+
+    # internal functions
+    def do(self, env, *args):
+        for arg in args:
+            ret = self.listProcess(self.Env(env), arg)
+        return ret
+    
+    def newline(self, env):
+        env['print']('<br />')
+        
+    def text(self, env, bold, value):
+        if bold == 'none':
+            env['print'](value)
+        else:
+            env['print']('<%s>%s</%s>'%(bold,value,bold))
+    
+    def function(self, env):
+        pass
+
+    @staticmethod
+    def preProcessReport(code,first_indent=None):
+        indent_list = ['list', 'sum', 'count', 'display']
+        retval = []
+        while True:
+            try:
+                line = code.pop(0)
+                if line[0] == 'end':
+                    if not first_indent:
+                        return 'bad code'
+                    return retval
+                if line[0] in indent_list:
+                    sub_list = ReportProcessor.preProcessReport(code,line)
+                    if sub_list == 'bad code':
+                        return 'bad code'
+                    line.extend(sub_list)
+                    retval.append(line)
+                else:
+                    retval.append(line)
+            except IndexError:
+                if first_indent:
+                    return 'bad code'
+                break
+        return retval
+    
+    def listProcess(self, env, code):
+        if env is None:
+            env={}
+        if not isinstance(code,list) or not code:
+            return code
+        first = code.pop(0)
+        if isinstance(first,list):
+            function = self.listProcess(self.Env(env), first)
+        else:
+            function = env[first]
+        return function(self.Env(env), *code)
+
+report_processor = ReportProcessor()
+
+
 # Common Methods
+
 def Print(*value):
     '''
     Useful debugging tool.
@@ -548,6 +651,7 @@ def manage(request,target_type=None,target_object=None):
                     i.users.add(target_object.user)
             # Special processing for reports
             if target_type=='report':
+                Print(request.POST)
                 request_dict = dict(request.POST)
                 report_code = []
                 report_row_counter = '0'
@@ -555,6 +659,8 @@ def manage(request,target_type=None,target_object=None):
                     report_code_row = []
                     report_col_counter = '0'
                     while isinstance(report_col_counter,str):
+                        if len(request_dict['code'+report_row_counter+'-'+report_col_counter])>1:
+                            request_dict['code'+report_row_counter+'-'+report_col_counter] = [u'on']
                         report_code_row.append(request_dict['code'+report_row_counter+'-'+report_col_counter][0])
 
                         found_next = False
@@ -579,8 +685,10 @@ def manage(request,target_type=None,target_object=None):
                         report_row_counter = str(int(report_row_counter)+1)
                     else:
                         report_row_counter = False
-                    
-                myobject.code = json.dumps(report_code)
+                processed_code = report_processor.preProcessReport([[a for a in i] for i in report_code])
+                if processed_code == 'bad code':
+                    messages.add_message(request, messages.INFO, '%s Contains Invalid Structure'%myobject.name)
+                myobject.code = json.dumps([processed_code,report_code])
                 myobject.save()
                             
             # if user wants to save a report but continue modifying it
@@ -601,14 +709,14 @@ def manage(request,target_type=None,target_object=None):
     if target_type == 'report':
         # Bind current code
         if target_instance:
-            context.update({'loaded_report':target_instance.code})
+            context.update({'loaded_report':json.dumps(json.loads(target_instance.code)[1])})
         # Pull all the forms from the database which the user is allowed to see
         all_forms_list = [i for i in Form.objects.all() if testPermission(i,request.user)]
         # Pull all fields from the database which the user is allowed to see
         all_field_dict = {i.name:[[a.name.replace('(',''),a.field_type] for a in Field.objects.filter(form=i).distinct() if testPermission(a,request.user)] for i in all_forms_list}
         all_field_dict.update({'guest':[['first_name','text_field'],['middle_name','text_field'],['last_name','text_field'],['ssn','text_field'],['program','list']]})
         # Put the list of fields and forms into the context
-        context.update({'all_forms_list':all_forms_list,'all_field_dict':json.dumps(all_field_dict)})
+        context.update({'all_forms_list':all_forms_list,'all_field_dict':json.dumps(all_field_dict),'available_functions':json.dumps([[i,list(report_processor.functions[i].func_code.co_varnames)] for i in report_processor.functions.keys()])})
     # Add the form and instance to the context
     context.update({'form':form.as_p(),'target_object':target_object})
     # Serve up the page :)
@@ -838,37 +946,13 @@ def runreport(request,report_id):
     View for executing and displaying reports
     '''
     context=baseContext(request)
-    report_code = json.loads(ReportCode.objects.get(pk=report_id).code)
-    report = ''
-    for i in report_code:
-        Print(i)
-        if i[0] == 'text':
-            report = report + i[1]
-        else:
-            operator_list = i[1].split('::')
-            field_list = i[2].split('::')
-            for a in range(0,len(operator_list)):
-                operator_list[a] = operator_list.split(' ',1)
-                operator_list[a][0] = operator_list[a][0].replace('=','exact').replace('>','gt').replace('<','lt').replace('>=','gte').replace('<=','lte')
-                operator_list[a][1] = operator_list[a][0].replace('True',"checked='checked'")
-            
-            kwargs = {'field__name':i[2].split('.')[1],'value__'+operator:value}
-            if len(i)<4:
-                filter_list = GuestData.objects.filter(**kwargs).distinct()
-            else:
-                filter_list = GuestTimeData.objects.filter(**kwargs).distinct()
-            if i[0] == 'count':
-                report = report + str(len(filter_list))
-            if i[0] == 'sum':
-                s=0
-                for i in filter_list:
-                    try:
-                        s+=float(i.value)
-                    except:
-                        pass
-                report = report + str(s)
-                
-    context.update({'report':mark_safe(report)})
+    report_code = json.loads(ReportCode.objects.get(pk=report_id).code)[0]
+    output = StringIO()
+    env = {'print':output.write}
+    env.update(report_processor.functions)
+    env.update(report_processor._functions)
+    success = report_processor.listProcess(env, ['do']+report_code)
+    context.update({'report':mark_safe(output.getvalue())})
     return render(request,'guestmanagement/report.html',context)
 
 def logout(request):

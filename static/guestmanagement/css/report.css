@@ -4,7 +4,8 @@
     height: 600px;
     width: 99%;
     background: orange;
-    overflow-y: scroll;
+    overflow-y: hidden;
+    margin-bottom: 10%;
 }
 
 #report_form{
@@ -27,9 +28,10 @@
 #report_builder{
     position: relative;
     background: red;
-    height: 80%;
+    height: 75%;
     width: 80%;
     float: right;
+    overflow-y: scroll;
 }
 #function_select{
     position: absolute;
@@ -37,6 +39,7 @@
     height: 80%;
     width: 20%;
     bottom: 0;
+    overflow-y: scroll;
 }
 #field_select{
     position: relative;
@@ -74,4 +77,16 @@
 
 .field_list_header {
 	font-weight: bold;
+}
+
+#insert_row{
+    display: none;
+}
+
+.variable_list{
+	padding-bottom: 5%;
+}
+
+.report_row{
+	padding-bottom: 5%;
 }

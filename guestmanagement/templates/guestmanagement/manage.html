@@ -1,116 +1,115 @@
 {% extends "shared/base.html" %}{% load i18n %}{% load staticfiles %}
 {% block pretitle %}
-	<h1>{% trans 'Manage' %}{% if target_type %} {% endif %}{{ target_type.capitalize }}{% if target_type %}s{% endif %}:</h1><br/>
-	{% if target_object and not target_object == 'new' %}<a href='/guestmanagement/view/{{ target_type.split|join:"_" }}/{{ target_object.id }}/'>View {{ target_object.name }}</a>{% endif %}</br>
+    <h1>{% trans 'Manage' %}{% if target_type %} {% endif %}{{ target_type.capitalize }}{% if target_type %}s{% endif %}:</h1><br/>
+    {% if target_object and not target_object == 'new' %}<a href='/guestmanagement/view/{{ target_type.split|join:"_" }}/{{ target_object.id }}/'>View {{ target_object.name }}</a>{% endif %}</br>
 {% endblock %}
 {% block content %}
-	{% if not target_type %}
-		{% if perms.guestmanagement.manage_guest %}<a href='/guestmanagement/manage/guest/'>Guests</a><br/>{% endif %}
-		{% if perms.guestmanagement.manage_form %}<a href='/guestmanagement/manage/form/'>Forms</a><br/>{% endif %}
-		{% if perms.guestmanagement.manage_field %}<a href='/guestmanagement/manage/field/'>Fields</a><br/>{% endif %}
-		{% if perms.guestmanagement.manage_program %}<a href='/guestmanagement/manage/program/'>Programs</a><br/>{% endif %}
-		{% if perms.guestmanagement.manage_prerequisite %}<a href='/guestmanagement/manage/prerequisite/'>Prerequisites</a><br/>{% endif %}
-		{% if perms.guestmanagement.manage_permission %}<a href='/guestmanagement/manage/permission/'>Permissions</a><br/>{% endif %}
-		{% if perms.guestmanagement.manage_report %}<a href='/guestmanagement/manage/report/'>Reports</a><br/>{% endif %}
-		{% if perms.guestmanagement.manage_attachment %}<a href='/guestmanagement/manage/attachment/'>Attachments</a><br/>{% endif %}
-		{% if perms.guestmanagement.manage_permission %}<a href='/guestmanagement/manage/user_permission_setting/'>Set User Permissions</a><br/>{% endif %}
-	{% elif not target_object %}
-		<a href='/guestmanagement/manage/{{ target_type.split|join:"_" }}/new/'>Create {{ target_type.capitalize }}</a><br/>
-		<h5>Search for {{ target_type }}:</h5>
-		<form action='.' method='post' autocomplete="off">
-			{% csrf_token %}
-			{{ search_html }}
-			<input id='search' type='submit' value='Search'>
-		</form><br/>
-		<table>
-			<tr>
-				{{ table_header_html }}
-			</tr>
-			{% for i in object_list %}
-				<tr>
-					{% for a in i %}
-						{% if not forloop.last %}
-							<td>{{ a }}</td>
-						{% else %}
-							<td><a href='/guestmanagement/manage/{{ target_type.split|join:"_" }}/{{ a }}/'>Edit {{ target_type.capitalize }}</a></td>
-							{% if target_type == 'guest' %}
-								<td>
-									<form action='.' method='post'>
-										{% csrf_token %}
-										<input id='set_guest' type='text' name='set_guest' value='{{ a }}' hidden>
-										<input id='search' type='submit' value='Set Guest'>
-									</form>
-								</td>
-							{% else %}
-								<td>
-									<a href='/guestmanagement/view/{{ target_type.split|join:"_" }}/{{ a }}/'>View {{ target_type }}</a>
-								</td>
-							{% endif %}
-						{% endif %}
-					{% endfor %}
-					
-				</tr>
-			{% endfor %}
-		</table>
-	{% else %}
-		<h5>{{ create_or_edit }} {{ target_type }}:</h5>
-		{% if create_or_edit == 'Modify' %}
-			<form action='.' method='post' autocomplete="off" name="DeleteForm">
-				{% csrf_token %}
+    {% if not target_type %}
+        {% if perms.guestmanagement.manage_guest %}<a href='/guestmanagement/manage/guest/'>Guests</a><br/>{% endif %}
+        {% if perms.guestmanagement.manage_form %}<a href='/guestmanagement/manage/form/'>Forms</a><br/>{% endif %}
+        {% if perms.guestmanagement.manage_field %}<a href='/guestmanagement/manage/field/'>Fields</a><br/>{% endif %}
+        {% if perms.guestmanagement.manage_program %}<a href='/guestmanagement/manage/program/'>Programs</a><br/>{% endif %}
+        {% if perms.guestmanagement.manage_prerequisite %}<a href='/guestmanagement/manage/prerequisite/'>Prerequisites</a><br/>{% endif %}
+        {% if perms.guestmanagement.manage_permission %}<a href='/guestmanagement/manage/permission/'>Permissions</a><br/>{% endif %}
+        {% if perms.guestmanagement.manage_report %}<a href='/guestmanagement/manage/report/'>Reports</a><br/>{% endif %}
+        {% if perms.guestmanagement.manage_attachment %}<a href='/guestmanagement/manage/attachment/'>Attachments</a><br/>{% endif %}
+        {% if perms.guestmanagement.manage_permission %}<a href='/guestmanagement/manage/user_permission_setting/'>Set User Permissions</a><br/>{% endif %}
+    {% elif not target_object %}
+        <a href='/guestmanagement/manage/{{ target_type.split|join:"_" }}/new/'>Create {{ target_type.capitalize }}</a><br/>
+        <h5>Search for {{ target_type }}:</h5>
+        <form action='.' method='post' autocomplete="off">
+            {% csrf_token %}
+            {{ search_html }}
+            <input id='search' type='submit' value='Search'>
+        </form><br/>
+        <table>
+            <tr>
+                {{ table_header_html }}
+            </tr>
+            {% for i in object_list %}
+                <tr>
+                    {% for a in i %}
+                        {% if not forloop.last %}
+                            <td>{{ a }}</td>
+                        {% else %}
+                            <td><a href='/guestmanagement/manage/{{ target_type.split|join:"_" }}/{{ a }}/'>Edit {{ target_type.capitalize }}</a></td>
+                            {% if target_type == 'guest' %}
+                                <td>
+                                    <form action='.' method='post'>
+                                        {% csrf_token %}
+                                        <input id='set_guest' type='text' name='set_guest' value='{{ a }}' hidden>
+                                        <input id='search' type='submit' value='Set Guest'>
+                                    </form>
+                                </td>
+                            {% else %}
+                                <td>
+                                    <a href='/guestmanagement/view/{{ target_type.split|join:"_" }}/{{ a }}/'>View {{ target_type }}</a>
+                                </td>
+                            {% endif %}
+                        {% endif %}
+                    {% endfor %}
+                    
+                </tr>
+            {% endfor %}
+        </table>
+    {% else %}
+        <h5>{{ create_or_edit }} {{ target_type }}:</h5>
+        {% if create_or_edit == 'Modify' %}
+            <form action='.' method='post' autocomplete="off" name="DeleteForm">
+                {% csrf_token %}
                 {% if "guestmanagement.delete_"|add:target_type in perms %}
-    				<input id='delete_{{ target_type }}' type='text' name='delete_{{ target_type }}' value='delete_{{ target_type }}' hidden>
-    				<input id='search' type='submit' value='Delete {{ target_type.capitalize }}' onsubmit="formSubmitConfirm('DeleteForm','Confirm Delete {{ target_type.capitalize }}')">
+                    <input id='delete_{{ target_type }}' type='text' name='delete_{{ target_type }}' value='delete_{{ target_type }}' hidden>
+                    <input id='search' type='submit' value='Delete {{ target_type.capitalize }}' onsubmit="formSubmitConfirm('DeleteForm','Confirm Delete {{ target_type.capitalize }}')">
                 {% endif %}
-			</form>
-		{% endif %}
+            </form>
+        {% endif %}
         <div class='form_container'>
-    		<form action='.' method='post' autocomplete="off" enctype="multipart/form-data">
-                {% if target_type == 'report' %}<input type='button' value='Report Builder' onclick="toggleReportView()" id="report_view_toggle" /><input id='search' type='submit' value='Submit'><input type='button' value='Submit and Continue Editing' onclick='submitAndContinue()'>{% endif %}
+            <form action='.' method='post' autocomplete="off" enctype="multipart/form-data">
+                {% if target_type == 'report' %}
+                    <input type='button' value='Report Builder' onclick="toggleReportView()" id="report_view_toggle" />
+                    <input type='submit' value='Submit' id='search'  />
+                    <input type='button' value='Submit and Continue Editing' onclick='submitAndContinue()' />
+                    <input type='button' value='Insert Row' onclick='insertRow()' id="insert_row" />
+                {% endif %}
                 <div id="standard_form">
-     	    		{% csrf_token %}
-           	    	{{ form }}
+                     {% csrf_token %}
+                       {{ form }}
                 </div>
-           		{% if target_type == 'report' %}
+                   {% if target_type == 'report' %}
                     <script type="text/javascript" src="{% static "guestmanagement/js/report.js" %}"></script>
-                   	<link rel="stylesheet" type="text/css" href="{% static "guestmanagement/css/report.css" %}" />
+                       <link rel="stylesheet" type="text/css" href="{% static "guestmanagement/css/report.css" %}" />
                     <div id='report_form'>
                         <input hidden id='loaded_report' value='{{ loaded_report }}'/>
                         <input hidden id='loaded_fields' value='{{ all_field_dict }}'/>
+                        <input hidden id='report_functions' value='{{ available_functions }}'/>
                         <div id='report_title'>title</div>
                         <div id='field_select'>
-							<div id='form_select'>
-								<h1>Select Form</h1>
-								<ul>
-									<li onclick='selectForm(this)'>guest</li>
-									{% for i in all_forms_list %}
-										<li onclick='selectForm(this)'>{{ i.name }}</li>
-									{% endfor %}
-								</ul>
-							</div>
-							<div id='fields'>
-								<h1>Select Field</h1>
-								<table></table>
-							</div>
-						</div>
-                        <div id='report_builder'><div><h1 class='report_viewer_column'>Type</h1><h1 class='report_viewer_column'>Filter/Text</h1><h1 class='report_viewer_column'>Field</h1><h1 class='report_viewer_column'>Time Series</h1></div></div>
+                            <div id='form_select'>
+                                <h1>Select Form</h1>
+                                <ul>
+                                    <li onclick='selectForm(this)'>guest</li>
+                                    {% for i in all_forms_list %}
+                                        <li onclick='selectForm(this)'>{{ i.name }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            <div id='fields'>
+                                <h1>Select Field</h1>
+                                <table></table>
+                            </div>
+                        </div>
+                        <div id='report_builder'><div><h1>Build Report</h1></div></div>
                         <div id='function_select'>
-							<h5>Operators</h5>
-							<ul>
-								<li onclick='addOperator(this)'>Equals</li>
-								<li onclick='addOperator(this)'>Greater Than</li>
-								<li onclick='addOperator(this)'>Less Than</li>
-								<li onclick='addOperator(this)'>Greater Than or Equals</li>
-								<li onclick='addOperator(this)'>Less Than or Equals</li>
-								<li onclick='addOperator(this)'>And</li>
-								<li onclick='addOperator(this)'>Or</li>
-								<li onclick='addOperator(this)'>Field Change</li>
-							</ul>
+                            <h1>Defined Variables</h1>
+                            <ul>
+                            <li>hello world</li>
+                            </ul>
                         </div>
                     </div>
                 {% endif %}
-       		{% if target_type != 'report' %}<input id='search' type='submit' value='Submit'>{% endif %}
-	    	</form>
-    	</div>
-	{% endif %}
+               {% if target_type != 'report' %}<input id='search' type='submit' value='Submit'>{% endif %}
+            </form>
+        </div>
+    {% endif %}
 
 {% endblock %}
