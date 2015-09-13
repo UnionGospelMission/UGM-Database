@@ -1,6 +1,6 @@
 from random import randint
 import hashlib,datetime,json
-import os
+import os,re, itertools
 from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from django.core.context_processors import csrf
@@ -13,6 +13,10 @@ from django.forms.formsets import formset_factory
 from guestmanagement.models import Guest,GuestmanagementUserSettings,Program,Form,Field,Prerequisite,GuestData,GuestFormsCompleted,Permission,GuestTimeData,ReportCode,Attachment,DynamicFilePermissions,User_Permission_Setting
 from forms import NewGuestForm,NewProgramForm,NewFormForm,NewFieldForm,NewPrerequisiteForm,NewPermissionsForm,NewReportForm,NewAttachmentForm,NewUser_Permission_Setting
 from django.core.exceptions import MultipleObjectsReturned
+from cStringIO import StringIO
+from copy import deepcopy
+from dateutil.relativedelta import relativedelta
+from django.utils import timezone
 
 # Common reference dictionaries
 
@@ -26,11 +30,550 @@ target_type_dict = {# Reference dictionary for matching the correct new form to 
                     'prerequisite':[NewPrerequisiteForm,Prerequisite,'name'],
                     'permission':[NewPermissionsForm,Permission,'name'],
                     'report':[NewReportForm,ReportCode,'name'],
-					'attachment':[NewAttachmentForm,Attachment,'name'],
+                    'attachment':[NewAttachmentForm,Attachment,'name'],
                     'user_permission_setting':[NewUser_Permission_Setting,User_Permission_Setting,'user'],
                 }
 
+#Report method class
+
+class ReportProcessor():
+
+    def __init__(self):
+        self.functions = {  'add':self.add,
+                            'subtract':self.subtract,
+                            'today': self.today,
+                            'subtract_dates': self.subtractDates,
+                            'length': self.length,
+                            'count_bool_times_activated':self.countBooleans,
+                            'count_bool_days_active':self.countDays,
+                            'last_day_bool_activated':self.lastDayActivated,
+                            'last_day_bool_deactivated':self.lastDayDeactivated,
+                            'format_picture':self.formatPicture,
+        }
+        self._functions = { 
+                            'do':self.do,
+                            'newline': self.newline,
+                            'text': self.text,
+                            'function':self.function,
+                            'display':self.display,
+                            'list':self.list_,
+                            'count':self.count,
+                            'sum':self.sum,
+                            'set':self.set_,
+                            'query':self.query,
+        }
+        self.filter_dict = {
+                            '=':'exact',
+                            '>':'gt',
+                            '<':'lt',
+                            '>=':'gte',
+                            '<=':'lte',
+                            'contains':'icontains',
+                            'guest':Guest,
+                            'field':{u'':GuestData,u'on':GuestTimeData},
+
+        }
+        
+    class Env(dict):
+        def __init__(self,parent):
+            self.parent=parent
+        def __getitem__(self,item):
+            if item in self:
+                return super(ReportProcessor.Env, self).__getitem__(item)
+            return self.parent[item]
+        def __setitem__(self,item,value):
+            if item not in self:
+                p = self.parent
+                while True:
+                    if item in p:
+                        p[item]=value
+                        return
+                    if isinstance(p,ReportProcessor.Env):
+                        p=p.parent
+                    else:
+                        break
+            super(ReportProcessor.Env, self).__setitem__(item,value)
+
+    # external functions
+    def formatPicture(self,env,url,height,width):
+        url = self.evalVariables(env,url)
+        height = self.evalVariables(env,height)
+        width = self.evalVariables(env,width)
+        return u'<img src="%s" height="%s" width="%s"/>' % (url,height,width)
+    
+    def lastDayActivated(self,env,boolean_list):
+        return self.booleanMethods(env,boolean_list,False,True)
+    
+    def lastDayDeactivated(self,env,boolean_list):
+        return self.booleanMethods(env,boolean_list,False,False,True)
+    
+    def countBooleans(self,env,boolean_list):
+        return self.booleanMethods(env,boolean_list)
+    
+    def countDays(self,env,boolean_list):
+        return self.booleanMethods(env,boolean_list,True)
+    
+    def add(self,env,value1,value2):
+        return str(float(value1) + float(value2))
+
+    def subtract(self,env,value1,value2):
+        return str(float(value1) - float(value2))
+
+
+    def today(self,env):
+        return datetime.datetime.now().date()
+        
+    def subtractDates(self,env,date1,date2,days_months_years=None):
+        a = self.evalVariables(env,date1)
+        b = self.evalVariables(env,date2)
+        if isinstance(a,str) or isinstance(b,str):
+            return ''
+        if isinstance(a,unicode):
+            a = datetime.datetime.strptime(a,'%m/%d/%Y').date()
+        if isinstance(b,unicode):
+            b = datetime.datetime.strptime(b,'%m/%d/%Y').date()
+        if not isinstance(b,type(a)) or not isinstance(a,type(b)):
+            if isinstance(a,datetime.datetime):
+                a = a.date()
+            if isinstance(b,datetime.datetime):
+                b = b.date()
+        c = relativedelta(a,b)
+        d = a - b
+        if days_months_years == 'months':
+            return c.years * 12 + c.months
+        if days_months_years == 'years':
+            return c.years
+        return d.days
+    
+    def length(self,env,variable):
+        variable = self.evalVariables(env,variable)
+        return len(variable)
+            
+
+    # internal functions
+    def booleanMethods(self,env,boolean_list,count_days=False,last_day_activated=False,last_day_deactivated=False):
+        if not isinstance(boolean_list,list):
+            boolean_list = self.evalVariables(env,boolean_list)
+        boolean_list = deepcopy(boolean_list)
+        count = 1
+        current = boolean_list.pop(0)
+        checkin_date = current[0]
+        checkout_date = ""
+        while current[1] !="checked='checked'":
+            try:
+                current = boolean_list.pop(0)
+                checkin_date = current[0]
+            except IndexError:
+                return 0
+        for i in boolean_list:
+            if i[1] == u'' and (count_days or last_day_deactivated) and current[1] =="checked='checked'":
+                count += self.subtractDates(env,i[0],checkin_date)
+                checkout_date = i[0]
+            if i[1] == "checked='checked'" and current[1]==u'':
+                if not count_days:
+                    count += 1
+                checkin_date=i[0]
+            current = i
+        if count_days and current[1]=="checked='checked'":
+            count += self.subtractDates(env,datetime.datetime.now(),checkin_date)
+        if last_day_activated:
+            return checkin_date
+        if last_day_deactivated:
+            return checkout_date
+        return count
+
+    def text(self, env, bold, value):
+        if bold == 'none':
+            env['print'](value)
+        else:
+            env['print']('<%s>%s</%s>'%(bold,value,bold))
+
+    def set_(self,env,key,value):
+        if '::' not in key:
+            env.parent.parent[key] = self.evalVariables(env,value)
+        else:
+            slice_list = key.split('::')
+            key = slice_list.pop(0)
+            end = int(slice_list.pop())
+            slice_list = [int(i) for i in slice_list]
+            cur_value = self.evalVariables(env,'$'+key)
+            a = cur_value
+            for i in slice_list:
+                a = a[i]
+            while len(a)<=end:
+                a.append('')
+            a[end] = self.evalVariables(env,value)
+            env.parent.parent[key] = cur_value
+                
+    
+    def display(self,env,display_value,separator,timeseries, *code):
+        if not code:
+            retval = self.evalVariables(env,display_value)
+            if isinstance(retval, (datetime.datetime,datetime.date)):
+                env['print'](retval.strftime('%m/%d/%Y'))
+            else:
+                env['print'](str(retval))
+        else:
+            filter = self.buildFilter(env,display_value,timeseries,code)
+            if len(filter)>1:
+                env['print']('filter returned more than one value')
+            elif len(filter)==1:
+                env['print'](separator.join(filter[0]))
+                
+
+    def newline(self, env):
+        env['print']('<br />')
+
+    def query(self, env, list_type,list_variable,list_range, timeseries, *code):
+        c = list(code)
+        if list_type == u'numbers':
+            start,stop = list_range.split(':')
+            a = xrange(int(start), int(stop)+1)
+        else:
+            a = self.buildFilter(env,list_range,timeseries,code)
+            while c[0][0]=='and' or c[0][0]=='or' or c[0][0]=='extrafield':
+                c.pop(0)
+                if c == []:
+                    break
+        c.insert(0, 'do')
+        if '!' in list_variable:
+            env.parent.parent[list_variable.replace('!','')] = a
+        else:
+            env[list_variable] = a
+
+
+    def list_(self, env, list_type,list_variable,row_items,row_separator,list_range, timeseries, *code):
+        c = list(code)
+        if list_type == u'numbers':
+            start,stop = list_range.split(':')
+            if '$' in start:
+                start = int(self.evalVariables(env,start))-1
+            if '$' in stop:
+                stop = int(self.evalVariables(env,stop))-1
+            a = xrange(int(start), int(stop)+1)
+        else:
+            a = self.buildFilter(env,list_range,timeseries,code)
+            while c[0][0]=='and' or c[0][0]=='or' or c[0][0]=='extrafield':
+                c.pop(0)
+                if c == []:
+                    break
+        c.insert(0, 'do')
+        count = 1
+        for i in a:
+            if '!' in list_variable:
+                env.parent.parent[list_variable.replace('!','')] = i
+            else:
+                env[list_variable] = i
+            self.listProcess(self.Env(env), deepcopy(c))
+            if count % int(row_items) == 0:
+                env['print'](row_separator)
+                count = 0
+            count += 1
+
+    def count(self,env,return_field,timeseries,*code):
+        filter = self.buildFilter(env,return_field,timeseries,code)
+        env['print'](str(len(filter)))
+
+    def sum(self,env,return_field,timeseries,*code):
+        filter = self.buildFilter(env,return_field,timeseries,code)
+        retval = 0.0
+        for i in filter:
+            for a in i:
+                try:
+                    retval = retval + float(a)
+                except (TypeError, ValueError):
+                    pass
+        env['print'](str(retval))
+
+    def function(self, env, function, return_variable, *args):
+        env.parent.parent[return_variable.replace('!','')] = self.functions[function](env,*args)
+
+    # system functions
+
+    def do(self, env, *args):
+        ret = ''
+        for arg in args:
+            ret = self.listProcess(self.Env(env), arg)
+        return ret
+
+    def distinct(self,list_):
+        retval = []
+        for i in list_:
+            if i not in retval:
+                retval.append(i)
+        return retval
+
+    def buildFilter(self,env,return_field,timeseries,code):
+        if '::' in return_field:
+            a = return_field.split('::')
+            for i in range(1,len(a)):
+                if '$' in a[i]:
+                    a[i]=str(self.evalVariables(env,a[i]))
+            return_field = '::'.join(a)
+        return_field_list = [[return_field,timeseries]]
+        filter = []
+        if code:
+            tracker = iter(code)
+            current = tracker.next()
+            while current[0]=='and' or current[0]=='or' or current[0]=='extrafield':
+                if current[0]=='extrafield':
+                    if '::' in current[1]:
+                        a = current[1].split('::')
+                        for i in range(1,len(a)):
+                            if '$' in a[i]:
+                                a[i]=str(self.evalVariables(env,a[i]))
+                        current[1] = '::'.join(a)
+                    return_field_list.append([current[1],current[2]])
+                else:
+                    filter.append(current)
+                try:
+                    current = tracker.next()
+                except StopIteration:
+                    break
+        if '$' in return_field:
+            if filter==[]:
+                field_dict = {}
+                for i in return_field_list:
+                    a = i[0].split('::')
+                    if len(a)>1:
+                        k = '||'.join(a[:-1]).replace('$','').replace(' ','')
+                    else:
+                        k = a[0].replace('$','').replace(' ','')
+                    if k not in field_dict.keys():
+                        v = self.evalVariables(env,'$'+k.replace('||','::'))
+                        if len(v)>0:
+                            if not isinstance(v[0],list):
+                                v = [v]
+                        field_dict[k]=v
+            else:
+                field_dict = {}
+                for i in filter:
+                    data = self.evalVariables(env,i[3].split('::')[0])
+                    value = self.evalVariables(env,i[2])
+                    for a in data:
+                        found = False
+                        if i[1]==u'=':
+                            if str(a[int(i[3].split('::')[1])])==str(value):
+                                found = True
+                        elif i[1]==u'contains':
+                            if str(a[int(i[3].split('::')[1])]) in str(value):
+                                found = True
+                        else:
+                            try:
+                                float(a[int(i[3].split('::')[1])])
+                                float(value)
+                            except ValueError:
+                                continue
+                            if i[1]==u'<=':
+                                if float(a[int(i[3].split('::')[1])])<=float(value):
+                                    found = True
+                            if i[1]==u'>=':
+                                if float(a[int(i[3].split('::')[1])])>=float(value):
+                                    found = True
+                            if i[1]==u'<':
+                                if float(a[int(i[3].split('::')[1])])<float(value):
+                                    found = True
+                            if i[1]==u'>':
+                                if float(a[int(i[3].split('::')[1])])>float(value):
+                                    found = True
+                        if found:
+                            field_dict[i[3].replace('$','').replace(' ','').split('::')[0]] =field_dict.get(i[3].replace('$','').replace(' ','').split('::')[0],[])
+                            if a not in field_dict[i[3].replace('$','').replace(' ','').split('::')[0]]:
+                                field_dict[i[3].replace('$','').replace(' ','').split('::')[0]].append(a)
+            retval = []
+            for k,v in field_dict.iteritems():
+                for i in v:
+                    return_list = []
+                    for a in return_field_list:
+                        ak = a[0].split('::')
+                        if len(ak)>1:
+                            ai = ak[-1]
+                            ak = '||'.join(ak[:-1]).replace('$','').replace(' ','')
+                            if k == ak:
+                                return_list.append(i[int(ai)])
+                        else:
+                            return_list = i
+                    retval.append(return_list)
+            return retval
+
+
+
+        if filter==[]:
+            guest_list = [i for i in Guest.objects.all() if testPermission(i,env['user'])]
+        else:
+            guest_list = []
+            filter = sorted(filter)
+            for i in filter:
+                kwargs = {}
+                if 'field.' in i[3]:
+                    kwargs['field__name']=i[3].split('field.')[1]
+                    operator = 'value__%s'%self.filter_dict[i[1]]
+                    kwargs[operator]=self.evalVariables(env,i[2]).replace('True',"checked='checked'")
+                    current_filter = self.filter_dict['field'][i[4]].objects.filter(**kwargs)
+                    current_guest_list = []
+                    for a in current_filter:
+                        if a.guest not in current_guest_list:
+                            current_guest_list.append(a.guest)
+                else:
+                    operator = '%s__'%i[3].split('guest.')[1]
+                    if i[3].split('guest.')[1]=='program':
+                        operator = operator + 'name__'
+                    operator = operator + self.filter_dict[i[1]]
+                    kwargs[operator]=self.evalVariables(env,i[2]).replace('True',"checked='checked'")
+                    current_guest_list = list(Guest.objects.filter(**kwargs).distinct())
+                if i[0]=='and':
+                    if guest_list==[]:
+                        guest_list = set(current_guest_list)
+                    else:
+                        guest_list = guest_list & set(current_guest_list)
+                else:
+                    if isinstance(guest_list,set):
+                        guest_list = list(guest_list)
+                    guest_list = self.distinct(guest_list + current_guest_list)
+        guest_list = list(guest_list)
+        retval = []
+        holding = {}
+        for i in return_field_list:
+            table,field = i[0].split('.')
+            if 'guest' == table:
+                for a in guest_list:
+                    holding[a] = holding.get(a,[])
+                    if field=='image_tag':
+                        holding[a].append(self.safegetattr(a,field)())
+                    elif field=='picture':
+                        holding[a].append(self.safegetattr(a,field).url)
+                    else:
+                        holding[a].append(self.safegetattr(a,field))
+            else:
+                filter = self.filter_dict['field'][i[1]].objects.filter(guest__in=guest_list,field__name=field).distinct()
+                guest_list_copy = deepcopy(guest_list)
+                timeseries_agregation = {}
+                if i[1] == u'on':
+                    filter = filter.order_by('date')
+                    for a in filter:
+                        timeseries_agregation[a.guest] = timeseries_agregation.get(a.guest,[])
+                        timeseries_agregation[a.guest].append([a.date,a.value])
+                else:
+                    blank_append = ''
+                    for a in filter:
+                        holding[a.guest] = holding.get(a.guest,[])
+                        holding[a.guest].append(a.value)
+                        guest_list_copy.pop(guest_list_copy.index(a.guest))
+                for a in guest_list_copy:
+                    holding[a] = holding.get(a,[])
+                    holding[a].append(timeseries_agregation.get(a,''))
+        for i in holding.keys():
+            retval.append(holding[i])
+        return sorted(retval)
+
+    def safegetattr(self,obj,attr):
+        return getattr(obj,attr)
+
+    def evalVariables(self,env,variable):
+        if isinstance(variable,(str,unicode)):
+            if '$' in variable:
+                var = env[variable.replace('$','').replace(' ','').split('::')[0]]
+                if '::' in variable:
+                    subs_list = variable.split('::')[1:]
+                    for i in subs_list:
+                        index = int(self.evalVariables(env,i))
+                        if len(var)>=index+1:
+                            var = var[index]
+                        else:
+                            var = ''
+                    return var
+                else:
+                    return var
+        return variable
+
+    @staticmethod
+    def preProcessReport(code,first_indent=None):
+        indent_list = ['list', 'sum', 'count', 'display', 'query']
+        retval = []
+        while True:
+            try:
+                line = code.pop(0)
+                if line[0] == 'end':
+                    if not first_indent:
+                        return 'bad code'
+                    return retval
+                if line[0] in indent_list:
+                    sub_list = ReportProcessor.preProcessReport(code,line)
+                    if sub_list == 'bad code':
+                        return 'bad code'
+                    line.extend(sub_list)
+                    retval.append(line)
+                else:
+                    retval.append(line)
+            except IndexError:
+                if first_indent:
+                    return 'bad code'
+                break
+        return retval
+    
+    def listProcess(self, env, code):
+        if env is None:
+            env={}
+        if not isinstance(code,list) or not code:
+            return code
+        first = code.pop(0)
+        if isinstance(first,list):
+            function = self.listProcess(self.Env(env), first)
+        else:
+            function = env[first]
+        return function(self.Env(env), *code)
+
+report_processor = ReportProcessor()
+
+
 # Common Methods
+
+def interactiveConsole(a,b=None):
+    import code
+    d = {}
+    if b:
+        d.update(b)
+    d.update(a)
+    c=code.InteractiveConsole(locals=d)
+    c.interact()
+
+def readableList(value):
+    value = iter(json.dumps(value)+' ')
+    retval = ''
+    indent = 0
+    i = value.next()
+    increase = True
+    while True:
+        ahead = ''
+        try:
+            if i=='[':
+                increase = True
+                indent+=1
+                retval = retval + '\n' + ' ' * indent + i
+            elif i==']':
+                indent -=1
+                ahead = value.next()
+                if ahead==',' and increase:
+                    retval = retval + i
+                else:
+                    if increase:
+                        indent +=1
+                        increase = False
+                        retval = retval + i
+                    else:
+                        retval = retval + '\n' + ' ' * indent + i
+                        if ahead==',':
+                            indent -=1
+            else:
+                retval = retval + i
+            if ahead:
+                i=ahead
+            else:
+                i = value.next()
+        except StopIteration:
+            break
+    print retval
+
 def Print(*value):
     '''
     Useful debugging tool.
@@ -80,7 +623,7 @@ def createForm(field_list,user,request=None,second_object=None,error_flags={}):
                         'list':"<select multiple='multiple' id='%s' name='%s' value='%s'>\n%s</select></br>",
                         'date':"<input class='datePicker' id='%s' name='%s' readonly='true' type='text' value='%s'></br>\n%s",
                         'url':'<iframe %s%s width="560" height="345" src="%s?rel=0" frameborder="0" allowfullscreen>%s</iframe></br>',
-						'attachment':'<a %s%s href="%s">%s</a></br>',
+                        'attachment':'<a %s%s href="%s">%s</a></br>',
                         'file':'</br>&nbsp;&nbsp;&nbsp;&nbsp;Change File: <input id="%s" name="%s" type="file" /></br>&nbsp;&nbsp;&nbsp;&nbsp;<a href="%s">%s</a></br>',
                         }
     # return html string for display in template.
@@ -93,13 +636,13 @@ def createForm(field_list,user,request=None,second_object=None,error_flags={}):
                                     field_type_options[i.field_type]%(
                                         i.name,
                                         i.name,
-										i.attachment.attachment.url
-								            if i.field_type=='attachment' else i.external_url
+                                        i.attachment.attachment.url
+                                            if i.field_type=='attachment' else i.external_url
                                             if i.field_type=='url' else GuestData.objects.get_or_create(guest=second_object,field=i)[0].value
                                             if not request else request.POST.get(i.name,'')
                                             if i.field_type != 'boolean' else "checked='checked'"
                                             if request.POST.get(i.name,'')=='on' else '',
-										i.name if i.field_type=='attachment' else '%s %s: %s'%(second_object.first_name,second_object.last_name,i.label)
+                                        i.name if i.field_type=='attachment' else '%s %s: %s'%(second_object.first_name,second_object.last_name,i.label)
                                         if i.field_type=='file' and GuestData.objects.get_or_create(guest=second_object,field=i)[0].value else
                                         ''.join(
                                             [
@@ -416,6 +959,9 @@ def manage(request,target_type=None,target_object=None):
         # Store the current form associate with the target field if applicable
         if target_type == 'field':
             currentform=target_object.form
+        # If loading a report, attach current code to context
+        if target_type == 'report':
+            context.update({'loaded_report':target_object.code})
         # Set wording to appear on webpage
         create_or_edit = 'Modify'
     # Add wording to context
@@ -543,6 +1089,47 @@ def manage(request,target_type=None,target_object=None):
                 # Update all affected permissions
                 for i in target_object.permissions.all():
                     i.users.add(target_object.user)
+            # Special processing for reports
+            if target_type=='report':
+                request_dict = dict(request.POST)
+                report_code = []
+                report_row_counter = '0'
+                while isinstance(report_row_counter, str):
+                    report_code_row = []
+                    report_col_counter = '0'
+                    while isinstance(report_col_counter,str):
+                        if len(request_dict['code'+report_row_counter+'-'+report_col_counter])>1:
+                            request_dict['code'+report_row_counter+'-'+report_col_counter] = [u'on']
+                        report_code_row.append(request_dict['code'+report_row_counter+'-'+report_col_counter][0])
+
+                        found_next = False
+                        for k,v in request_dict.iteritems():
+                            if k.find('code'+report_row_counter+'-'+str(int(report_col_counter)+1)) > -1:
+                                found_next = True
+                                break
+                        if found_next:
+                            report_col_counter = str(int(report_col_counter)+1)
+                        else:
+                            report_col_counter = False
+                    
+                    if report_code_row[0] != u'':
+                        report_code.append(report_code_row)
+                    
+                    found_next = False
+                    for k,v in request_dict.iteritems():
+                        if k.find('code'+str(int(report_row_counter)+1)) > -1:
+                            found_next = True
+                            break
+                    if found_next:
+                        report_row_counter = str(int(report_row_counter)+1)
+                    else:
+                        report_row_counter = False
+                processed_code = report_processor.preProcessReport([[a for a in i] for i in report_code])
+                if processed_code == 'bad code':
+                    messages.add_message(request, messages.INFO, '%s Contains Invalid Structure'%myobject.name)
+                myobject.code = json.dumps([processed_code,report_code])
+                myobject.save()
+                            
             # if user wants to save a report but continue modifying it
             if request.POST.get('save_report',''):
                 # Add the form to the context
@@ -559,12 +1146,16 @@ def manage(request,target_type=None,target_object=None):
         form = target_type_dict[target_type][0](request.POST or None,instance=target_instance)
     # Special processing for reports
     if target_type == 'report':
+        # Bind current code
+        if target_instance:
+            context.update({'loaded_report':json.dumps(json.loads(target_instance.code)[1])})
         # Pull all the forms from the database which the user is allowed to see
         all_forms_list = [i for i in Form.objects.all() if testPermission(i,request.user)]
         # Pull all fields from the database which the user is allowed to see
         all_field_dict = {i.name:[[a.name.replace('(',''),a.field_type] for a in Field.objects.filter(form=i).distinct() if testPermission(a,request.user)] for i in all_forms_list}
+        all_field_dict.update({'guest':[['first_name','text_field'],['middle_name','text_field'],['last_name','text_field'],['ssn','text_field'],['program','list'],['picture','url'],['image_tag','picture']]})
         # Put the list of fields and forms into the context
-        context.update({'all_forms_list':all_forms_list,'all_field_dict':json.dumps(all_field_dict)})
+        context.update({'all_forms_list':all_forms_list,'all_field_dict':json.dumps(all_field_dict),'available_functions':json.dumps([[i,list(report_processor.functions[i].func_code.co_varnames)[:report_processor.functions[i].func_code.co_argcount]] for i in report_processor.functions.keys()])})
     # Add the form and instance to the context
     context.update({'form':form.as_p(),'target_object':target_object})
     # Serve up the page :)
@@ -793,12 +1384,14 @@ def runreport(request,report_id):
     '''
     View for executing and displaying reports
     '''
-    import ReportProcesser
-    target_report = ReportCode.objects.get(pk=report_id)
-    if request.user not in target_report.users.all():
-        return beGone('missing permission to view report')
     context=baseContext(request)
-    context.update({'report_html':mark_safe(ReportProcesser.process(target_report.code, request))})
+    report_code = json.loads(ReportCode.objects.get(pk=report_id).code)[0]
+    output = StringIO()
+    env = {'print':output.write,'user':request.user}
+    env.update(report_processor.functions)
+    env.update(report_processor._functions)
+    success = report_processor.listProcess(env, ['do']+report_code)
+    context.update({'report':mark_safe(output.getvalue())})
     return render(request,'guestmanagement/report.html',context)
 
 def logout(request):
