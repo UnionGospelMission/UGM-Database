@@ -67,8 +67,8 @@
             <form action='.' method='post' autocomplete="off" enctype="multipart/form-data">
                 {% if target_type == 'report' %}
                     <input type='button' value='Report Builder' onclick="toggleReportView()" id="report_view_toggle" />
-                    <input type='submit' value='Submit' id='search'  />
-                    <input type='button' value='Submit and Continue Editing' onclick='submitAndContinue()' />
+                    <input type='button' value='Submit' id='search' onclick='processReport(this)' />
+                    <input type='button' value='Submit and Continue Editing' onclick='processReport(this)' />
                     <input type='button' value='Insert Row' onclick='insertRow()' id="insert_row" />
                 {% endif %}
                 <div id="standard_form">

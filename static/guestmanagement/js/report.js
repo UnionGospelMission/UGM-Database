@@ -1,6 +1,11 @@
-window.onload=function (){
+document.ready=function (){
+    window.debug = false;
     // Miscellaneous
-    window.total_form = document.getElementsByTagName('form')[1];
+    if (document.getElementsByTagName('form').length==1){
+        window.total_form = document.getElementsByTagName('form')[0];
+    } else {
+        window.total_form = document.getElementsByTagName('form')[1];
+    }
     // Field Select
     if (document.getElementById('loaded_fields').value!=''){
         window.loaded_fields = JSON.parse(document.getElementById('loaded_fields').value);
@@ -51,6 +56,28 @@ function insertRow(row_num){
             row_num += 1;
         }
     }
+    indentRows();
+}
+
+function indentRows(){
+    var indent_level = 0;
+    for (var i=0;i<report_viewer.children.length;i++){
+        report_viewer.children[i].style.marginLeft = String(indent_level * 10)+"px";
+        switch (report_viewer.children[i].children[0].value){
+            case 'query':
+            case 'list':
+            case 'sum':
+            case 'count':
+            case 'display':
+                indent_level += 1;
+                break;
+            case 'end':
+                indent_level -= 1;
+                report_viewer.children[i].style.marginLeft = String(indent_level * 10)+"px";
+                break;
+        }
+    }
+    return indent_level
 }
 
 
@@ -72,6 +99,7 @@ function newRow(type,values,insert){
             new_type.appendChild(new Option('text','text'));
             new_type.appendChild(new Option('newline','newline'));
             new_type.appendChild(new Option('list','list'));
+            new_type.appendChild(new Option('query','query'));
             new_type.appendChild(new Option('and','and'));
             new_type.appendChild(new Option('or','or'));
             new_type.appendChild(new Option('display','display'));
@@ -90,13 +118,18 @@ function newRow(type,values,insert){
             new_type.onchange = typeChange;
     if (values){
         for (var i=0;i<values.length;i++){
-            if (new_type.parentNode.children[i+1].type!='checkbox'){
-                new_type.parentNode.children[i+1].value = values[i];
-            } else {
-                new_type.parentNode.children[i+1].checked = values[i];
-            }
-			if (i+1==1 && new_type.value=='function'){
-				setFunctionName(new_type.parentNode.children[i+1]);
+            try {
+                if (new_type.parentNode.children[i+1].type!='checkbox'){
+                    new_type.parentNode.children[i+1].value = values[i];
+                } else {
+                    new_type.parentNode.children[i+1].checked = values[i];
+                }
+	    		if (i+1==1 && new_type.value=='function'){
+		    		setFunctionName(new_type.parentNode.children[i+1]);
+			    }
+			}
+			catch (err){
+
 			}
         }
     }
@@ -105,6 +138,7 @@ function newRow(type,values,insert){
     if (insert){
         return new_row;
     }
+    indentRows();
 }
 
 function setTarget() {
@@ -112,13 +146,15 @@ function setTarget() {
 }
 
 function typeChange(t,single){
-    if (! t.parentNode){
-        t = this;
-    }
+	if (t instanceof Event) {
+		t=this;
+	}
     while (t.nextSibling){
         t.parentNode.removeChild(t.nextSibling);
     }
+    t.onclick=alertName;
     switch (t.previous_value){
+        case 'query':
         case 'list':
         case 'set':
         case 'function':
@@ -140,27 +176,40 @@ function typeChange(t,single){
                     bold.value = 'none';
                     bold.name = 'code'+row.line_number+'-1';
                     bold.setAttribute('title','Pick text bold level');
+                    bold.onclick=alertName;
 
                 var value = row.appendChild(document.createElement('input'));
                     value.name = 'code'+row.line_number+'-2';
                     value.setAttribute('title','Enter Text to Display');
+                    value.onclick=alertName;
                 break;
 
             case 'list':
-                name_offset = 3;
+            case 'query':
+                name_offset = 2;
                 var list_type = row.appendChild(document.createElement('select'));
                     list_type.appendChild(new Option('fields','fields'));
                     list_type.appendChild(new Option('numbers','numbers'));
                     list_type.name = 'code'+row.line_number+'-1';
                     list_type.setAttribute('title','Pick List Type');
                     list_type.onchange = changeListType;
+                    list_type.onclick=alertName;
                 var list_return = row.appendChild(document.createElement('input'));
                     list_return.name = 'code'+row.line_number+'-2';
                     list_return.setAttribute('title','Set List Variable Name');
                     list_return.onchange = changeReturnVariable;
-                var num_per_row = row.appendChild(document.createElement('input'));
-                    num_per_row.name = 'code'+row.line_number+'-3';
-                    num_per_row.setAttribute('title','Number of Items Per Row');
+                    list_return.onclick=alertName;
+                if (t.value=='list'){
+                    var num_per_row = row.appendChild(document.createElement('input'));
+                        num_per_row.name = 'code'+row.line_number+'-3';
+                        num_per_row.setAttribute('title','Number of Items Per Row');
+                        num_per_row.onclick=alertName;
+                    var row_separator = row.appendChild(document.createElement('input'));
+                        row_separator.name = 'code'+row.line_number+'-4';
+                        row_separator.setAttribute('title','Row Separator');
+                        name_offset = 4;
+                        row_separator.onclick=alertName;
+                    }
             case 'extrafield':
             case 'display':
             case 'count':
@@ -169,16 +218,21 @@ function typeChange(t,single){
                     display_field.name = 'code'+row.line_number+'-'+String(name_offset+1);
                     display_field.setAttribute('title','Pick Field to Return');
                     display_field.onblur = setTarget;
+                    display_field.onclick=alertName;
+                if (t.value=='display'){
+                    var separator = row.appendChild(document.createElement('input'));
+                        separator.name = 'code'+row.line_number+'-'+String(name_offset+2);
+                        separator.setAttribute('title','Display Separator');
+                        name_offset+=1;
+                        separator.onclick=alertName;
+                }
                 var timeseries = row.appendChild(document.createElement('input'));
                     timeseries.type = 'checkbox';
                     timeseries.name = 'code'+row.line_number+'-'+String(name_offset+2);
                     timeseries.setAttribute('title','Return Time Series');
-                    var empty = document.createElement('input');
-                        empty.name = 'code'+row.line_number+'-'+String(name_offset+2);
-                        empty.style.display = 'none';
-                        total_form.insertBefore(empty,total_form.children[0]);
+                    timeseries.onclick=alertName;
                     
-                if (! single && (' list sum count display'.search(t.previous_value)<1 && ' list sum count display'.search(t.value)>-1)){
+                if (! single && (' list sum count display query'.search(t.previous_value)<1 && ' list sum count display query'.search(t.value)>-1)){
                     insertRow(row.line_number+1);
                     row.nextSibling.children[0].value = 'and';
                     typeChange(row.nextSibling.children[0]);
@@ -186,6 +240,7 @@ function typeChange(t,single){
                     row.nextSibling.nextSibling.children[0].value = 'end';
                     typeChange(row.nextSibling.nextSibling.children[0]);
                 }
+                indentRows();
                 break;
 
             case 'and':
@@ -197,28 +252,29 @@ function typeChange(t,single){
                     operator.appendChild(new Option('>=','>='));
                     operator.appendChild(new Option('<','<'));
                     operator.appendChild(new Option('<=','<='));
+                    operator.appendChild(new Option('contains','contains'));
                     operator.value = '';
                     operator.name = 'code'+row.line_number+'-1';
                     operator.setAttribute('title','Pick Operator');
                     operator.onchange = changeOperator;
+                    operator.onclick=alertName;
 
                 var value = row.appendChild(document.createElement('input'));
                     value.name = 'code'+row.line_number+'-2';
                     value.onblur = setTarget;
                     value.setAttribute('title','Pick Operator First');
+                    value.onclick=alertName;
 
                 var field = row.appendChild(document.createElement('input'));
                     field.name = 'code'+row.line_number+'-3';
                     field.onblur = setTarget;
                     field.setAttribute('title','Pick Field');
+                    field.onclick=alertName;
                 var timeseries = row.appendChild(document.createElement('input'));
                     timeseries.type = 'checkbox';
                     timeseries.name = 'code'+row.line_number+'-4';
                     timeseries.setAttribute('title','Return Time Series');
-                    var empty = document.createElement('input');
-                        empty.name = 'code'+row.line_number+'-4';
-                        empty.style.display = 'none';
-                        total_form.insertBefore(empty,total_form.children[0]);
+                    timeseries.onclick=alertName;
                 break;
             
             case 'function':
@@ -229,10 +285,12 @@ function typeChange(t,single){
                     function_name.name = 'code'+row.line_number+'-1';
                     function_name.setAttribute('title','Pick Function');
                     function_name.onchange = setFunctionName;
+                    function_name.onclick=alertName;
                 var function_return = row.appendChild(document.createElement('input'));
                     function_return.name = 'code'+row.line_number+'-2';
                     function_return.setAttribute('title','Set List Variable');
                     function_return.onchange = changeReturnVariable;
+                    function_return.onclick=alertName;
                 setFunctionName(function_name);
                 break;
 
@@ -241,9 +299,12 @@ function typeChange(t,single){
                     name.name = 'code'+row.line_number+'-1';
                     name.setAttribute('title','Set Name');
                     name.onchange = changeReturnVariable;
+                    name.onclick=alertName;
                 var value = row.appendChild(document.createElement('input'));
                     value.name = 'code'+row.line_number+'-2';
                     value.setAttribute('title','Set Value');
+                    value.onclick=alertName;
+                    value.onblur=setTarget;
                 break;
         }
     }
@@ -251,7 +312,7 @@ function typeChange(t,single){
     if (! t.parentNode.nextSibling && ! single){
         newRow();
     }
-
+    indentRows();
 }
 
 function setFunctionName(t){
@@ -268,6 +329,8 @@ function setFunctionName(t){
 				var argument = t.parentNode.appendChild(document.createElement('input'));
 					argument.name = 'code'+t.parentNode.line_number+'-'+String(a+1);
                     argument.setAttribute('title',report_functions[i][1][a]);
+                    argument.onclick=alertName;
+                    argument.onblur=setTarget;
 			}
 			break;
 		}
@@ -278,21 +341,25 @@ function changeReturnVariable(){
     var var_list = [];
     for (var i=0;i<report_viewer.children.length;i++){
         var return_name = '';
-        switch (report_viewer.children[i].children[0].value){
-            case 'list':
-                report_viewer.children[i].children[2].value = report_viewer.children[i].children[2].value.split(' ').join('_');
-                return_name = report_viewer.children[i].children[2].value;
-                break;
-            case 'function':
-                return_name = report_viewer.children[i].children[2].value;
-                report_viewer.children[i].children[2].value = report_viewer.children[i].children[2].value.split(' ').join('_');
-                break;
-            case 'set':
-                return_name = report_viewer.children[i].children[1].value;
-                report_viewer.children[i].children[1].value = report_viewer.children[i].children[1].value.split(' ').join('_');
-                break;
+        if (report_viewer.children[i].children.length > 1){
+            switch (report_viewer.children[i].children[0].value){
+                case 'query':
+                case 'list':
+                    report_viewer.children[i].children[2].value = report_viewer.children[i].children[2].value.split(' ').join('_');
+                    return_name = report_viewer.children[i].children[2].value;
+                    break;
+                case 'function':
+                    report_viewer.children[i].children[2].value = report_viewer.children[i].children[2].value.split(' ').join('_');
+                    return_name = report_viewer.children[i].children[2].value;
+                    break;
+                case 'set':
+                    report_viewer.children[i].children[1].value = report_viewer.children[i].children[1].value.split(' ').join('_');
+                    return_name = report_viewer.children[i].children[1].value;
+                    break;
+            }
         }
-        if (return_name !='' && var_list.indexOf(return_name)==-1){
+        return_name = return_name.split('!').join('');
+        if (return_name !='' && var_list.indexOf(return_name)==-1 && return_name.indexOf('::')==-1){
             var_list.push(return_name);
         }
     }
@@ -315,29 +382,38 @@ function insertVariable(){
     }
     var prepend = ' $';
     previous_element.value += prepend + this.innerHTML;
+    previous_element.focus();
 }
 
 function changeListType(){
     if (this.value=='numbers'){
         var from = '';
         var to = '';
-        do {
-            from = prompt('Number Range from','0');
-        } while (! Number(from) && Number(from)!=0 && from!=null);
+        from = prompt('Number Range from','');
         if (from==null){
             this.value = 'fields';
             return;
         }
-        do {
-            to = prompt('Number Range to',String(Number(from)+1));
-        } while (! Number(to) && Number(to)!=0 && to!=null);
+        to = prompt('Number Range to','');
         if (to==null){
             this.value = 'fields';
             return;
         }
-        this.parentNode.children[5].value = String(from)+':'+String(to);
+        switch (this.parentNode.children[0].value){
+            case 'list':
+                this.parentNode.children[5].value = String(from)+':'+String(to);
+                break;
+            case 'query':
+                this.parentNode.children[3].value = String(from)+':'+String(to);
+        }
     } else {
-        this.parentNode.children[5].value = '';
+        switch (this.parentNode.children[0].value){
+            case 'list':
+                this.parentNode.children[5].value = '';
+                break;
+            case 'query':
+                this.parentNode.children[3].value = '';
+        }
     }
 }
 
@@ -360,6 +436,9 @@ function changeOperator(){
             break;
         case '<=':
             this.nextSibling.setAttribute('title','Less Than or Equal to What?');
+            break;
+        case 'contains':
+            this.nextSibling.setAttribute('title','Contains What?');
             break;
     }
 
@@ -401,6 +480,7 @@ function insertField(){
         prepend = 'guest.';
     }
     previous_element.value = prepend + this.innerHTML;
+    previous_element.focus();
 }
 
 // Function Select
@@ -448,10 +528,28 @@ function addOperator(t) {
 
 // Miscellaneous
 
-function submitAndContinue() {
-    var new_input = total_form.appendChild(document.createElement('input'));
-    new_input.name = 'save_report';
-    new_input.value = 'True';
+function processReport(t) {
+    if (indentRows()!=0){
+        alert('Report Not Valid');
+        return;
+    }
+    for (var i=0;i<report_viewer.children.length;i++){
+        var row = report_viewer.children[i];
+        for (var a=0;a<row.children.length;a++){
+            if (row.children[a].type=='checkbox'){
+                var empty = document.createElement('input');
+                empty.name = row.children[a].name;
+                empty.style.display = 'none';
+                total_form.insertBefore(empty,total_form.children[0]);
+            }
+        }
+    }
+    if (t.value=='Submit and Continue Editing'){
+        var new_input = total_form.appendChild(document.createElement('input'));
+        new_input.style.display = 'none';
+        new_input.name = 'save_report';
+        new_input.value = 'True';
+    }
     total_form.submit();
 }
 
@@ -481,5 +579,7 @@ function leadingZeros(number){
 }
 
 function alertName(){
-    alert(this.name);
+    if (debug){
+        console.log(this.name);
+    }
 }
