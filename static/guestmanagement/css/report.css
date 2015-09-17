@@ -3,7 +3,7 @@
     position: absolute;
     height: 600px;
     width: 99%;
-    background: orange;
+//    background: orange;
     overflow-y: hidden;
     margin-bottom: 10%;
 }
@@ -19,7 +19,7 @@
 }
 
 #report_title{
-    background: yellow;
+//    background: yellow;
     height: 20%;
     width: 20%;
     position: absolute;
@@ -27,7 +27,7 @@
 
 #report_builder{
     position: relative;
-    background: red;
+//    background: red;
     height: 75%;
     width: 80%;
     float: right;
@@ -35,7 +35,7 @@
 }
 #function_select{
     position: absolute;
-    background: green;
+//    background: green;
     height: 80%;
     width: 20%;
     bottom: 0;
@@ -43,7 +43,7 @@
 }
 #field_select{
     position: relative;
-    background: blue;
+//    background: blue;
     height: 20%;
     width: 80%;
     float: right;
@@ -51,7 +51,7 @@
 
 #form_select{
     position: relative;
-    background: purple;
+//    background: purple;
     width: 50%;
     height: 100%;
     float: left;
@@ -60,7 +60,7 @@
 
 #fields{
     position: relative;
-    background: brown;
+//    background: brown;
     width: 50%;
     height: 100%;
     margin-left: 50%;
