@@ -1390,7 +1390,9 @@ def runreport(request,report_id):
     env = {'print':output.write,'user':request.user}
     env.update(report_processor.functions)
     env.update(report_processor._functions)
+    env['print']('<div>')
     success = report_processor.listProcess(env, ['do']+report_code)
+    env['print']('</div><br/><br/><br/>')
     context.update({'report':mark_safe(output.getvalue())})
     return render(request,'guestmanagement/report.html',context)
 
