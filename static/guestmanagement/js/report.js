@@ -479,6 +479,9 @@ function insertField(){
     if (form_name=='guest'){
         prepend = 'guest.';
     }
+    if (form_name=='date'){
+        prepend = 'date.';
+    }
     previous_element.value = prepend + this.innerHTML;
     previous_element.focus();
 }

@@ -49,6 +49,7 @@ class ReportProcessor():
                             'last_day_bool_activated':self.lastDayActivated,
                             'last_day_bool_deactivated':self.lastDayDeactivated,
                             'format_picture':self.formatPicture,
+                            'add_subtract_dates':self.addSubtractDates,
         }
         self._functions = { 
                             'do':self.do,
@@ -95,6 +96,18 @@ class ReportProcessor():
             super(ReportProcessor.Env, self).__setitem__(item,value)
 
     # external functions
+    def addSubtractDates(self,env,date,adjustment,days_months_years,operator):
+        date = self.evalVariables(env,date)
+        if not isinstance(date,(datetime.datetime,datetime.date)):
+            date = datetime.datetime.strptime(date,'%m/%d/%Y')
+        adjustment = int(self.evalVariables(env,adjustment))
+        kwargs = {'{0}'.format(days_months_years):adjustment}
+        b = relativedelta(**kwargs)
+        if operator=='+':
+            return date + b
+        else:
+            return date - b
+
     def formatPicture(self,env,url,height,width):
         url = self.evalVariables(env,url)
         height = self.evalVariables(env,height)
