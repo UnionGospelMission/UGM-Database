@@ -16,6 +16,7 @@ from django.core.exceptions import MultipleObjectsReturned
 from cStringIO import StringIO
 from copy import deepcopy
 from dateutil.relativedelta import relativedelta
+import traceback
 from django.utils import timezone
 
 # Common reference dictionaries
@@ -77,6 +78,7 @@ class ReportProcessor():
         
     class Env(dict):
         def __init__(self,parent):
+            super(ReportProcessor.Env, self).__init__()
             self.parent=parent
         def __getitem__(self,item):
             if item in self:
@@ -293,7 +295,7 @@ class ReportProcessor():
         for i in filter:
             for a in i:
                 try:
-                    retval = retval + float(a)
+                    retval += float(a)
                 except (TypeError, ValueError):
                     pass
         env['print'](str(retval))
@@ -436,7 +438,7 @@ class ReportProcessor():
                 else:
                     operator = '%s__'%i[3].split('guest.')[1]
                     if i[3].split('guest.')[1]=='program':
-                        operator = operator + 'name__'
+                        operator += 'name__'
                     operator = operator + self.filter_dict[i[1]]
                     kwargs[operator]=self.evalVariables(env,i[2]).replace('True',"checked='checked'")
                     current_guest_list = list(Guest.objects.filter(**kwargs).distinct())
@@ -483,7 +485,7 @@ class ReportProcessor():
                     holding[a].append(timeseries_agregation.get(a,''))
         for i in holding.keys():
             retval.append(holding[i])
-        return sorted(retval)
+        return sorted(retval, key=lambda s: s[0].lower())
 
     def safegetattr(self,obj,attr):
         return getattr(obj,attr)
@@ -1409,9 +1411,13 @@ def runreport(request,report_id):
     env = {'print':output.write,'user':request.user}
     env.update(report_processor.functions)
     env.update(report_processor._functions)
-    env['print']('<div>')
-    success = report_processor.listProcess(env, ['do']+report_code)
-    env['print']('</div><br/><br/><br/>')
+    try:
+        success = report_processor.listProcess(env, ['do']+report_code)
+    except:
+        env['print']('<pre>')
+        env['print'](traceback.format_exc()+'\n-----------------------\n')
+        env['print'](str(report_code))
+        env['print']('</pre>')
     context.update({'report':mark_safe(output.getvalue())})
     return render(request,'guestmanagement/report.html',context)
 
