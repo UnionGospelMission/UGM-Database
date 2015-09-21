@@ -317,6 +317,7 @@ class ReportProcessor():
         return retval
 
     def buildFilter(self,env,return_field,timeseries,code):
+        date_filters = []
         if '::' in return_field:
             a = return_field.split('::')
             for i in range(1,len(a)):
@@ -337,6 +338,8 @@ class ReportProcessor():
                                 a[i]=str(self.evalVariables(env,a[i]))
                         current[1] = '::'.join(a)
                     return_field_list.append([current[1],current[2]])
+                elif 'date.' in current[3]:
+                    date_filters.append(current)
                 else:
                     filter.append(current)
                 try:
@@ -422,6 +425,9 @@ class ReportProcessor():
                     kwargs['field__name']=i[3].split('field.')[1]
                     operator = 'value__%s'%self.filter_dict[i[1]]
                     kwargs[operator]=self.evalVariables(env,i[2]).replace('True',"checked='checked'")
+                    if i[4]==u'on' and date_filters!=[]:
+                        for a in date_filters:
+                            kwargs.update({'date__{0}'.format(self.filter_dict[a[1]]):self.evalVariables(env,a[2])})
                     current_filter = self.filter_dict['field'][i[4]].objects.filter(**kwargs)
                     current_guest_list = []
                     for a in current_filter:
