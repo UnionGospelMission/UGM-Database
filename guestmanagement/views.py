@@ -37,6 +37,8 @@ target_type_dict = {# Reference dictionary for matching the correct new form to 
 
 #Report method class
 
+
+
 class ReportProcessor():
 
     def __init__(self):
@@ -75,6 +77,7 @@ class ReportProcessor():
                             'field':{u'':GuestData,u'on':GuestTimeData},
 
         }
+        
         
     class Env(dict):
         def __init__(self,parent):
@@ -141,7 +144,7 @@ class ReportProcessor():
     def subtractDates(self,env,date1,date2,days_months_years=None):
         a = self.evalVariables(env,date1)
         b = self.evalVariables(env,date2)
-        if isinstance(a,str) or isinstance(b,str):
+        if not isinstance(a,(datetime.datetime,unicode,datetime.date)) or not isinstance(b,(datetime.datetime,unicode,datetime.date)):
             return ''
         if isinstance(a,unicode):
             a = datetime.datetime.strptime(a,'%m/%d/%Y').date()

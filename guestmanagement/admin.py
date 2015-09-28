@@ -20,6 +20,7 @@ class FieldAdmin(admin.ModelAdmin):
 	search_fields = ['name']
 	
 class GuestDataAdmin(admin.ModelAdmin):
+	search_fields = ['guest__last_name','field__name']
 	list_display = ('guest','field','value')
 
 class GuestTimeDataAdmin(admin.ModelAdmin):
