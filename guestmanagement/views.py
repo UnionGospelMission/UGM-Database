@@ -18,6 +18,7 @@ from copy import deepcopy
 from dateutil.relativedelta import relativedelta
 import traceback
 from django.utils import timezone
+from django.contrib.auth.decorators import login_required
 
 # Common reference dictionaries
 
@@ -816,6 +817,15 @@ def autoGrade(form,guest):
 
 
 # Views
+
+@login_required
+def quickfilter(request):
+    context=baseContext(request)
+    if request.POST:
+        pass
+    context.update({'output':'1'})
+    return render(request,'guestmanagement/quickfilter.html',context)
+    
 
 def guestlogin(request,target_guest=None):
     '''

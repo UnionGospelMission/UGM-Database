@@ -569,10 +569,12 @@ function toggleReportView() {
         document.getElementById('report_view_toggle').value = 'Report Information';
         document.getElementById('insert_row').style.display = 'inline';
         document.getElementById('report_title').innerHTML = '<h1>Working on report</h1><br /><h1>' + document.getElementById('id_name').value + '</h1>';
+        document.getElementById('menu').style.zIndex='-150';
     } else {
         report_form.style.zIndex='-1';
         document.getElementById('report_view_toggle').value = 'Report Builder';
         document.getElementById('insert_row').style.display = 'none';
+        document.getElementById('menu').style.zIndex='150';
     }
 }
 
