@@ -492,6 +492,8 @@ class ReportProcessor():
                         holding[a].append(self.safegetattr(a,field)())
                     elif field=='picture':
                         holding[a].append(self.safegetattr(a,field).url)
+                    elif field=='program':
+                        holding[a].append('|'.join([i.name for i in self.safegetattr(a,field).all()]))
                     else:
                         holding[a].append(self.safegetattr(a,field))
             else:
@@ -514,7 +516,10 @@ class ReportProcessor():
                     holding[a].append(timeseries_agregation.get(a,''))
         for i in holding.keys():
             retval.append(holding[i])
-        return sorted(retval, key=lambda s: s[0].lower())
+        try:
+            return sorted(retval, key=lambda s: s[0].lower())
+        except AttributeError:
+            return sorted(retval)
 
     def safegetattr(self,obj,attr):
         return getattr(obj,attr)
