@@ -248,6 +248,7 @@ function typeChange(t,single){
                 var operator = row.appendChild(document.createElement('select'));
                     operator.appendChild(new Option('',''));
                     operator.appendChild(new Option('=','='));
+                    operator.appendChild(new Option('<>','<>'));
                     operator.appendChild(new Option('>','>'));
                     operator.appendChild(new Option('>=','>='));
                     operator.appendChild(new Option('<','<'));
@@ -424,6 +425,9 @@ function changeOperator(){
             break;
         case '=':
             this.nextSibling.setAttribute('title','Equals What?');
+            break;
+        case '<>':
+            this.nextSibling.setAttribute('title','Not Equals What?');
             break;
         case '>':
             this.nextSibling.setAttribute('title','Greater Than What?');

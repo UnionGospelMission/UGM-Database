@@ -73,6 +73,7 @@ class ReportProcessor():
                             '<':'lt',
                             '>=':'gte',
                             '<=':'lte',
+                            '<>':'exact',
                             'contains':'icontains',
                             'guest':Guest,
                             'field':{u'':GuestData,u'on':GuestTimeData},
@@ -380,6 +381,9 @@ class ReportProcessor():
                         elif i[1]==u'contains':
                             if str(a[int(i[3].split('::')[1])]) in str(value):
                                 found = True
+                        elif i[1]==u'<>':
+                            if str(a[int(i[3].split('::')[1])]) != str(value):
+                                found = True
                         else:
                             try:
                                 float(a[int(i[3].split('::')[1])])
@@ -426,15 +430,20 @@ class ReportProcessor():
             guest_list = []
             filter = sorted(filter)
             for i in filter:
-                kwargs = {}
+                eqkwargs = {}
+                nekwargs = {}
                 if 'field.' in i[3]:
-                    kwargs['field__name']=i[3].split('field.')[1]
+                    holdingdict = {}
+                    eqkwargs['field__name']=i[3].split('field.')[1]
                     operator = 'value__%s'%self.filter_dict[i[1]]
-                    kwargs[operator]=self.evalVariables(env,i[2]).replace('True',"checked='checked'")
+                    if i[1] == '<>':
+                        nekwargs[operator]=self.evalVariables(env,i[2]).replace('True',"checked='checked'")
+                    else:
+                        eqkwargs[operator]=self.evalVariables(env,i[2]).replace('True',"checked='checked'")
                     if i[4]==u'on' and date_filters!=[]:
                         for a in date_filters:
-                            kwargs.update({'date__{0}'.format(self.filter_dict[a[1]]):self.evalVariables(env,a[2])})
-                    current_filter = self.filter_dict['field'][i[4]].objects.filter(**kwargs)
+                            eqkwargs.update({'date__{0}'.format(self.filter_dict[a[1]]):self.evalVariables(env,a[2])})
+                    current_filter = self.filter_dict['field'][i[4]].objects.filter(**eqkwargs).exclude(**nekwargs)
                     current_guest_list = []
                     for a in current_filter:
                         if a.guest not in current_guest_list:
@@ -444,8 +453,11 @@ class ReportProcessor():
                     if i[3].split('guest.')[1]=='program':
                         operator += 'name__'
                     operator = operator + self.filter_dict[i[1]]
-                    kwargs[operator]=self.evalVariables(env,i[2]).replace('True',"checked='checked'")
-                    current_guest_list = list(Guest.objects.filter(**kwargs).distinct())
+                    if i[1] == '<>':
+                        nekwargs[operator]=self.evalVariables(env,i[2]).replace('True',"checked='checked'")
+                    else:
+                        eqkwargs[operator]=self.evalVariables(env,i[2]).replace('True',"checked='checked'")
+                    current_guest_list = list(Guest.objects.filter(**eqkwargs).exclude(**nekwargs).distinct())
                 if i[0]=='and':
                     if guest_list==[]:
                         guest_list = set(current_guest_list)
