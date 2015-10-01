@@ -134,10 +134,10 @@ class ReportProcessor():
         return self.booleanMethods(env,boolean_list,True)
     
     def add(self,env,value1,value2):
-        return str(float(value1) + float(value2))
+        return str(float(self.evalVariables(env,value1)) + float(self.evalVariables(env,value2)))
 
     def subtract(self,env,value1,value2):
-        return str(float(value1) - float(value2))
+        return str(float(self.evalVariables(env,value1)) - float(self.evalVariables(env,value2)))
 
 
     def today(self,env):
