@@ -375,32 +375,33 @@ class ReportProcessor():
                     value = self.evalVariables(env,i[2])
                     for a in data:
                         found = False
+                        comparator = a[int(self.evalVariables(env,i[3].split('::')[1]))]
                         if i[1]==u'=':
-                            if str(a[int(i[3].split('::')[1])])==str(value):
+                            if str(comparator)==str(value):
                                 found = True
                         elif i[1]==u'contains':
-                            if str(a[int(i[3].split('::')[1])]) in str(value):
+                            if str(comparator) in str(value):
                                 found = True
                         elif i[1]==u'<>':
-                            if str(a[int(i[3].split('::')[1])]) != str(value):
+                            if str(comparator) != str(value):
                                 found = True
                         else:
                             try:
-                                float(a[int(i[3].split('::')[1])])
-                                float(value)
+                                comparator = float(comparator)
+                                value = float(value)
                             except ValueError:
                                 continue
                             if i[1]==u'<=':
-                                if float(a[int(i[3].split('::')[1])])<=float(value):
+                                if comparator<=value:
                                     found = True
                             if i[1]==u'>=':
-                                if float(a[int(i[3].split('::')[1])])>=float(value):
+                                if comparator>=value:
                                     found = True
                             if i[1]==u'<':
-                                if float(a[int(i[3].split('::')[1])])<float(value):
+                                if comparator<value:
                                     found = True
                             if i[1]==u'>':
-                                if float(a[int(i[3].split('::')[1])])>float(value):
+                                if comparator>value:
                                     found = True
                         if found:
                             field_dict[i[3].replace('$','').replace(' ','').split('::')[0]] =field_dict.get(i[3].replace('$','').replace(' ','').split('::')[0],[])
