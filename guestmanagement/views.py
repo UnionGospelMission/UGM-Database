@@ -370,9 +370,11 @@ class ReportProcessor():
                         field_dict[k]=v
             else:
                 field_dict = {}
+                first_filter = True
                 for i in filter:
                     data = self.evalVariables(env,i[3].split('::')[0])
                     value = self.evalVariables(env,i[2])
+                    holdingdict = {}
                     for a in data:
                         found = False
                         comparator = a[int(self.evalVariables(env,i[3].split('::')[1]))]
@@ -404,9 +406,19 @@ class ReportProcessor():
                                 if comparator>value:
                                     found = True
                         if found:
-                            field_dict[i[3].replace('$','').replace(' ','').split('::')[0]] =field_dict.get(i[3].replace('$','').replace(' ','').split('::')[0],[])
-                            if a not in field_dict[i[3].replace('$','').replace(' ','').split('::')[0]]:
-                                field_dict[i[3].replace('$','').replace(' ','').split('::')[0]].append(a)
+                            holdingdict[i[3].replace('$','').replace(' ','').split('::')[0]] =holdingdict.get(i[3].replace('$','').replace(' ','').split('::')[0],[])
+                            if a not in holdingdict[i[3].replace('$','').replace(' ','').split('::')[0]]:
+                                holdingdict[i[3].replace('$','').replace(' ','').split('::')[0]].append(a)
+                    for k,v in holdingdict.iteritems():
+                        field_dict[k] = field_dict.get(k,[])
+                        if i[0]=='or':
+                            field_dict[k] = field_dict[k] + v
+                        else:
+                            if field_dict[k] == [] and first_filter:
+                                first_filter = False
+                                field_dict[k] = [list(x) if isinstance(x,tuple) else x for x in set(tuple(tuple(x) for x in v))]
+                            else:
+                                field_dict[k] = [list(x) if isinstance(x,tuple) else x for x in set(tuple(tuple(x) for x in field_dict[k])) & set(tuple(tuple(x) for x in v))]
             retval = []
             for k,v in field_dict.iteritems():
                 for i in v:
