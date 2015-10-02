@@ -416,9 +416,9 @@ class ReportProcessor():
                         else:
                             if field_dict[k] == [] and first_filter:
                                 first_filter = False
-                                field_dict[k] = [list(x) if isinstance(x,tuple) else x for x in set(tuple(tuple(x) for x in v))]
+                                field_dict[k] = v
                             else:
-                                field_dict[k] = [list(x) if isinstance(x,tuple) else x for x in set(tuple(tuple(x) for x in field_dict[k])) & set(tuple(tuple(x) for x in v))]
+                                field_dict[k] = self.listToSet(set(self.listToSet(v)) & set(self.listToSet(field_dict[k])),True)
             retval = []
             for k,v in field_dict.iteritems():
                 for i in v:
@@ -520,6 +520,19 @@ class ReportProcessor():
             return sorted(retval, key=lambda s: s[0].lower())
         except AttributeError:
             return sorted(retval)
+    
+    def listToSet(self,_list,rev=False):
+        _list = deepcopy(_list)
+        if not rev:
+            for i in range(0,len(_list)):
+                if isinstance(_list[i],list):
+                    _list[i] = self.listToSet(_list[i])
+            return tuple(_list)
+        _list = list(_list)
+        for i in range(0,len(_list)):
+            if isinstance(_list[i],tuple):
+                _list[i] = self.listToSet(_list[i],True)
+        return _list
 
     def safegetattr(self,obj,attr):
         return getattr(obj,attr)
