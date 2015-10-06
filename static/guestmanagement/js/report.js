@@ -601,8 +601,11 @@ function alertName(){
 
 function runReport(t){
 	var input = document.getElementsByTagName('input');
-	for (var i=0;i<input.length;i++){
-		t.href+='?'+input[i].name+'='+input[i].value;
+	if (input.length>0){
+		t.href = t.href.split("?")[0] + "?"+input[0].name+'='+input[0].value;
+		for (var i=1;i<input.length;i++){
+			t.href+='&'+input[i].name+'='+input[i].value;
+		}
 	}
 	//alert(document.getElementsByName('variable__test')[0].value);
 }
