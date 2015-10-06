@@ -1,4 +1,4 @@
-{% extends "shared/base.html" %}{% load i18n %}
+{% extends "shared/base.html" %}{% load i18n %}{% load staticfiles %}
 {% block pretitle %}
 	<h1>{% trans 'View' %} {{ target_type.capitalize }} {{ target_object.name }}{% if target_object.label %} (aka {{ target_object.label }}){% endif %}:</h1><br/>
 	<a href='/guestmanagement/manage/{{ target_type }}/{{ target_object.id }}/'>Manage {{ target_type }} {{ target_object.name }}</a></br>
@@ -89,7 +89,23 @@
 		{% endif %}
 	{% elif target_type == 'report' %}
 		{{ target_object.description }}</br>
-		<a href='/guestmanagement/runreport/{{ target_object.id }}/'>Run Report</a>
+		{% if variables %}
+			<script type="text/javascript" src='{% static "guestmanagement/js/report.js" %}'></script>
+			<table>
+				<tr><th>Variable Name</th><th>Value</th></tr>
+				{% for i in variables %}
+					<tr>
+						<td>
+							{{ i }}
+						</td>
+						<td>
+							<input name='variable__{{ i }}' />
+						</td>
+					</tr>
+				{% endfor %}
+			</table>
+		{% endif %}
+		<a href='/guestmanagement/runreport/{{ target_object.id }}/' onclick=runReport(this)>Run Report</a>
 	{% endif %}
 	{% if link_list %}
 		{% for i in link_list %}

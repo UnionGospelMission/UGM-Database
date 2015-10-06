@@ -558,26 +558,30 @@ class ReportProcessor():
     def preProcessReport(code,first_indent=None):
         indent_list = ['list', 'sum', 'count', 'display', 'query']
         retval = []
+        user_variables = []
         while True:
             try:
                 line = code.pop(0)
                 if line[0] == 'end':
                     if not first_indent:
-                        return 'bad code'
-                    return retval
+                        return 'bad code',[]
+                    return retval,user_variables
                 if line[0] in indent_list:
-                    sub_list = ReportProcessor.preProcessReport(code,line)
+                    sub_list,sub_user_variables = ReportProcessor.preProcessReport(code,line)
                     if sub_list == 'bad code':
-                        return 'bad code'
+                        return 'bad code',[]
                     line.extend(sub_list)
                     retval.append(line)
+                    user_variables = user_variables + sub_user_variables
+                elif line[0] == 'user input':
+                    user_variables.append(line[1])
                 else:
                     retval.append(line)
             except IndexError:
                 if first_indent:
-                    return 'bad code'
+                    return 'bad code',[]
                 break
-        return retval
+        return retval,user_variables
     
     def listProcess(self, env, code):
         if env is None:
@@ -1201,10 +1205,11 @@ def manage(request,target_type=None,target_object=None):
                         report_row_counter = str(int(report_row_counter)+1)
                     else:
                         report_row_counter = False
-                processed_code = report_processor.preProcessReport([[a for a in i] for i in report_code])
+                processed_code,user_variables = report_processor.preProcessReport([[a for a in i] for i in report_code])
                 if processed_code == 'bad code':
                     messages.add_message(request, messages.INFO, '%s Contains Invalid Structure'%myobject.name)
                 myobject.code = json.dumps([processed_code,report_code])
+                myobject.variables = json.dumps(user_variables)
                 myobject.save()
                             
             # if user wants to save a report but continue modifying it
@@ -1457,6 +1462,8 @@ def view(request,target_type,target_object,second_object=None):
     # if not a guest logged in
     if not request.session.get('password',''):
         context.update({'link_list':link_list})
+    if target_type == 'report':
+        context.update({'variables':json.loads(target_object.variables)})
     return render(request,'guestmanagement/view.html',context)
 
 def runreport(request,report_id):
@@ -1467,6 +1474,8 @@ def runreport(request,report_id):
     report_code = json.loads(ReportCode.objects.get(pk=report_id).code)[0]
     output = StringIO()
     env = {'print':output.write,'user':request.user}
+    for k,v in request.GET.iteritems():
+        env[k.replace('variable__','')]=v
     env.update(report_processor.functions)
     env.update(report_processor._functions)
     try:

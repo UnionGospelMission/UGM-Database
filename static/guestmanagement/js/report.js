@@ -107,6 +107,7 @@ function newRow(type,values,insert){
             new_type.appendChild(new Option('extrafield','extrafield'));
             new_type.appendChild(new Option('end','end'));
             new_type.appendChild(new Option('set','set'));
+            new_type.appendChild(new Option('user input','user input'));
             new_type.setAttribute('title','Select Row Type');
             if (type){
                 new_type.value = type;
@@ -158,6 +159,7 @@ function typeChange(t,single){
         case 'list':
         case 'set':
         case 'function':
+        case 'user input':
             changeReturnVariable();
             break;
     }
@@ -296,16 +298,19 @@ function typeChange(t,single){
                 break;
 
             case 'set':
+            case 'user input':
                 var name = row.appendChild(document.createElement('input'));
                     name.name = 'code'+row.line_number+'-1';
                     name.setAttribute('title','Set Name');
                     name.onchange = changeReturnVariable;
                     name.onclick=alertName;
-                var value = row.appendChild(document.createElement('input'));
-                    value.name = 'code'+row.line_number+'-2';
-                    value.setAttribute('title','Set Value');
-                    value.onclick=alertName;
-                    value.onblur=setTarget;
+                if (t.value=='set'){
+					var value = row.appendChild(document.createElement('input'));
+						value.name = 'code'+row.line_number+'-2';
+						value.setAttribute('title','Set Value');
+						value.onclick=alertName;
+						value.onblur=setTarget;
+				}
                 break;
         }
     }
@@ -353,6 +358,7 @@ function changeReturnVariable(){
                     report_viewer.children[i].children[2].value = report_viewer.children[i].children[2].value.split(' ').join('_');
                     return_name = report_viewer.children[i].children[2].value;
                     break;
+                case 'user input':
                 case 'set':
                     report_viewer.children[i].children[1].value = report_viewer.children[i].children[1].value.split(' ').join('_');
                     return_name = report_viewer.children[i].children[1].value;
@@ -591,4 +597,12 @@ function alertName(){
     if (debug){
         console.log(this.name);
     }
+}
+
+function runReport(t){
+	var input = document.getElementsByTagName('input');
+	for (var i=0;i<input.length;i++){
+		t.href+='?'+input[i].name+'='+input[i].value;
+	}
+	//alert(document.getElementsByName('variable__test')[0].value);
 }

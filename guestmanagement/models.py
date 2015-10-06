@@ -242,6 +242,7 @@ class ReportCode(models.Model):
     description = models.CharField(max_length=2000)
     code = models.CharField(max_length=20000, blank=True, null=True)
     users = models.ManyToManyField(User)
+    variables = models.CharField(max_length=20000, blank=True, null=True)
 
     def user_list(self):
         return ' | '.join([i.__unicode__() for i in self.users.all()])
