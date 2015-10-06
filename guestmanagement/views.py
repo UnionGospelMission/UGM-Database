@@ -456,11 +456,7 @@ class ReportProcessor():
                     if i[4]==u'on' and date_filters!=[]:
                         for a in date_filters:
                             eqkwargs.update({'date__{0}'.format(self.filter_dict[a[1]]):self.evalVariables(env,a[2])})
-                    current_filter = self.filter_dict['field'][i[4]].objects.filter(**eqkwargs).exclude(**nekwargs)
-                    current_guest_list = []
-                    for a in current_filter:
-                        if a.guest not in current_guest_list:
-                            current_guest_list.append(a.guest)
+                    current_guest_list = self.filter_dict['field'][i[4]].objects.filter(**eqkwargs).exclude(**nekwargs).values_list('guest',flat=True)
                 else:
                     operator = '%s__'%i[3].split('guest.')[1]
                     if i[3].split('guest.')[1]=='program':
@@ -470,7 +466,7 @@ class ReportProcessor():
                         nekwargs[operator]=self.evalVariables(env,i[2]).replace('True',"checked='checked'")
                     else:
                         eqkwargs[operator]=self.evalVariables(env,i[2]).replace('True',"checked='checked'")
-                    current_guest_list = list(Guest.objects.filter(**eqkwargs).exclude(**nekwargs).distinct())
+                    current_guest_list = list(Guest.objects.filter(**eqkwargs).exclude(**nekwargs).distinct().values_list('id',flat=True))
                 if i[0]=='and':
                     if guest_list==[]:
                         guest_list = set(current_guest_list)
@@ -480,7 +476,7 @@ class ReportProcessor():
                     if isinstance(guest_list,set):
                         guest_list = list(guest_list)
                     guest_list = self.distinct(guest_list + current_guest_list)
-        guest_list = list(guest_list)
+        guest_list = list(Guest.objects.filter(id__in=list(guest_list)).distinct())
         retval = []
         holding = {}
         for i in return_field_list:
