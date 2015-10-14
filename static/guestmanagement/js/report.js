@@ -108,6 +108,8 @@ function newRow(type,values,insert){
             new_type.appendChild(new Option('end','end'));
             new_type.appendChild(new Option('set','set'));
             new_type.appendChild(new Option('user input','user input'));
+            new_type.appendChild(new Option('begin table','begin table'));
+            new_type.appendChild(new Option('end table','end table'));
             new_type.setAttribute('title','Select Row Type');
             if (type){
                 new_type.value = type;
@@ -312,6 +314,14 @@ function typeChange(t,single){
 						value.onblur=setTarget;
 				}
                 break;
+
+            case 'begin table':
+                var name = row.appendChild(document.createElement('input'));
+                    name.name = 'code'+row.line_number+'-1';
+                    name.setAttribute('title','Comma Separated Row Headers');
+                    name.onclick=alertName;
+                break;
+            
         }
     }
     t.previous_value = t.value;
@@ -589,8 +599,8 @@ function toggleReportView() {
 }
 
 function leadingZeros(number){
-    var retval = "0" + String(number);
-    return retval.substr(retval.length-2);
+    var retval = "0000" + String(number);
+    return retval.substr(retval.length-4);
 }
 
 function alertName(){

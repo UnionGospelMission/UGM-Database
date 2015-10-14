@@ -16,6 +16,7 @@ from django.core.exceptions import MultipleObjectsReturned
 from cStringIO import StringIO
 from copy import deepcopy
 from dateutil.relativedelta import relativedelta
+from dateutil.parser import parse
 import traceback
 from django.utils import timezone
 from django.contrib.auth.decorators import login_required
@@ -66,6 +67,8 @@ class ReportProcessor():
                             'sum':self.sum,
                             'set':self.set_,
                             'query':self.query,
+                            'begin table':self.beginTable,
+                            'end table':self.endTable,
         }
         self.filter_dict = {
                             '=':'exact',
@@ -103,6 +106,7 @@ class ReportProcessor():
             super(ReportProcessor.Env, self).__setitem__(item,value)
 
     # external functions
+    
     def addSubtractDates(self,env,date,adjustment,days_months_years,operator):
         date = self.evalVariables(env,date)
         if not isinstance(date,(datetime.datetime,datetime.date)):
@@ -149,9 +153,9 @@ class ReportProcessor():
         if not isinstance(a,(datetime.datetime,unicode,datetime.date)) or not isinstance(b,(datetime.datetime,unicode,datetime.date)):
             return ''
         if isinstance(a,unicode):
-            a = datetime.datetime.strptime(a,'%m/%d/%Y').date()
+            a = parse(a).date()
         if isinstance(b,unicode):
-            b = datetime.datetime.strptime(b,'%m/%d/%Y').date()
+            b = parse(b).date()
         if not isinstance(b,type(a)) or not isinstance(a,type(b)):
             if isinstance(a,datetime.datetime):
                 a = a.date()
@@ -160,10 +164,10 @@ class ReportProcessor():
         c = relativedelta(a,b)
         d = a - b
         if days_months_years == 'months':
-            return c.years * 12 + c.months
+            return str(c.years * 12 + c.months)
         if days_months_years == 'years':
-            return c.years
-        return d.days
+            return str(c.years)
+        return str(d.days)
     
     def length(self,env,variable):
         variable = self.evalVariables(env,variable)
@@ -171,6 +175,17 @@ class ReportProcessor():
             
 
     # internal functions
+    def beginTable(self,env,comma_separated_headers):
+        headers = comma_separated_headers.split(',')
+        env['print']('<table><tr>')
+        if len(headers)>0:
+            for i in headers:
+                env['print']('<th>'+i+'</th>')
+            env['print']('</tr><tr>')
+
+    def endTable(self,env):
+        env['print']('</tr></table>')
+
     def booleanMethods(self,env,boolean_list,count_days=False,last_day_activated=False,last_day_deactivated=False):
         if not isinstance(boolean_list,list):
             boolean_list = self.evalVariables(env,boolean_list)
@@ -381,6 +396,9 @@ class ReportProcessor():
                         if i[1]==u'=':
                             if str(comparator)==str(value):
                                 found = True
+                            elif str(comparator).isdigit() and str(value).isdigit():
+                                if int(str(comparator))==int(str(value)):
+                                    found=True
                         elif i[1]==u'contains':
                             if str(comparator) in str(value):
                                 found = True
@@ -415,10 +433,10 @@ class ReportProcessor():
                             field_dict[k] = field_dict[k] + v
                         else:
                             if field_dict[k] == [] and first_filter:
-                                first_filter = False
                                 field_dict[k] = v
                             else:
                                 field_dict[k] = self.listToSet(set(self.listToSet(v)) & set(self.listToSet(field_dict[k])),True)
+                    first_filter = False
             retval = []
             for k,v in field_dict.iteritems():
                 for i in v:
