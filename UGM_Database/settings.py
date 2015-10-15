@@ -103,6 +103,9 @@ DATABASES = MYSETTINGS['DATABASE']
 PRIVATE_KEY_FILE = MYSETTINGS['PRIVATE_KEY_FILE']
 PUBLIC_KEY_FILE = MYSETTINGS['PUBLIC_KEY_FILE']
 PORT = MYSETTINGS['PORT']
+if isinstance(PORT,str):
+	if PORT.isdigit():
+		PORT=int(PORT)
 # Internationalization
 # https://docs.djangoproject.com/en/dev/topics/i18n/
 

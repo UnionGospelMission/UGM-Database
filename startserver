@@ -1,5 +1,2 @@
 #! /bin/bash
-#authbind twistd web --https=443 -k /home/luke/Open\ Door/server.t -c /home/luke/Open\ Door/server.crt --path=/home/luke/Open\ Door/Edited/Services/
 authbind twistd -noy server.py 
-#authbind twistd -noy server.py web --https=443 -c ./server.crt -k ./server.t
-#authbind twistd -n web -c ./server.crt -k ./server.t --https=443 --wsgi=UGM_Database.wsgi.application
