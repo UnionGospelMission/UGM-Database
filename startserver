@@ -1,2 +1,2 @@
 #! /bin/bash
-authbind twistd -noy server.py 
+authbind twistd -noy server.py | tee -a server.log
