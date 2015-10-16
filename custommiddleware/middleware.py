@@ -6,8 +6,14 @@ class setBaseSite():
         print request.GET
         print request.POST
         print request.get_host()
-        uid = Session.objects.get(pk=request.session.session_key).get_decoded().get('_auth_user_id')
-        print User.objects.get(pk=uid)
+        if request.session.session_key:
+            uid = Session.objects.get(pk=request.session.session_key).get_decoded().get('_auth_user_id')
+            if uid:
+                print User.objects.get(pk=uid)
+            else:
+                print "Anonymous"
+        else:
+            print "Anonymous"
         if request.path == '/':
             request.session['base_site']=''
         if not request.session.get('base_site',''):
