@@ -1116,6 +1116,10 @@ def manage(request,target_type=None,target_object=None):
                     target_instance.order=starting_order+1
         # There is now a target_instance whether it is just created or being modified
         # get the new/modify form from the reference dictionary and bind the submitted data to it
+        hashpassword=True
+        if target_type=='guest' and not request.POST.get('password',''):
+            request.POST['password']=target_instance.password
+            hashpassword=False
         form = target_type_dict[target_type][0](request.POST,request.FILES,instance=target_instance)
         # If the form has all the required data
         if form.is_valid():
@@ -1139,10 +1143,12 @@ def manage(request,target_type=None,target_object=None):
                 target_instance.order=starting_order+1
             # Save the form
             myobject = form.save()
+            Print(myobject.password)
             # Special processing for guests
             if target_type=='guest':
-                # Hash the guest's password
-                myobject.password = hashlib.sha512(myobject.password).hexdigest()
+                if hashpassword:
+                    # Hash the guest's password
+                    myobject.password = hashlib.sha512(myobject.password).hexdigest()
                 # Save the guest object
                 myobject.save()
                 # set static file permissions for the guest picture
