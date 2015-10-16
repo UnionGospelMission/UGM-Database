@@ -202,7 +202,7 @@ class ReportProcessor():
                 return 0
         for i in boolean_list:
             if i[1] == u'' and (count_days or last_day_deactivated) and current[1] =="checked='checked'":
-                count += self.subtractDates(env,i[0],checkin_date)
+                count += int(self.subtractDates(env,i[0],checkin_date))
                 checkout_date = i[0]
             if i[1] == "checked='checked'" and current[1]==u'':
                 if not count_days:
@@ -210,7 +210,7 @@ class ReportProcessor():
                 checkin_date=i[0]
             current = i
         if count_days and current[1]=="checked='checked'":
-            count += self.subtractDates(env,datetime.datetime.now(),checkin_date)
+            count += int(self.subtractDates(env,datetime.datetime.now(),checkin_date))
         if last_day_activated:
             return checkin_date
         if last_day_deactivated:
