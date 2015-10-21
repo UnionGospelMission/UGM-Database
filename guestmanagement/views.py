@@ -1143,7 +1143,6 @@ def manage(request,target_type=None,target_object=None):
                 target_instance.order=starting_order+1
             # Save the form
             myobject = form.save()
-            Print(myobject.password)
             # Special processing for guests
             if target_type=='guest':
                 if hashpassword:
