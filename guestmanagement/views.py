@@ -509,7 +509,7 @@ class ReportProcessor():
                     elif field=='program':
                         holding[a].append('|'.join([i.name for i in self.safegetattr(a,field).all()]))
                     else:
-                        holding[a].append(self.safegetattr(a,field))
+                        holding[a].append(str(self.safegetattr(a,field)))
             else:
                 filter = self.filter_dict['field'][i[1]].objects.filter(guest__in=guest_list,field__name=field).distinct()
                 guest_list_copy = deepcopy(guest_list)
