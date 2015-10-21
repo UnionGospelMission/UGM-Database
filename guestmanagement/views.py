@@ -321,7 +321,7 @@ class ReportProcessor():
         env['print'](str(retval))
 
     def function(self, env, function, return_variable, *args):
-        env.parent.parent[return_variable.replace('!','')] = self.functions[function](env,*args)
+        self.set_(env,return_variable.replace('$',''),self.functions[function](env,*args))
 
     # system functions
 
