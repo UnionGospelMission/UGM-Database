@@ -69,6 +69,7 @@ class ReportProcessor():
                             'query':self.query,
                             'begin table':self.beginTable,
                             'end table':self.endTable,
+                            'if':self.if_,
         }
         self.filter_dict = {
                             '=':'exact',
@@ -276,6 +277,31 @@ class ReportProcessor():
         else:
             env[list_variable] = a
 
+    def if_(self,env,operator,value1,value2,*code):
+        a = self.evalVariables(env,value1)
+        b = self.evalVariables(env,value2)
+        code=['do']+list(code)
+        if operator == '=':
+            if a==b:
+                self.listProcess(self.Env(env), deepcopy(code))
+        elif operator == '>':
+            if a>b:
+                self.listProcess(self.Env(env), deepcopy(code))
+        elif operator == '<':
+            if a<b:
+                self.listProcess(self.Env(env), deepcopy(code))
+        elif operator == '>=':
+            if a>=b:
+                self.listProcess(self.Env(env), deepcopy(code))
+        elif operator == '<=':
+            if a<=b:
+                self.listProcess(self.Env(env), deepcopy(code))
+        elif operator == '<>':
+            if a<>b:
+                self.listProcess(self.Env(env), deepcopy(code))
+        elif operator == 'contains':
+            if a in b:
+                self.listProcess(self.Env(env), deepcopy(code))
 
     def list_(self, env, list_type,list_variable,row_items,row_separator,list_range, timeseries, *code):
         c = list(code)
@@ -570,7 +596,7 @@ class ReportProcessor():
 
     @staticmethod
     def preProcessReport(code,first_indent=None):
-        indent_list = ['list', 'sum', 'count', 'display', 'query']
+        indent_list = ['list', 'sum', 'count', 'display', 'query', 'if']
         retval = []
         user_variables = []
         while True:

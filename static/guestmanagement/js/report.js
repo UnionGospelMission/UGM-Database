@@ -69,6 +69,7 @@ function indentRows(){
             case 'sum':
             case 'count':
             case 'display':
+            case 'if':
                 indent_level += 1;
                 break;
             case 'end':
@@ -100,6 +101,7 @@ function newRow(type,values,insert){
             new_type.appendChild(new Option('newline','newline'));
             new_type.appendChild(new Option('list','list'));
             new_type.appendChild(new Option('query','query'));
+            new_type.appendChild(new Option('if','if'));
             new_type.appendChild(new Option('and','and'));
             new_type.appendChild(new Option('or','or'));
             new_type.appendChild(new Option('display','display'));
@@ -249,6 +251,7 @@ function typeChange(t,single){
 
             case 'and':
             case 'or':
+            case 'if':
                 var operator = row.appendChild(document.createElement('select'));
                     operator.appendChild(new Option('',''));
                     operator.appendChild(new Option('=','='));
