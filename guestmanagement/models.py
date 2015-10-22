@@ -240,7 +240,7 @@ class GuestmanagementUserSettings(models.Model):
 class ReportCode(models.Model):
     name = models.CharField(max_length=2000, blank=True, null=True, unique=True)
     description = models.CharField(max_length=2000)
-    code = models.CharField(max_length=20000, blank=True, null=True)
+    code = models.CharField(max_length=200000, blank=True, null=True)
     users = models.ManyToManyField(User)
     variables = models.CharField(max_length=20000, blank=True, null=True)
 
