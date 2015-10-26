@@ -294,6 +294,9 @@ class ReportProcessor():
         if operator == '=':
             if a==b:
                 self.listProcess(self.Env(env), deepcopy(code))
+            elif str(a).isdigit() and str(b).isdigit():
+                if int(str(a))==int(str(b)):
+                    self.listProcess(self.Env(env), deepcopy(code))
         elif operator == '>':
             if a>b:
                 self.listProcess(self.Env(env), deepcopy(code))
@@ -308,7 +311,8 @@ class ReportProcessor():
                 self.listProcess(self.Env(env), deepcopy(code))
         elif operator == '<>':
             if a<>b:
-                self.listProcess(self.Env(env), deepcopy(code))
+                if int(str(a))==int(str(b)):
+                    self.listProcess(self.Env(env), deepcopy(code))
         elif operator == 'contains':
             if a in b:
                 self.listProcess(self.Env(env), deepcopy(code))
