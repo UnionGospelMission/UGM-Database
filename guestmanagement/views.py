@@ -188,7 +188,7 @@ class ReportProcessor():
     def beginTable(self,env,comma_separated_headers):
         headers = comma_separated_headers.split(',')
         env['print']('<table><tr>')
-        if len(headers)>0:
+        if comma_separated_headers:
             for i in headers:
                 env['print']('<th>'+i+'</th>')
             env['print']('</tr><tr>')
@@ -313,6 +313,7 @@ class ReportProcessor():
                 self.listProcess(self.Env(env), deepcopy(code))
 
     def list_(self, env, list_type,list_variable,row_items,row_num,row_separator,list_range, timeseries, *code):
+        row_separator = self.evalVariables(env,row_separator)
         c = list(code)
         if list_type == u'numbers':
             start,stop = list_range.split(':')
