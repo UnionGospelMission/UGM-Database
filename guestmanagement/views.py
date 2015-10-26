@@ -252,6 +252,7 @@ class ReportProcessor():
                 
     
     def display(self,env,display_value,separator,timeseries, *code):
+        separator = self.evalVariables(env,separator)
         if not code:
             retval = self.evalVariables(env,display_value)
             if isinstance(retval, (datetime.datetime,datetime.date)):
