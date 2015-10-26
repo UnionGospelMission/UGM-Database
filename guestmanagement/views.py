@@ -44,6 +44,15 @@ target_type_dict = {# Reference dictionary for matching the correct new form to 
 class ReportProcessor():
 
     def __init__(self):
+        self.tableVariables = { 'table_new_row':'</tr><tr>',
+                                'table_new_row_with_break':'</tr><tr><td></td></tr><tr>',
+                                'table_new_cell':'</td><td>',
+                                'table_open_cell':'<td>',
+                                'table_close_cell':'</td>',
+                                'table_open_row':'<tr>',
+                                'table_close_row':'</tr>',
+        }
+        
         self.functions = {  'add':self.add,
                             'subtract':self.subtract,
                             'today': self.today,
@@ -303,7 +312,7 @@ class ReportProcessor():
             if a in b:
                 self.listProcess(self.Env(env), deepcopy(code))
 
-    def list_(self, env, list_type,list_variable,row_items,row_separator,list_range, timeseries, *code):
+    def list_(self, env, list_type,list_variable,row_items,row_num,row_separator,list_range, timeseries, *code):
         c = list(code)
         if list_type == u'numbers':
             start,stop = list_range.split(':')
@@ -319,17 +328,26 @@ class ReportProcessor():
                 if c == []:
                     break
         c.insert(0, 'do')
-        count = 1
+        rowcount = 1
+        pagecount = 2
         for i in a:
             if '!' in list_variable:
                 env.parent.parent[list_variable.replace('!','')] = i
             else:
                 env[list_variable] = i
             self.listProcess(self.Env(env), deepcopy(c))
-            if count % int(row_items) == 0:
-                env['print'](row_separator)
-                count = 0
-            count += 1
+            if rowcount % int(row_items) == 0:
+                if row_num:
+                    if pagecount % int(row_num) == 0:
+                        pagecount = 0
+                        env['print'](row_separator[:-1] + ' style="page-break-after: always"' + row_separator[-1:])
+                    else:
+                        env['print'](row_separator)
+                else:
+                    env['print'](row_separator)
+                rowcount = 0
+                pagecount += 1
+            rowcount += 1
 
     def count(self,env,return_field,timeseries,*code):
         filter = self.buildFilter(env,return_field,timeseries,code)
@@ -1283,6 +1301,8 @@ def manage(request,target_type=None,target_object=None):
         all_field_dict.update({'date':[['date','date']],'guest':[['id','id'],['first_name','text_field'],['middle_name','text_field'],['last_name','text_field'],['ssn','text_field'],['program','list'],['picture','url'],['image_tag','picture']]})
         # Put the list of fields and forms into the context
         context.update({'all_forms_list':all_forms_list,'all_field_dict':json.dumps(all_field_dict),'available_functions':json.dumps([[i,list(report_processor.functions[i].func_code.co_varnames)[:report_processor.functions[i].func_code.co_argcount]] for i in report_processor.functions.keys()])})
+        # Put helper variables in context
+        context.update({'helper_variables':json.dumps(report_processor.tableVariables.keys())})
     # Add the form and instance to the context
     context.update({'form':form.as_p(),'target_object':target_object})
     # Serve up the page :)
@@ -1522,6 +1542,7 @@ def runreport(request,report_id):
     for k,v in request.GET.iteritems():
         env[k.replace('variable__','')]=v
     env.update(report_processor.functions)
+    env.update(report_processor.tableVariables)
     env.update(report_processor._functions)
     try:
         success = report_processor.listProcess(env, ['do']+report_code)

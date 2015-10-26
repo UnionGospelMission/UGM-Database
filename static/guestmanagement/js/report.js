@@ -31,6 +31,12 @@ document.ready=function (){
         newRow(loaded_report[i].shift(),loaded_report[i]);
     }
     newRow();
+    // Variable Select
+    if (document.getElementById('helper_variables').value!=''){
+		window.helper_variables = JSON.parse(document.getElementById('helper_variables').value);
+	} else {
+		window.helper_variables = [];
+	}
     changeReturnVariable();
 
 }
@@ -210,11 +216,15 @@ function typeChange(t,single){
                         num_per_row.name = 'code'+row.line_number+'-3';
                         num_per_row.setAttribute('title','Number of Items Per Row');
                         num_per_row.onclick=alertName;
+                    var rows_per_page = row.appendChild(document.createElement('input'));
+                        rows_per_page.name = 'code'+row.line_number+'-4';
+                        rows_per_page.setAttribute('title','Number of Rows Per Page');
+                        rows_per_page.onclick=alertName;
                     var row_separator = row.appendChild(document.createElement('input'));
-                        row_separator.name = 'code'+row.line_number+'-4';
+                        row_separator.name = 'code'+row.line_number+'-5';
                         row_separator.setAttribute('title','Row Separator');
-                        name_offset = 4;
                         row_separator.onclick=alertName;
+                        name_offset = 5;
                     }
             case 'extrafield':
             case 'display':
@@ -357,7 +367,7 @@ function setFunctionName(t){
 }
 
 function changeReturnVariable(){
-    var var_list = [];
+    var var_list = window.helper_variables;
     for (var i=0;i<report_viewer.children.length;i++){
         var return_name = '';
         if (report_viewer.children[i].children.length > 1){

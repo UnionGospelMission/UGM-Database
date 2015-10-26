@@ -89,3 +89,7 @@
 .report_row{
 	padding-bottom: 5%;
 }
+
+tr {
+	display: block;
+}
