@@ -539,6 +539,8 @@ class ReportProcessor():
                 else:
                     if isinstance(guest_list,set):
                         guest_list = list(guest_list)
+                    if not isinstance(current_guest_list,list):
+                        current_guest_list = list(current_guest_list)
                     guest_list = self.distinct(guest_list + current_guest_list)
         guest_list = list(Guest.objects.filter(id__in=list(guest_list)).distinct())
         retval = []
