@@ -42,8 +42,11 @@ target_type_dict = {# Reference dictionary for matching the correct new form to 
 
 
 class ReportProcessor():
-
+    '''
+        Main class for handling preparing and running reports
+    '''
     def __init__(self):
+        # Helper variables for creating tables
         self.tableVariables = { 'table_new_row':'</tr><tr>',
                                 'table_new_row_with_break':'</tr><tr><td></td></tr><tr>',
                                 'table_new_cell':'</td><td>',
@@ -52,7 +55,7 @@ class ReportProcessor():
                                 'table_open_row':'<tr>',
                                 'table_close_row':'</tr>',
         }
-        
+        # External functions (found on the report builder when "function" is selected)
         self.functions = {  'add':self.add,
                             'subtract':self.subtract,
                             'today': self.today,
@@ -65,6 +68,7 @@ class ReportProcessor():
                             'format_picture':self.formatPicture,
                             'add_subtract_dates':self.addSubtractDates,
         }
+        # Internal functions (found on the report builder in each line's dropdown)
         self._functions = { 
                             'do':self.do,
                             'newline': self.newline,
@@ -80,6 +84,7 @@ class ReportProcessor():
                             'end table':self.endTable,
                             'if':self.if_,
         }
+        # Dictionary to convert report builder operators to django query filters
         self.filter_dict = {
                             '=':'exact',
                             '>':'gt',
@@ -95,14 +100,23 @@ class ReportProcessor():
         
         
     class Env(dict):
+        '''
+            Environment container for reports
+        '''
         def __init__(self,parent):
             super(ReportProcessor.Env, self).__init__()
+            # Make current instance a child of its parent
             self.parent=parent
+            
         def __getitem__(self,item):
+            # If variable is local, return it
+            # Otherwise check the parent for the variable
             if item in self:
                 return super(ReportProcessor.Env, self).__getitem__(item)
             return self.parent[item]
+            
         def __setitem__(self,item,value):
+            # check for variable in parents if not in current environment
             if item not in self:
                 p = self.parent
                 while True:
@@ -118,269 +132,450 @@ class ReportProcessor():
     # external functions
     
     def addSubtractDates(self,env,date,adjustment,days_months_years,operator):
+        '''
+            Function to manipulate dates
+        '''
+        # Evaluate the date variable
         date = self.evalVariables(env,date)
+        # If the entered date is not already a datetime
         if not isinstance(date,(datetime.datetime,datetime.date)):
+            # Convert the submitted variable to a datetime
             date = datetime.datetime.strptime(date,'%m/%d/%Y')
+        # Evaluate the adjustment variable and convert to integer
         adjustment = int(self.evalVariables(env,adjustment))
+        # Create a dictionary of the type of adjustment and quantity of adjustment
         kwargs = {'{0}'.format(days_months_years):adjustment}
+        # Translate the dictionary into a relative delta
         b = relativedelta(**kwargs)
+        # If adding the delta, return the addition, otherwise return the subtraction
         if operator=='+':
             return date + b
         else:
             return date - b
 
     def formatPicture(self,env,url,height,width):
+        '''
+            function to convert guest picture record to html img tag
+        '''
+        # Evaluate the url variable
         url = self.evalVariables(env,url)
+        # Evaluate the height variable
         height = self.evalVariables(env,height)
+        # Evaluate the width variable
         width = self.evalVariables(env,width)
+        # Return html img tag
         return u'<img src="%s" height="%s" width="%s"/>' % (url,height,width)
     
     def lastDayActivated(self,env,boolean_list):
+        '''
+            pass through function to booleanMethods
+        '''
         return self.booleanMethods(env,boolean_list,False,True)
     
     def lastDayDeactivated(self,env,boolean_list):
+        '''
+            pass through function to booleanMethods
+        '''
         return self.booleanMethods(env,boolean_list,False,False,True)
     
     def countBooleans(self,env,boolean_list):
+        '''
+            pass through function to booleanMethods
+        '''
         return self.booleanMethods(env,boolean_list)
     
     def countDays(self,env,boolean_list):
+        '''
+            pass through function to booleanMethods
+        '''
         return self.booleanMethods(env,boolean_list,True)
     
     def add(self,env,value1,value2):
+        # Eval both variables and return their sum
         return str(float(self.evalVariables(env,value1)) + float(self.evalVariables(env,value2)))
 
     def subtract(self,env,value1,value2):
+        # Eval both variables and return their difference
         return str(float(self.evalVariables(env,value1)) - float(self.evalVariables(env,value2)))
 
 
     def today(self,env):
+        # Return now as a datetime
         return datetime.datetime.now().date()
         
     def subtractDates(self,env,date1,date2,days_months_years=None):
+        '''
+            Function to subtract date 1 from date two
+        '''
+        # evaluate variables
         a = self.evalVariables(env,date1)
         b = self.evalVariables(env,date2)
+        # Ensure variables a and b are valid for function
         if not isinstance(a,(datetime.datetime,unicode,datetime.date)) or not isinstance(b,(datetime.datetime,unicode,datetime.date)):
             return ''
+        # Convert variables to datetime if unicode
         if isinstance(a,unicode):
             a = parse(a).date()
         if isinstance(b,unicode):
             b = parse(b).date()
+        # Ensure variables are the same type
         if not isinstance(b,type(a)) or not isinstance(a,type(b)):
             if isinstance(a,datetime.datetime):
                 a = a.date()
             if isinstance(b,datetime.datetime):
                 b = b.date()
+        # Obtain relative delta between the two variables
         c = relativedelta(a,b)
+        # Obtain difference between the two variables
         d = a - b
+        # If months or years specified, return same
         if days_months_years == 'months':
             return str(c.years * 12 + c.months)
         if days_months_years == 'years':
             return str(c.years)
+        # return number of days
         return str(d.days)
     
     def length(self,env,variable):
+        # Eval variable
         variable = self.evalVariables(env,variable)
+        # Return length
         return len(variable)
             
 
     # internal functions
     def beginTable(self,env,comma_separated_headers):
+        '''
+            Helper function to build html table
+        '''
+        # Split headers variable into list
         headers = comma_separated_headers.split(',')
+        # Start html table
         env['print']('<table><tr>')
+        # If headers specified
         if comma_separated_headers:
+            # Print each header into a header row
             for i in headers:
                 env['print']('<th>'+i+'</th>')
+            # Start new row for table
             env['print']('</tr><tr>')
 
     def endTable(self,env):
+        # Close last row and table
         env['print']('</tr></table>')
 
     def booleanMethods(self,env,boolean_list,count_days=False,last_day_activated=False,last_day_deactivated=False):
+        '''
+            Function for manipulating timedata boolean list.
+                The list should be in the form [[date1,true/false],[date2,true/false],...]
+        '''
+        # Eval list variable if not already a list
         if not isinstance(boolean_list,list):
             boolean_list = self.evalVariables(env,boolean_list)
+        # Make a copy of list to preserve original
         boolean_list = deepcopy(boolean_list)
+        # Initialize counter of days active
         count = 1
+        # Retrieve first date record from list
         current = boolean_list.pop(0)
+        # Initialize turned on date
         checkin_date = current[0]
+        # Initialize turned off date
         checkout_date = ""
+        # Iterate the list until boolean activated
         while current[1] !="checked='checked'":
             try:
+                # Take next record from list
                 current = boolean_list.pop(0)
+                # Set turned on date
                 checkin_date = current[0]
             except IndexError:
+                # If the boolean never activates
                 return 0
+        # Iterate the remaining list after boolean first activates
         for i in boolean_list:
+            # If boolean is now inactive and (counting days or wants last deactivation) and previous record was active
             if i[1] == u'' and (count_days or last_day_deactivated) and current[1] =="checked='checked'":
+                # increase days active count
                 count += int(self.subtractDates(env,i[0],checkin_date))
+                # Set deactivated date
                 checkout_date = i[0]
+            # If boolean is now active and previous record was not active
             if i[1] == "checked='checked'" and current[1]==u'':
+                # If not counting days
                 if not count_days:
+                    # Increase counter
                     count += 1
+                # Set activated date
                 checkin_date=i[0]
+            # Set previous record to current record for next iteration
             current = i
+        # If counting days and list ended with active boolean
         if count_days and current[1]=="checked='checked'":
+            # Increase count with difference from today to boolean last activated
             count += int(self.subtractDates(env,datetime.datetime.now(),checkin_date))
+        # If wanting last day activated
         if last_day_activated:
+            # Return date activated
             return checkin_date
+        # If wanting last day deactivated
         if last_day_deactivated:
+            # Return date deactivated
             return checkout_date
+        # Return day count
         return count
 
     def text(self, env, bold, value):
+        '''
+            Function to put text into html
+        '''
+        # If no bold selected
         if bold == 'none':
+            # append text to report
             env['print'](value)
         else:
+            # Put text in appropriate h tag
             env['print']('<%s>%s</%s>'%(bold,value,bold))
 
     def set_(self,env,key,value):
+        '''
+            Function to update environment variable with value
+        '''
+        # If list element not being updated
         if '::' not in key:
+            # Set parent environment variable
             env.parent.parent[key] = self.evalVariables(env,value)
         else:
+            # Split update variable into list of steps
             slice_list = key.split('::')
+            # Retrieve base variable
             key = slice_list.pop(0)
+            # Retrieve last element reference
             end = int(slice_list.pop())
+            # Convert intermediary steps into index integers
             slice_list = [int(i) for i in slice_list]
+            # Obtain base variable value
             cur_value = self.evalVariables(env,'$'+key)
+            # Set walker to entire list
             a = cur_value
+            # Walk the intermediary steps
             for i in slice_list:
+                # Set walker to list element
                 a = a[i]
+            # If ending element shorter than last element index
             while len(a)<=end:
+                # Increase list length
                 a.append('')
+            # Set last element to evaluated variable (mutable lists auto update original list)
             a[end] = self.evalVariables(env,value)
+            # Set base variable to new list value in parent environment
             env.parent.parent[key] = cur_value
                 
     
     def display(self,env,display_value,separator,timeseries, *code):
+        '''
+            Function to look up variables and append html
+        '''
+        # Evaluate separator variable
         separator = self.evalVariables(env,separator)
+        # If not running a query
         if not code:
+            # Evaluate display_value variable
             retval = self.evalVariables(env,display_value)
+            # If variable is a datetime
             if isinstance(retval, (datetime.datetime,datetime.date)):
+                # Format datetime to string
                 env['print'](retval.strftime('%m/%d/%Y'))
             else:
+                # Append variable to html
                 env['print'](str(retval))
         else:
+            # Build filter from variables
             filter = self.buildFilter(env,display_value,timeseries,code)
+            # If filter returns more than one record
             if len(filter)>1:
+                # Warn user
                 env['print']('filter returned more than one value')
             elif len(filter)==1:
+                # Use separator to create a string from the filter's list and append
                 env['print'](separator.join(filter[0]))
                 
 
     def newline(self, env):
+        # Append html new line
         env['print']('<br />')
 
     def query(self, env, list_type,list_variable,list_range, timeseries, *code):
-        c = list(code)
-        if list_type == u'numbers':
-            start,stop = list_range.split(':')
-            a = xrange(int(start), int(stop)+1)
-        else:
-            a = self.buildFilter(env,list_range,timeseries,code)
-            while c[0][0]=='and' or c[0][0]=='or' or c[0][0]=='extrafield':
-                c.pop(0)
-                if c == []:
-                    break
-        c.insert(0, 'do')
-        if '!' in list_variable:
-            env.parent.parent[list_variable.replace('!','')] = a
-        else:
-            env[list_variable] = a
+        '''
+            Function to retrive data from database
+        '''
+        # Retrieve filter results
+        a = self.buildFilter(env,list_range,timeseries,code)
+        # Save filter results into parent environment
+        env.parent.parent[list_variable.replace('!','')] = a
 
     def if_(self,env,operator,value1,value2,*code):
+        '''
+            Function to run some code conditionally
+        '''
+        # Evaluate variables to be compared
         a = self.evalVariables(env,value1)
         b = self.evalVariables(env,value2)
-        code=['do']+list(code)
+        # Initialize true flag
+        true = False
+        # Determine type of conditional
         if operator == '=':
+            # If equals
             if a==b:
-                self.listProcess(self.Env(env), deepcopy(code))
+                # Set true flag
+                true = True
             elif str(a).isdigit() and str(b).isdigit():
+                # Double check not integer comparison
                 if int(str(a))==int(str(b)):
-                    self.listProcess(self.Env(env), deepcopy(code))
+                    # Set true flag
+                    true = True
         elif operator == '>':
             if a>b:
-                self.listProcess(self.Env(env), deepcopy(code))
+                true = True
         elif operator == '<':
             if a<b:
-                self.listProcess(self.Env(env), deepcopy(code))
+                true = True
         elif operator == '>=':
             if a>=b:
-                self.listProcess(self.Env(env), deepcopy(code))
+                true = True
         elif operator == '<=':
             if a<=b:
-                self.listProcess(self.Env(env), deepcopy(code))
+                true = True
         elif operator == '<>':
             if a!=b:
-                self.listProcess(self.Env(env), deepcopy(code))
+                true = True
         elif operator == 'contains':
             if a in b:
+                true = True
+        if code:
+            if true:
+                # Prepare code for execution
+                code=['do']+list(code)
+                # Run code
                 self.listProcess(self.Env(env), deepcopy(code))
+        else:
+            return true
 
     def list_(self, env, list_type,list_variable,row_items,row_num,row_separator,list_range, timeseries, *code):
+        '''
+            Function for iterating over lists or ranges
+        '''
+        # Evaluate row separator
         row_separator = self.evalVariables(env,row_separator)
+        # Copy code to preserve original
         c = list(code)
+        # If iterating range
         if list_type == u'numbers':
+            # Split start and stop in two
             start,stop = list_range.split(':')
+            # Evaluate start and stop if variables
             if '$' in start:
                 start = int(self.evalVariables(env,start))-1
             if '$' in stop:
                 stop = int(self.evalVariables(env,stop))-1
+            # Build generator to iterate
             a = xrange(int(start), int(stop)+1)
         else:
+            # build filter to iterate
             a = self.buildFilter(env,list_range,timeseries,code)
+            # Remove filter from code
             while c[0][0]=='and' or c[0][0]=='or' or c[0][0]=='extrafield':
                 c.pop(0)
                 if c == []:
                     break
+        # Prepare code for execution
         c.insert(0, 'do')
+        # Initialize row item counter
         rowcount = 1
+        # Initialize Page counter
         pagecount = 2
+        # Iterate over range
         for i in a:
+            # If walker should be global
             if '!' in list_variable:
+                # Store walker in environment parent
                 env.parent.parent[list_variable.replace('!','')] = i
             else:
+                # Store walker in environment
                 env[list_variable] = i
+            # Execute code
             self.listProcess(self.Env(env), deepcopy(c))
+            # If number of items iterated is multiple of items per row
             if rowcount % int(row_items) == 0:
+                # If number of rows per page specified
                 if row_num:
+                    # If number of rows multiple of number of rows per page
                     if pagecount % int(row_num) == 0:
+                        # Reset page counter
                         pagecount = 0
+                        # Force pagebreak after this row
                         env['print'](row_separator[:-1] + ' style="page-break-after: always"' + row_separator[-1:])
                     else:
+                        # Start new row
                         env['print'](row_separator)
                 else:
+                    # Start new row
                     env['print'](row_separator)
+                # Reset item per row counter
                 rowcount = 0
+                # Increase row per page counter
                 pagecount += 1
+            # Increase Item per row counter
             rowcount += 1
 
     def count(self,env,return_field,timeseries,*code):
+        '''
+            Function to count number of items returned by filter
+        '''
+        # Retrieve filter
         filter = self.buildFilter(env,return_field,timeseries,code)
+        # Update html with number of items returned
         env['print'](str(len(filter)))
 
     def sum(self,env,return_field,timeseries,*code):
+        '''
+            Function to return sum of all items in filter
+        '''
+        # Retrieve filter
         filter = self.buildFilter(env,return_field,timeseries,code)
+        # Initialize sum
         retval = 0.0
+        # Iterate filter
         for i in filter:
+            # Iterate values in each element
             for a in i:
+                # Add to sum if valid type
                 try:
                     retval += float(a)
                 except (TypeError, ValueError):
                     pass
+        # Enter sum in html
         env['print'](str(retval))
 
     def function(self, env, function, return_variable, *args):
+        # pass through function to specific selected functions
         self.set_(env,return_variable.replace('$',''),self.functions[function](env,*args))
 
     # system functions
 
     def do(self, env, *args):
+        '''
+            Function to catch code and process it
+        '''
         ret = ''
         for arg in args:
             ret = self.listProcess(self.Env(env), arg)
         return ret
 
     def distinct(self,list_):
+        '''
+            Function to remove duplicate elements from lists
+        '''
         retval = []
         for i in list_:
             if i not in retval:
@@ -388,171 +583,275 @@ class ReportProcessor():
         return retval
 
     def buildFilter(self,env,return_field,timeseries,code):
+        '''
+            Function to retrieve data from database
+        '''
+        # Initialize date_filters list
+        # date_filters = [date1, ...]
         date_filters = []
+        # If filtering on variable and variable has sub elements
         if '::' in return_field:
+            # Split return field into list
             a = return_field.split('::')
+            # Iterate list and eval variables
             for i in range(1,len(a)):
                 if '$' in a[i]:
                     a[i]=str(self.evalVariables(env,a[i]))
+            # Return updated list to string
             return_field = '::'.join(a)
+        # Place initial return_field variable into list with timeseries flag
+        # return_field_list = [[field,timeseries],...]
         return_field_list = [[return_field,timeseries]]
+        # Initialize filter
+        # filter = [["and/or",operator,value1,value2,timeseries],...]
         filter = []
+        # if filter has criterion
         if code:
+            # convert code list to generator
             tracker = iter(code)
+            # set walker to first element
             current = tracker.next()
+            # Iterate over filter criterion
             while current[0]=='and' or current[0]=='or' or current[0]=='extrafield':
+                # If filter should return another field
                 if current[0]=='extrafield':
+                    # If filtering on variable and variable has sub elements
                     if '::' in current[1]:
+                        # Split current return field into list
                         a = current[1].split('::')
+                        # Iterate list
                         for i in range(1,len(a)):
+                            # If variable
                             if '$' in a[i]:
+                                # Evaluate variable and store in list
                                 a[i]=str(self.evalVariables(env,a[i]))
+                        # Return updated list to string
                         current[1] = '::'.join(a)
+                    # Put evaluated extra field into return list with timeseries flag
                     return_field_list.append([current[1],current[2]])
                 elif 'date.' in current[3]:
+                    # If filtering for date
+                    # Put date in date filters
                     date_filters.append(current)
                 else:
+                    # Put filter in filter list
                     filter.append(current)
                 try:
+                    # Get next criterion
                     current = tracker.next()
                 except StopIteration:
+                    # If no more elements to iterate
                     break
+        # If filtering against variable
         if '$' in return_field:
+            # Initialize dictionary of fields
+            # field_dict = {'field':[[value1,value2...],...]...}
+            field_dict = {}
+            # If no criterion
             if filter==[]:
-                field_dict = {}
+                # Iterate list of fields to return
                 for i in return_field_list:
+                    # Split each return field into list
                     a = i[0].split('::')
+                    # If return field has sub elements
                     if len(a)>1:
+                        # field key is base variable through pentultimate element
                         k = '||'.join(a[:-1]).replace('$','').replace(' ','')
                     else:
+                        # Key is field name
                         k = a[0].replace('$','').replace(' ','')
+                    # If each field not already in field dict
                     if k not in field_dict.keys():
+                        # evaluate variable
                         v = self.evalVariables(env,'$'+k.replace('||','::'))
+                        # If value has a length
                         if len(v)>0:
+                            # If value first element not a list (value is not a list of lists)
                             if not isinstance(v[0],list):
+                                # Make value a list
                                 v = [v]
+                        # Set value of field in dictionary
                         field_dict[k]=v
             else:
-                field_dict = {}
+                # Set flag for first filter
                 first_filter = True
+                # Iterate criteria
                 for i in filter:
+                    # Retrieve variable being filtered against
                     data = self.evalVariables(env,i[3].split('::')[0])
+                    # Evaluate value being sought
                     value = self.evalVariables(env,i[2])
+                    # Initialize holding dictionary for items matching criteria
+                    # holdingdict = {field_name: [[data,data,data,...],...}
                     holdingdict = {}
+                    # Walk through each record in variable being filtered
                     for a in data:
+                        # Set found flag
                         found = False
+                        # Retreive comparison value from the sub element of the current record
                         comparator = a[int(self.evalVariables(env,i[3].split('::')[1]))]
-                        if i[1]==u'=':
-                            if str(comparator)==str(value):
-                                found = True
-                            elif str(comparator).isdigit() and str(value).isdigit():
-                                if int(str(comparator))==int(str(value)):
-                                    found=True
-                        elif i[1]==u'contains':
-                            if str(comparator) in str(value):
-                                found = True
-                        elif i[1]==u'<>':
-                            if str(comparator) != str(value):
-                                found = True
-                        else:
-                            try:
-                                comparator = float(comparator)
-                                value = float(value)
-                            except ValueError:
-                                continue
-                            if i[1]==u'<=':
-                                if comparator<=value:
-                                    found = True
-                            if i[1]==u'>=':
-                                if comparator>=value:
-                                    found = True
-                            if i[1]==u'<':
-                                if comparator<value:
-                                    found = True
-                            if i[1]==u'>':
-                                if comparator>value:
-                                    found = True
+                        # run comparison
+                        # compare values
+                        found = self.if_(env,i[1],value,comparator)
                         if found:
-                            holdingdict[i[3].replace('$','').replace(' ','').split('::')[0]] =holdingdict.get(i[3].replace('$','').replace(' ','').split('::')[0],[])
+                            # Initialize holding dict list for field
+                            holdingdict[i[3].replace('$','').replace(' ','').split('::')[0]] = holdingdict.get(i[3].replace('$','').replace(' ','').split('::')[0],[])
+                            # If this record is not already in the holding dict list for this field
                             if a not in holdingdict[i[3].replace('$','').replace(' ','').split('::')[0]]:
+                                # Append this record to the holding dict list for this field
                                 holdingdict[i[3].replace('$','').replace(' ','').split('::')[0]].append(a)
+                    # Iterate through the key, value pairs of the holding dict
                     for k,v in holdingdict.iteritems():
+                        # Initialize the field_dict list for the field
                         field_dict[k] = field_dict.get(k,[])
+                        # If filter is an "or"
                         if i[0]=='or':
+                            # Add all records to existing field list
                             field_dict[k] = field_dict[k] + v
                         else:
+                            # If an 'and' filter
+                            # If no list for the current field and this is the first filter
                             if field_dict[k] == [] and first_filter:
+                                # Set field list equal to the current record list
                                 field_dict[k] = v
                             else:
+                                # Set field list equal to the intersection of previous records and current records
                                 field_dict[k] = self.listToSet(set(self.listToSet(v)) & set(self.listToSet(field_dict[k])),True)
+                    # Set first_filter flag
                     first_filter = False
+            # Initialize return list
+            # retval = [[[record1],[record2],...],[[record1],[record2],...]]
             retval = []
+            # Iterate through the key, value pairs of field_dict
             for k,v in field_dict.iteritems():
+                # Iterate through the records of each field
                 for i in v:
+                    # Initialize the list for records
+                    # return_list = [[record1],[record2],...]
                     return_list = []
+                    # Iterate through the list of fields to return
                     for a in return_field_list:
+                        # Split the field into a list
                         ak = a[0].split('::')
+                        # If field has sub elements
                         if len(ak)>1:
+                            # Retrieve Last index
                             ai = ak[-1]
+                            # Put base variable through pentultimate element back into field key
                             ak = '||'.join(ak[:-1]).replace('$','').replace(' ','')
+                            # If current field is matches the just created key
                             if k == ak:
+                                # Append records into return list
                                 return_list.append(i[int(ai)])
                         else:
+                            # If field has no sub elements
+                            # Append records into return list
                             return_list = i
+                    # Append return list into retval
                     retval.append(return_list)
+            # Return filter results
             return retval
 
 
-
+        # If filtering against the database
+        # If no criteria
         if filter==[]:
+            # Return all guests
             guest_list = [i for i in Guest.objects.all() if testPermission(i,env['user'])]
         else:
+            # Initialize guest list
+            # guest_list = [guest1,guest2,...]
             guest_list = []
+            # Order filter ands then ors
             filter = sorted(filter)
+            # Iterate over filters
             for i in filter:
+                # Initialize equals kwargs
+                # eqkwargs={field:value,...}
                 eqkwargs = {}
+                # Initialize not equals kwargs
+                # nekwargs={field:value,...}
                 nekwargs = {}
+                # If filtering against a field
                 if 'field.' in i[3]:
-                    holdingdict = {}
+                    # place field name in filter criteria
                     eqkwargs['field__name']=i[3].split('field.')[1]
+                    # Translate filter comparator into django filter format
                     operator = 'value__%s'%self.filter_dict[i[1]]
+                    # If filtering for not equal
                     if i[1] == '<>':
+                        # Append operator into nekwargs
                         nekwargs[operator]=self.evalVariables(env,i[2]).replace('True',"checked='checked'")
                     else:
+                        # Append operator into eqkwargs
                         eqkwargs[operator]=self.evalVariables(env,i[2]).replace('True',"checked='checked'")
+                    # If filtering on timeseries and dates specified
                     if i[4]==u'on' and date_filters!=[]:
+                        # Iterate through date filters
                         for a in date_filters:
+                            # Add to eqkwargs date filter requirements
                             eqkwargs.update({'date__{0}'.format(self.filter_dict[a[1]]):self.evalVariables(env,a[2])})
+                    # run filter based on timeseries (GuestTimeData vs GuestData) and kwargs; return list of guestids who fit critera
                     current_guest_list = self.filter_dict['field'][i[4]].objects.filter(**eqkwargs).exclude(**nekwargs).values_list('guest',flat=True)
                 else:
+                    # If filtering on guests
+                    # initialize operator with first guest attribute
                     operator = '%s__'%i[3].split('guest.')[1]
+                    # If filtering on guest program
                     if i[3].split('guest.')[1]=='program':
+                        # Add name to operator (results in operator == "program__name__")
                         operator += 'name__'
+                    # Add django filter comparator
                     operator = operator + self.filter_dict[i[1]]
+                    # If filtering on not equal
                     if i[1] == '<>':
+                        # Append filter to not equal kwargs
                         nekwargs[operator]=self.evalVariables(env,i[2]).replace('True',"checked='checked'")
                     else:
+                        # Append filter to equal kwargs
                         eqkwargs[operator]=self.evalVariables(env,i[2]).replace('True',"checked='checked'")
+                    # Run django filter returning list of guest ids where guest matches criteria
                     current_guest_list = list(Guest.objects.filter(**eqkwargs).exclude(**nekwargs).distinct().values_list('id',flat=True))
+                # If criteria is "and"
                 if i[0]=='and':
+                    # If no guests in list
                     if guest_list==[]:
+                        # Guest list is currently returned list
                         guest_list = set(current_guest_list)
                     else:
+                        # Guest list is the intersection of current list and previous list
                         guest_list = guest_list & set(current_guest_list)
                 else:
+                    # If criteria is "or"
+                    # If guest list is a set
                     if isinstance(guest_list,set):
+                        # Convert to list
                         guest_list = list(guest_list)
+                    # If current guest list is not a list
                     if not isinstance(current_guest_list,list):
+                        # Convert to list
                         current_guest_list = list(current_guest_list)
+                    # Merge guest list and current guest list deduplicating
                     guest_list = self.distinct(guest_list + current_guest_list)
+        # Convert list of guest ids to list of guest objects
         guest_list = list(Guest.objects.filter(id__in=list(guest_list)).distinct())
+        # Initialize Retval
+        # retval = [[[record1],[record2],...],[[record1],[record2],...],...]
         retval = []
+        # Initialize holding
+        # holding = {guest:[field1,field2,...],...}
         holding = {}
+        # Iterate over return field list
         for i in return_field_list:
+            # Split table and field
             table,field = i[0].split('.')
+            # If table is guest
             if 'guest' == table:
+                # Iterate over the list of guest objects
                 for a in guest_list:
+                    # Initialize holding for this guest
                     holding[a] = holding.get(a,[])
+                    # Append the attribute being requested from the current guest
                     if field=='image_tag':
                         holding[a].append(self.safegetattr(a,field)())
                     elif field=='picture':
@@ -562,110 +861,210 @@ class ReportProcessor():
                     else:
                         holding[a].append(str(self.safegetattr(a,field)))
             else:
+                # If table is field
+                # Retrieve filter from database where field name matches and guest is in guest list
                 filter = self.filter_dict['field'][i[1]].objects.filter(guest__in=guest_list,field__name=field).distinct()
+                # Make a copy of guest list
                 guest_list_copy = deepcopy(guest_list)
+                # Initialize timeseries agregation
+                # timeseries_agregation = {guest:[[date,value],[date,value],...],...}
                 timeseries_agregation = {}
+                # If filtering against timeseries
                 if i[1] == u'on':
+                    # Order filter by date
                     filter = filter.order_by('date')
+                    # Iterate through records
                     for a in filter:
+                        # Initialize timeseries agregation for specific guest
                         timeseries_agregation[a.guest] = timeseries_agregation.get(a.guest,[])
+                        # Append current record into timeseries agregation
                         timeseries_agregation[a.guest].append([a.date,a.value])
                 else:
-                    blank_append = ''
+                    # If not filtering on timeseries
+                    # Iterate through records
                     for a in filter:
+                        # Initialize holding for specific guest
                         holding[a.guest] = holding.get(a.guest,[])
+                        # Append value to holding
                         holding[a.guest].append(a.value)
+                        # Remove guest from list
                         guest_list_copy.pop(guest_list_copy.index(a.guest))
+                # Iterate remaining guests in list copy
                 for a in guest_list_copy:
+                    # Initialize holding for specific guest (will be all guests if not filtering on timeseries)
                     holding[a] = holding.get(a,[])
+                    # Append timeseries agregation or blank
                     holding[a].append(timeseries_agregation.get(a,''))
+        # Iterate through guests in holding
         for i in holding.keys():
+            # Add to return each guest's records
             retval.append(holding[i])
         try:
+            # Try sorting on lower case the first element
             return sorted(retval, key=lambda s: s[0].lower())
         except AttributeError:
+            # Other wise just sort list
             return sorted(retval)
     
     def listToSet(self,_list,rev=False):
+        '''
+            Function to convert list and sublists to or from set
+        '''
+        # Copy list
         _list = deepcopy(_list)
+        # If converting to set
         if not rev:
+            # Iterate list
             for i in range(0,len(_list)):
+                # If element is list
                 if isinstance(_list[i],list):
+                    # Convert element to set
                     _list[i] = self.listToSet(_list[i])
+            # Return tuple of list copy
             return tuple(_list)
+        # If reverting to list
+        # convert outer tuple to list
         _list = list(_list)
+        # Iterate newly converted list
         for i in range(0,len(_list)):
+            # If element is tuple
             if isinstance(_list[i],tuple):
+                # Convert element to list
                 _list[i] = self.listToSet(_list[i],True)
+        # return list
         return _list
 
     def safegetattr(self,obj,attr):
-        return getattr(obj,attr)
+        '''
+            Function to limit user access to attributes
+        '''
+        if not attr.startswith('__'):
+            return getattr(obj,attr)
+        return ''
 
     def evalVariables(self,env,variable):
+        '''
+            Function to convert variable names into values
+        '''
+        # If variable is string or unicode
         if isinstance(variable,(str,unicode)):
+            # If actual variable
             if '$' in variable:
+                # Request from env value of variable base name
                 var = env[variable.replace('$','').replace(' ','').split('::')[0]]
+                # If variable has sub elements
                 if '::' in variable:
+                    # Get element list from variable
                     subs_list = variable.split('::')[1:]
+                    # Iterate over sub element list
                     for i in subs_list:
+                        # Evaluate sub element index
                         index = int(self.evalVariables(env,i))
+                        # If current list longer than index
                         if len(var)>=index+1:
+                            # Set current list to sub element
                             var = var[index]
                         else:
+                            # Set current list blank
                             var = ''
                     return var
                 else:
                     return var
+        # If not variable
         return variable
 
     @staticmethod
     def preProcessReport(code,first_indent=None):
+        '''
+            Method to translate report builder list into processable list
+        '''
+        # List of words indicating agregate code
         indent_list = ['list', 'sum', 'count', 'display', 'query', 'if']
+        # Initialize return
+        # retval = [[instruction1],[instruction2],...]
         retval = []
+        # Initialize user defined variables
+        # user_variables = [variable name1, variable name2,...]
         user_variables = []
+        # Iterate over the entire list
         while True:
             try:
+                # Get first remaining element of code list
                 line = code.pop(0)
+                # If closing an indent
                 if line[0] == 'end':
+                    # If no indent to close
                     if not first_indent:
+                        # Warn user
                         return 'bad code',[]
+                    # Return current code
                     return retval,user_variables
+                # If opening an indent
                 if line[0] in indent_list:
+                    # Process remaining code into block
                     sub_list,sub_user_variables = ReportProcessor.preProcessReport(code,line)
+                    # If indented code not valid
                     if sub_list == 'bad code':
+                        # Warn user
                         return 'bad code',[]
+                    # Add code block to current instruction
                     line.extend(sub_list)
+                    # Add current instruction to return value
                     retval.append(line)
+                    # Add any user variables to global list
                     user_variables = user_variables + sub_user_variables
                 elif line[0] == 'user input':
+                    # If user input requested, add to list of user variables
                     user_variables.append(line[1])
                 else:
+                    # Add current instructions to return value
                     retval.append(line)
             except IndexError:
+                # If code list is empty
+                # If number of ends does not match number of indents
                 if first_indent:
+                    # Notify user
                     return 'bad code',[]
                 break
         return retval,user_variables
     
     def listProcess(self, env, code):
+        '''
+            Method to process code
+        '''
+        # If no environment supplied
         if env is None:
+            # Create environment
             env={}
+        # If code not executable
         if not isinstance(code,list) or not code:
+            # Return the value
             return code
+        # Pull first instruction
         first = code.pop(0)
+        # If first code is code
         if isinstance(first,list):
+            # Set function the outcome of processing code
             function = self.listProcess(self.Env(env), first)
         else:
+            # Set function
             function = env[first]
+        # Execute function
         return function(self.Env(env), *code)
 
+
+# Instantiate ReportProcessor
 report_processor = ReportProcessor()
 
 
 # Common Methods
 
 def interactiveConsole(a,b=None):
+    '''
+        Useful function for debugging
+        Placing interactiveConsole(locals(),globals()) into code will
+        drop into an interactive console when run
+    '''
     import code
     d = {}
     if b:
@@ -675,6 +1074,9 @@ def interactiveConsole(a,b=None):
     c.interact()
 
 def readableList(value):
+    '''
+        Function to print lists to console which are multiline and readable
+    '''
     value = iter(json.dumps(value)+' ')
     retval = ''
     indent = 0
@@ -763,7 +1165,7 @@ def createForm(field_list,user,request=None,second_object=None,error_flags={}):
                         'attachment':'<a %s%s href="%s">%s</a></br>',
                         'file':'</br>&nbsp;&nbsp;&nbsp;&nbsp;Change File: <input id="%s" name="%s" type="file" /></br>&nbsp;&nbsp;&nbsp;&nbsp;<a href="%s">%s</a></br>',
                         }
-    # return html string for display in template.
+    # return html string of form for display in template.
     return mark_safe(
                         ''.join([
                                 "%s%s%s: %s"%(
@@ -932,6 +1334,10 @@ def autoGrade(form,guest):
 
 @login_required
 def quickfilter(request):
+    '''
+        View for executing one filter against the database
+        NOT YET IMPLEMENTED
+    '''
     context=baseContext(request)
     if request.POST:
         pass
@@ -1242,44 +1648,79 @@ def manage(request,target_type=None,target_object=None):
                     i.users.add(target_object.user)
             # Special processing for reports
             if target_type=='report':
+                # Turn POST into standard dictionary
                 request_dict = dict(request.POST)
+                # Initialize report code
                 report_code = []
+                # Initialize row counter
                 report_row_counter = '0'
+                # Process post dictionary to align instructions by "row" and "column"
+                # Post values for the code will have the name "code[rownum]-[colnum]"
+                # Continue processing rows until no counter exists
                 while isinstance(report_row_counter, str):
+                    # Initialize each instruction
                     report_code_row = []
+                    # Initialize column counter
                     report_col_counter = '0'
+                    # Continue processing columns until no counter exists
                     while isinstance(report_col_counter,str):
+                        # Multiple values for a name means a checkbox is active
                         if len(request_dict['code'+report_row_counter+'-'+report_col_counter])>1:
+                            # Set checkbox value to on
                             request_dict['code'+report_row_counter+'-'+report_col_counter] = [u'on']
+                        # Add column value to row list
                         report_code_row.append(request_dict['code'+report_row_counter+'-'+report_col_counter][0])
-
+                        # Initialize found next flag
                         found_next = False
+                        # Iterate key, value pairs in the post dictionary
                         for k,v in request_dict.iteritems():
+                            # if this row name plus the next column is in the post dictionary
                             if k.find('code'+report_row_counter+'-'+str(int(report_col_counter)+1)) > -1:
+                                # Set found next flag
                                 found_next = True
+                                # Skip remaining searching
                                 break
+                        # If another column is found
                         if found_next:
+                            # Set column counter to next column number
                             report_col_counter = str(int(report_col_counter)+1)
                         else:
+                            # Otherwise remove column counter (ends while loop)
                             report_col_counter = False
                     
+                    # If row was not blank in report builder
                     if report_code_row[0] != u'':
+                        # Add row to code list
                         report_code.append(report_code_row)
-                    
+                    # Search for next row
+                    # Initialize found next flag
                     found_next = False
+                    # Iterate key, value pairs in post dictionary
                     for k,v in request_dict.iteritems():
+                        # If code + next row number found in key
                         if k.find('code'+str(int(report_row_counter)+1)) > -1:
+                            # Set found next flag
                             found_next = True
+                            # Skip remaining search
                             break
+                    # if found next row
                     if found_next:
+                        # Set row counter to next row number
                         report_row_counter = str(int(report_row_counter)+1)
                     else:
+                        # Remove row counter (ends while loop)
                         report_row_counter = False
+                # Send formed code list to report processor for compiling
                 processed_code,user_variables = report_processor.preProcessReport([[a for a in i] for i in report_code])
+                # If an error in code
                 if processed_code == 'bad code':
+                    # Warn User
                     messages.add_message(request, messages.INFO, '%s Contains Invalid Structure'%myobject.name)
+                # Store compiled code and uncompiled code into report code object
                 myobject.code = json.dumps([processed_code,report_code])
+                # Store user variables into report code object
                 myobject.variables = json.dumps(user_variables)
+                # Save report code object
                 myobject.save()
                             
             # if user wants to save a report but continue modifying it
@@ -1476,19 +1917,32 @@ def view(request,target_type,target_object,second_object=None):
                     # If required field check failed, recreate form with error messages
                     form=createForm(field_list,request.user,request,second_object,required_test)
             # if no form was created from request.POST or no request.POST submitted
+            # Create form
             while not form:
                 try:
+                    # Try building form
                     form=createForm(field_list,request.user,second_object=second_object)
                 except MultipleObjectsReturned, e:
+                    # If guest has more than one datapoint for a field
+                    # Retrieve all data
                     b=GuestData.objects.filter(guest=second_object)
+                    # Initialize holding dict
                     c={}
+                    # Iterate through data
                     for i in b:
+                        # If data not in holding dict
                         if not c.get(i.field.name,False):
+                            # Update holding dict
                             c[i.field.name]=i
                         elif c[i.field.name].value==i.value:
+                            # If data already in holding dict and values match
+                            # Delete second data point
                             i.delete()
                         else:
+                            # If data already in holding dict and values do not match
+                            # Reraise exception
                             raise e
+                    # Reloop while loop to build form
                     form = ''
 
 
@@ -1535,6 +1989,7 @@ def view(request,target_type,target_object,second_object=None):
     if not request.session.get('password',''):
         context.update({'link_list':link_list})
     if target_type == 'report':
+        # Add user variables for display on report view
         context.update({'variables':json.loads(target_object.variables)})
     return render(request,'guestmanagement/view.html',context)
 
@@ -1543,21 +1998,29 @@ def runreport(request,report_id):
     View for executing and displaying reports
     '''
     context=baseContext(request)
+    # Retrieve compiled code from report code object
     report_code = json.loads(ReportCode.objects.get(pk=report_id).code)[0]
+    # Create a file like buffer
     output = StringIO()
+    # Initialize environment
     env = {'print':output.write,'user':request.user}
+    # Add user defined variables to environment
     for k,v in request.GET.iteritems():
         env[k.replace('variable__','')]=v
+    # Add external functions, helper variables, internal functions to report environment
     env.update(report_processor.functions)
     env.update(report_processor.tableVariables)
     env.update(report_processor._functions)
     try:
+        # Run Report
         success = report_processor.listProcess(env, ['do']+report_code)
     except:
+        # Display errors
         env['print']('<pre>')
         env['print'](traceback.format_exc()+'\n-----------------------\n')
         env['print'](str(report_code))
         env['print']('</pre>')
+    # Display results
     context.update({'report':mark_safe(output.getvalue())})
     return render(request,'guestmanagement/report.html',context)
 
@@ -1572,52 +2035,93 @@ def editpastform(request,target_guest,target_form,target_guesttimedata=None):
     '''
     View for editing past forms
     '''
+    # Test permission to change past forms
     if not request.user.has_perm('guestmanagement.change_guesttimedata'):
         return beGone('guestmanagement.change_guesttimedata')
-    
+    # Retrieve guest object
     target_guest = Guest.objects.get(pk=target_guest)
+    # Verify permission to change guest
     if not testPermission(target_guest,request.user):
         return beGone('May not access guest')
+    # Retrieve form object
     target_form = Form.objects.get(pk=target_form)
+    # Test permission to view form
     if not testPermission(target_form,request.user):
         return beGone('May not access form')
+    # Set base context
     context=baseContext(request)
+    # Retrieve field list for form
     target_field_list = Field.objects.filter(form=target_form,time_series=True).order_by('order')
+    # Test permissions on fields
+    target_field_list = [i for i in target_field_list if testPermission(i,request.user)]
+    # If no date to change selected
     if not target_guesttimedata:
-        target_field_list = [i for i in target_field_list if testPermission(i,request.user)]
+        # Initialize link list
+        # link_list = [[readable date,id],...]
         link_list = []
+        # Initialize readable dates
+        # readable_dates = [date,...]
         readable_dates = []
+        # Retrieve list of guesttimedata for fields
         guesttimedata_list = GuestTimeData.objects.filter(guest=target_guest,field__in=target_field_list).distinct().order_by('-date')
+        # Iterate through guest time datas
         for i in guesttimedata_list:
+            # If date not already in readable dates
             if i.date.strftime('%Y/%m/%d %H:%M:%S') not in readable_dates:
+                # Append date and id to link list
                 link_list.append([i.date.strftime('%Y/%m/%d %H:%M:%S'),i.id])
+                # Append date to readable dates
                 readable_dates.append(i.date.strftime('%Y/%m/%d %H:%M:%S'))
+        # Put link list into context
         context.update({'link_list':link_list})
     else:
+        # If date to change selected
+        # If posting changes
         if request.POST:
+            # Retrieve affected guest time data
             target_guesttimedata = GuestTimeData.objects.get(pk=target_guesttimedata)
+            # Retrieve all guest time data from that date
             guesttimedata_list = GuestTimeData.objects.filter(date=target_guesttimedata.date,guest=target_guesttimedata.guest,field__form=target_guesttimedata.field.form).distinct()
+            # If user trying to delete data
             if request.POST.get('delete_%s'%target_form.name):
+                # If not allowed to delete
                 if not request.user.has_perm('guestmanagement.delete_guesttimedata'):
                     return beGone('guestmanagement.change_guesttimedata')
+                # Delete data
                 for i in guesttimedata_list:
                     i.delete()
+                # Notify user
                 messages.add_message(request, messages.INFO, 'Form Deleted')
                 return redirect('/guestmanagement/view/guest/%s/'%target_guest.id)
+            # Get date from current record
             new_date = target_guesttimedata.date.strftime('%m/%d/%Y ')
+            # If change date submitted
             if request.POST.get('changeDate'):
+                # Update date
                 new_date = request.POST.get('changeDate') + ' '
+            # Get time from current record
             new_time = target_guesttimedata.date.strftime('%H:%M %p')
+            # If chage time submitted
             if request.POST.get('changeTime'):
+                # Update time
                 new_time = request.POST.get('changeTime')
+            # Append time to date
             new_date = new_date + new_time
+            # Convert date to datetime
             new_date = datetime.datetime.strptime(new_date,'%m/%d/%Y %H:%M %p')
+            # Retrieve potential conflicts
             test_list = GuestTimeData.objects.filter(guest=target_guest,date=new_date)
+            # If potential conflicts
             if len(test_list)>0:
+                # Warn user
                 messages.add_message(request, messages.INFO, 'Form already exists in selected date/time slot')
+                # Return to guest view
                 return redirect('/guestmanagement/view/guest/%s/'%target_guest.id)
+            # Iterate affected guest time datas
             for i in guesttimedata_list:
+                # Set date
                 i.date = new_date
+                # Set value
                 if i.field.field_type == 'boolean':
                     if request.POST.get(i.field.name,'') == 'on':
                         i.value="checked='checked'"
@@ -1662,8 +2166,11 @@ def editpastform(request,target_guest,target_form,target_guesttimedata=None):
             messages.add_message(request, messages.INFO, 'Form Changed')
             return redirect('/guestmanagement/view/guest/%s/'%target_guest.id)
         else:
+            # If no update being posted
+            # Create form
             form = createForm(target_field_list,request.user,second_object=target_guest)
             context.update({'form':form})
+    # Serve it up
     context.update({'target_guest':target_guest, 'target_form':target_form.name})
     return render(request,'guestmanagement/edit.html',context)
 
