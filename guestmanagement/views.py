@@ -421,6 +421,7 @@ class ReportProcessor():
         # Evaluate variables to be compared
         a = self.evalVariables(env,value1)
         b = self.evalVariables(env,value2)
+        Print(operator,a,b)
         # Initialize true flag
         true = False
         # Determine type of conditional
@@ -434,24 +435,29 @@ class ReportProcessor():
                 if int(str(a))==int(str(b)):
                     # Set true flag
                     true = True
-        elif operator == '>':
-            if a>b:
-                true = True
-        elif operator == '<':
-            if a<b:
-                true = True
-        elif operator == '>=':
-            if a>=b:
-                true = True
-        elif operator == '<=':
-            if a<=b:
-                true = True
-        elif operator == '<>':
-            if a!=b:
-                true = True
         elif operator == 'contains':
             if a in b:
                 true = True
+        else:
+            if str(a).isdigit() and str(b).isdigit():
+                a = int(str(a))
+                b = int(str(b))
+            if operator == '>':
+                if a>b:
+                    true = True
+            elif operator == '<':
+                if a<b:
+                    true = True
+            elif operator == '>=':
+                if a>=b:
+                    true = True
+            elif operator == '<=':
+                if a<=b:
+                    true = True
+            elif operator == '<>':
+                if a!=b:
+                    true = True
+        print true
         if code:
             if true:
                 # Prepare code for execution
@@ -692,7 +698,7 @@ class ReportProcessor():
                         comparator = a[int(self.evalVariables(env,i[3].split('::')[1]))]
                         # run comparison
                         # compare values
-                        found = self.if_(env,i[1],value,comparator)
+                        found = self.if_(env,i[1],comparator,value)
                         if found:
                             # Initialize holding dict list for field
                             holdingdict[i[3].replace('$','').replace(' ','').split('::')[0]] = holdingdict.get(i[3].replace('$','').replace(' ','').split('::')[0],[])
