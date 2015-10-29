@@ -33,6 +33,7 @@ class DynamicFilePermissions(models.Model):
 
 
 class Attachment(models.Model):
+    owner = models.ManyToManyField(User)
     name = models.CharField(max_length=200, unique=True)
     attachment = models.FileField(upload_to='staticforms')
     permissions_may_have = models.ManyToManyField('Permission', null=True, blank=True, related_name='static_form_may')
@@ -47,6 +48,7 @@ class Attachment(models.Model):
 
 
 class Program(models.Model):
+    owner = models.ManyToManyField(User)
     name = models.CharField(max_length=200)
     permissions_may_have = models.ManyToManyField('Permission', null=True, blank=True, related_name='program_may')
     permissions_must_have = models.ManyToManyField('Permission', null=True, blank=True, related_name='program_must')
@@ -62,6 +64,7 @@ class Program(models.Model):
 
 
 class Form(models.Model):
+    owner = models.ManyToManyField(User)
     name = models.CharField(max_length=200)
     program = models.ManyToManyField(Program)
     form_prerequisite = models.ManyToManyField('Prerequisite', null=True, blank=True)
@@ -88,6 +91,7 @@ class Form(models.Model):
 
 
 class Field(models.Model):
+    owner = models.ManyToManyField(User)
     order = models.SmallIntegerField(null=True)
     name = models.CharField(max_length=200)
     label = models.CharField(max_length=200, blank=True, null=True)
@@ -169,6 +173,7 @@ class Guest(models.Model):
 
 
 class Permission(models.Model):
+    owner = models.ManyToManyField(User,related_name='permission_owner')
     name = models.CharField(max_length=2000, unique=True)
     users = models.ManyToManyField(User, blank=True, null=True)
 
@@ -186,6 +191,7 @@ class Permission(models.Model):
 
 
 class Prerequisite(models.Model):
+    owner = models.ManyToManyField(User)
     name = models.CharField(max_length=2000, blank=True, null=True)
     prerequisite_form = models.ManyToManyField(Form, blank=True, null=True)
     prerequisite_field = models.ManyToManyField(Field, blank=True, null=True)

@@ -1510,6 +1510,9 @@ def manage(request,target_type=None,target_object=None):
         target_instance = target_type_dict[target_type][1].objects.get(pk=target_object)
         # Make target object match target instance (pending cleanup)
         target_object = target_instance
+        if target_type != 'guest' and target_type != 'report':
+            if request.user not in target_object.owner.all():
+                return beGone("You may not edit other people's content")
         # user_permission_settings get updated at this point
         if target_type == 'user_permission_settings':
             # Update user_permissions_settings model to include all the permissions the user currently has
