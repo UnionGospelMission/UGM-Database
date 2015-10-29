@@ -1,0 +1,24 @@
+{% extends "shared/base.html" %}{% load i18n %}{% load staticfiles %}
+{% block pretitle %}
+	<h1>{% trans 'Edit Guest' %} {{ target_guest.name }}'s {{ target_form }} form:</h1><br/>
+{% endblock %}
+{% block content %}
+	{% if link_list != 'no links' %}
+		{% if not link_list %}
+			No valid forms to edit
+		{% else %}
+			Pick date to edit: <br />
+			{% for i in link_list %}
+				<a href='/guestmanagement/edit/{{ target_guest.id }}/{{ target_form.id }}/{{ i.1 }}/'>{{ i.0 }}</a><br />
+			{% endfor %}
+		{% endif %}
+	{% else %}
+		<form action='.' method='post' autocomplete="off" enctype="multipart/form-data">
+			{% csrf_token %}
+			New Date: <input class='datePicker' id='changeDate' name='changeDate' readonly='true' type='text'></br>
+			New Time: <input class='timePicker' id='changeTime' name='changeTime' readonly='true' type='text'></br>
+		{{ form }}
+		<input id='search' type='submit' value='Submit'>
+		</form>
+	{% endif %}
+{% endblock %}

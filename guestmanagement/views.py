@@ -421,7 +421,6 @@ class ReportProcessor():
         # Evaluate variables to be compared
         a = self.evalVariables(env,value1)
         b = self.evalVariables(env,value2)
-        Print(operator,a,b)
         # Initialize true flag
         true = False
         # Determine type of conditional
@@ -457,7 +456,6 @@ class ReportProcessor():
             elif operator == '<>':
                 if a!=b:
                     true = True
-        print true
         if code:
             if true:
                 # Prepare code for execution
@@ -1159,6 +1157,9 @@ def createForm(field_list,user,request=None,second_object=None,error_flags={}):
     '''
     Builds the html form to be displayed based on a list of fields passed in from requesting view
     '''
+    # Order field_list by "order"
+    if not isinstance(field_list,list):
+        field_list.order_by('order')
     field_type_options={# reference dictionary relating field types (found in the Field model) to specific html
                         # 'field_type' : "html to display" (must have 4 %s locations)
                         'text_box':"<input id='%s' name='%s' type='text' value='%s'></br>\n%s",
@@ -1203,7 +1204,7 @@ def createForm(field_list,user,request=None,second_object=None,error_flags={}):
                                     )
                                 )
                                  if i.field_type!='title' and testPrerequisites(i,second_object) else '<p class="formlabel"><strong>%s</strong></p></br>'%i.label
-                                 if i.field_type=='title' else '<ul><li>Field %s prerequisites not satisfied</li></ul>'%i.name for i in field_list.order_by('order') if testPermission(i,user)
+                                 if i.field_type=='title' else '<ul><li>Field %s prerequisites not satisfied</li></ul>'%i.name for i in field_list if testPermission(i,user)
                             ]
                         )
                     )
@@ -2060,6 +2061,8 @@ def editpastform(request,target_guest,target_form,target_guesttimedata=None):
     target_field_list = Field.objects.filter(form=target_form,time_series=True).order_by('order')
     # Test permissions on fields
     target_field_list = [i for i in target_field_list if testPermission(i,request.user)]
+    # Initialize link list as flag
+    context.update({'link_list':'no links'})
     # If no date to change selected
     if not target_guesttimedata:
         # Initialize link list
@@ -2177,7 +2180,7 @@ def editpastform(request,target_guest,target_form,target_guesttimedata=None):
             form = createForm(target_field_list,request.user,second_object=target_guest)
             context.update({'form':form})
     # Serve it up
-    context.update({'target_guest':target_guest, 'target_form':target_form.name})
+    context.update({'target_guest':target_guest, 'target_form':target_form})
     return render(request,'guestmanagement/edit.html',context)
 
 
