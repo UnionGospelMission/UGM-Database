@@ -1,0 +1,36 @@
+The database is divided into three broad categories
+ - Framework (the actual django program)
+ - Content (forms, fields, permissions, reports, &c from the user)
+ - Data (values of the fields created by the content level)
+
+
+Permissions are divided among these categories.  
+
+Framework permissions reside with whoever can change/update the program
+
+Framework level Content permissions are managed by the django framework.  
+These permissions are set per user through the Admin area of the 
+framework and include the ability to create new content, view current 
+content, edit previous content, and delete content.
+
+Content level Content permissions are divided into two categories, read
+and write.
+
+Content level Content Read permissions are handled by the framework 
+through the creation of "permissions" content.  Content itself is then 
+assigned "May Have"  content permissions, which allow read access to 
+content if *any* of the permissions are satisfied, and "Must Have" 
+content permissions, which allow read access to content if *all* the 
+permissions are satisfied.
+
+Content level Content Write permissions are further divided into two 
+categories, Framework level Content Creation, managed by the framework 
+as mentioned previously, and Content level Content Modification, which 
+restricts content modification to content owners.
+
+Data level permissions consist of read and write permissions.  Read
+permissions are managed in like manner to content level permissions.
+Framework level Data permissions are managed through Django to allow
+users to view, create, alter, and delete Data.  Content level Data 
+permissions are managed by reference to the user's Content level Content
+permissions.
