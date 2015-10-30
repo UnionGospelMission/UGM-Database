@@ -1898,6 +1898,7 @@ def view(request,target_type,target_object,second_object=None):
                             elif i.field_type == 'list':
                                 a.value=request.POST.getlist(i.name)
                             elif i.field_type == 'comment_box' and i.add_only and not request.user.has_perm('guestmanagement.change_fixed_field'):
+                                a.value = a.value.strip()
                                 if not a.value:
                                     a.value=request.POST.get(i.name)
                                 elif a.value in request.POST.get(i.name,''):
