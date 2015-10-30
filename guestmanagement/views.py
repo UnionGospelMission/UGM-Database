@@ -1159,7 +1159,7 @@ def createForm(field_list,user,request=None,second_object=None,error_flags={}):
     '''
     # Order field_list by "order"
     if not isinstance(field_list,list):
-        field_list.order_by('order')
+        field_list = field_list.order_by('order')
     field_type_options={# reference dictionary relating field types (found in the Field model) to specific html
                         # 'field_type' : "html to display" (must have 4 %s locations)
                         'text_box':"<input id='%s' name='%s' type='text' value='%s'></br>\n%s",
