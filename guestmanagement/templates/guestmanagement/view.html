@@ -1,7 +1,9 @@
 {% extends "shared/base.html" %}{% load i18n %}{% load staticfiles %}
 {% block pretitle %}
 	<h1>{% trans 'View' %} {{ target_type.capitalize }} {{ target_object.name }}{% if target_object.label %} (aka {{ target_object.label }}){% endif %}:</h1><br/>
-	<a href='/guestmanagement/manage/{{ target_type }}/{{ target_object.id }}/'>Manage {{ target_type }} {{ target_object.name }}</a></br>
+	{% if "guestmanagement.manage_"|add:target_type in perms and "guestmanagement.change_"|add:target_type in perms %}
+		<a href='/guestmanagement/manage/{{ target_type }}/{{ target_object.id }}/'>Manage {{ target_type }} {{ target_object.name }}</a></br>
+	{% endif %}
 {% endblock %}
 {% block content %}
 	{{ view_image }}</br>
@@ -11,20 +13,22 @@
 			{% for i in form_list %}
 				<tr>
 					<td>{{ i.0 }}</td>
-					{% if user.is_authenticated or i.1 != 'Completed' or not i.2 %}
+					{% if i.1 != 'Completed' or not i.2 or perms.guestmanagement.change_guestformscompleted %}
 						<td><a href='/guestmanagement/view/form/{{ i.0.id }}/{{ target_object.id }}/?next={{ nexturl }}'>Complete Form</a></td>
+					{% else %}
+						<td></td>
 					{% endif %}
-					{% if user.is_authenticated %}
+					{% if perms.guestmanagement.view_forms or perms.guestmanagement.manage_forms %}
 						<td><a href='/guestmanagement/view/form/{{ i.0.id }}/?next={{ nexturl }}'>Edit Form</a></td>
 					{% endif %}
 					<td>{{ i.1 }}</td>
 					{% if i.3 %}
 						<td>{{ i.3 }}%</td>
 					{% endif %}
-					{% if user.is_authenticated and i.2 and i.1 == 'Completed' %}
+					{% if i.2 and i.1 == 'Completed' and perms.guestmanagement.delete_guestformscompleted %}
 						<td><a href='/guestmanagement/unsetcomplete/{{ i.0.id }}/{{ target_object.id }}/?next={{ nexturl }}'>Set Incomplete</a></td>
 					{% endif %}
-					{% if user.is_authenticated and i.4 %}
+					{% if i.4 and perms.guestmanagement.change_guestformscompleted  %}
 						<td><a href='/guestmanagement/setscore/{{ i.0.id }}/{{ target_object.id }}/?next={{ nexturl }}'>Set Score</a></td>
 					{% endif %}
                     {% if perms.guestmanagement.change_guesttimedata %}

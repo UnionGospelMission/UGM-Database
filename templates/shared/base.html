@@ -132,11 +132,11 @@
                 <div id="menu">
                     <div id="dropdowns">
                         <ul>
-                            {% if perms.guestmanagement.manage_guest or perms.guestmanagement.add_guest %}
+                            {% if perms.guestmanagement.manage_guest or perms.guestmanagement.view_guest or perms.guestmanagement.add_guest %}
                                 <li id="menutitle">
                                     <a href="#">Guests</a>
                                     <ul id="submenu">
-                                        {% if perms.guestmanagement.manage_guest %}
+                                        {% if perms.guestmanagement.manage_guest or perms.guestmanagement.view_guest %}
                                             <li>
                                                 <a href='/guestmanagement/manage/guest/?next={{ nexturl }}' {% if target_object %}target='_blank'{% endif %}>Manage Guest</a>
                                             </li>
@@ -150,11 +150,11 @@
                                 </li>
                             {% endif %}
 
-                            {% if perms.guestmanagement.manage_program or perms.guestmanagement.add_program %}
+                            {% if perms.guestmanagement.manage_program or perms.guestmanagement.add_program or perms.guestmanagement.view_program %}
                                 <li id="menutitle">
                                     <a href="#">Programs</a>
                                     <ul id="submenu">
-                                        {% if perms.guestmanagement.manage_program %}
+                                        {% if perms.guestmanagement.manage_program or perms.guestmanagement.view_program %}
                                             <li>
                         	    			    <a href='/guestmanagement/manage/program/?next={{ nexturl }}' {% if target_object %}target='_blank'{% endif %}>Manage Program</a>
                                             </li>
@@ -167,11 +167,11 @@
                                     </ul>
                                 </li>
                             {% endif %}
-                            {% if perms.guestmanagement.manage_form or perms.guestmanagement.add_form %}
+                            {% if perms.guestmanagement.manage_form or perms.guestmanagement.add_form or perms.guestmanagement.view_form %}
                                 <li id="menutitle">
                                     <a href="#">Forms</a>
                                     <ul id="submenu">
-                                        {% if perms.guestmanagement.manage_form %}
+                                        {% if perms.guestmanagement.manage_form or perms.guestmanagement.view_form %}
                                             <li>
                         	    			    <a href='/guestmanagement/manage/form/?next={{ nexturl }}' {% if target_object %}target='_blank'{% endif %}>Manage Form</a>
                                             </li>
@@ -184,11 +184,11 @@
                                     </ul>
                                 </li>
                             {% endif %}
-                            {% if perms.guestmanagement.manage_field or perms.guestmanagement.add_field %}
+                            {% if perms.guestmanagement.manage_field or perms.guestmanagement.add_field or perms.guestmanagement.view_field %}
                                 <li id="menutitle">
                                     <a href="#">Fields</a>
                                     <ul id="submenu">
-                                        {% if perms.guestmanagement.manage_field %}
+                                        {% if perms.guestmanagement.manage_field or perms.guestmanagement.view_field %}
                                             <li>
                         	    			    <a href='/guestmanagement/manage/field/?next={{ nexturl }}' {% if target_object %}target='_blank'{% endif %}>Manage Fields</a>
                                             </li>
@@ -201,11 +201,11 @@
                                     </ul>
                                 </li>
                             {% endif %}
-                            {% if perms.guestmanagement.manage_prerequisite or perms.guestmanagement.add_prerequisite %}
+                            {% if perms.guestmanagement.manage_prerequisite or perms.guestmanagement.add_prerequisite or perms.guestmanagement.view_prerequisite %}
                                 <li id="menutitle">
                                     <a href="#">Prerequisites</a>
                                     <ul id="submenu">
-                                        {% if perms.guestmanagement.manage_prerequisite %}
+                                        {% if perms.guestmanagement.manage_prerequisite or perms.guestmanagement.view_prerequisite %}
                                             <li>
                         	    			    <a href='/guestmanagement/manage/prerequisite/?next={{ nexturl }}' {% if target_object %}target='_blank'{% endif %}>Manage Prerequisites</a>
                                             </li>
@@ -218,11 +218,11 @@
                                     </ul>
                                 </li>
                             {% endif %}
-                            {% if perms.guestmanagement.manage_permission or perms.guestmanagement.add_permission %}
+                            {% if perms.guestmanagement.manage_permission or perms.guestmanagement.add_permission or perms.guestmanagement.view_permission %}
                                 <li id="menutitle">
                                     <a href="#">Permissions</a>
                                     <ul id="submenu">
-                                        {% if perms.guestmanagement.manage_permission %}
+                                        {% if perms.guestmanagement.manage_permission or perms.guestmanagement.view_permission %}
                                             <li>
                         	    			    <a href='/guestmanagement/manage/permission/?next={{ nexturl }}' {% if target_object %}target='_blank'{% endif %}>Manage Permission</a>
                                             </li>
@@ -235,11 +235,11 @@
                                     </ul>
                                 </li>
                             {% endif %}
-                            {% if perms.guestmanagement.manage_report or perms.guestmanagement.add_report %}
+                            {% if perms.guestmanagement.manage_report or perms.guestmanagement.add_report or perms.guestmanagement.view_report %}
                                 <li id="menutitle">
                                     <a href="#">Reports</a>
                                     <ul id="submenu">
-                                        {% if perms.guestmanagement.manage_report %}
+                                        {% if perms.guestmanagement.manage_report or perms.guestmanagement.view_report %}
                                             <li>
                         	    			    <a href='/guestmanagement/manage/report/?next={{ nexturl }}' {% if target_object %}target='_blank'{% endif %}>Manage Reports</a>
                                             </li>
@@ -252,11 +252,11 @@
                                     </ul>
                                 </li>
                             {% endif %}
-                            {% if perms.guestmanagement.manage_attachment or perms.guestmanagement.add_attachment %}
+                            {% if perms.guestmanagement.manage_attachment or perms.guestmanagement.add_attachment or perms.guestmanagement.view_attachment %}
                                 <li id="menutitle">
                                     <a href="#">Attachments</a>
                                     <ul id="submenu">
-                                        {% if perms.guestmanagement.manage_attachment %}
+                                        {% if perms.guestmanagement.manage_attachment or perms.guestmanagement.view_attachment %}
                                             <li>
                         	    			    <a href='/guestmanagement/manage/attachment/?next={{ nexturl }}' {% if target_object %}target='_blank'{% endif %}>Manage Attachment</a>
                                             </li>

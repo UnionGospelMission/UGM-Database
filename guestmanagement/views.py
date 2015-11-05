@@ -1232,22 +1232,36 @@ def updateStaticPermissions(target_object,delete=False):
             i.save()
 
 
-def testPermission(target_object,user,session={},second_object=None,testurl=False):
+def testPermission(target_object,user,session={},second_object=None,testurl=False,owner=False):
     '''
     Method of determining based on permissions whether a user has permission to access a form, field, guest, or static file
-    a return of True signifies permission, False signifies no permission
     '''
+    # Return True if a superuser
+    if user.is_superuser:
+        return True
+    # Initialize allow access flag
     if testurl:
         # If testing a static file, pull the static file permissions record from the database
         target_object = DynamicFilePermissions.objects.get(path=target_object)
-    # If a report is being requested, return false if the user is not listed
-    if isinstance(target_object,ReportCode):
+    if isinstance(target_object,list):
+        option = target_object.pop(0)
+        if option == 'or':
+            test = [True for i in target_object if testPermission(i,user,session,second_object,testurl)]
+            if not test:
+                return False
+        else:
+            for i in target_object:
+                if not testPermission(i,user,session,second_object,testurl):
+                    return False
+    elif isinstance(target_object,ReportCode):
+        # If a report is being requested, deny access if the user is not listed
         if user not in target_object.users.all():
             return False
-    # If a guest is logged in
-    if session.get('password',''):
+    elif session.get('password',''):
+        # If a guest is logged in
         # Get the guest's record based on the session
         target_guest = Guest.objects.get(pk=session['guest'])
+        # Deny access if a guest is requesting a different guest's records
         if isinstance(target_object,Guest) and not target_object==target_guest:
             return False
         if isinstance(target_object,Form):
@@ -1260,20 +1274,27 @@ def testPermission(target_object,user,session={},second_object=None,testurl=Fals
             # If the requested url does not belong to the requesting guest and belongs to a guest
             if not target_guest == target_object.guest and target_object.guest:
                 return False
-        return True
-    if hasattr(target_object,'permissions_must_have'):
-        for i in target_object.permissions_must_have.all():
-            if user not in i.users.all():
-                return False
-    if hasattr(target_object,'permissions_may_have'):
-        test_list = [True for i in target_object.permissions_may_have.all() if user in i.users.all()]
-        if test_list==[] and target_object.permissions_may_have.all():
+    elif isinstance(target_object,str):
+        # If testing Framework level permission
+        if not user.has_perm('guestmanagement.' + str(target_object)):
             return False
-    if hasattr(target_object,'program'):
-        if list(target_object.program.all()) != []:
-            test_list=[True for i in getattr(target_object,'program').all() if testPermission(i,user)]
-            if test_list==[]:
+    else:
+        if hasattr(target_object,'owner') and owner:
+            if not user in target_object.owner.all():
                 return False
+        if hasattr(target_object,'permissions_must_have'):
+            for i in target_object.permissions_must_have.all():
+                if user not in i.users.all():
+                    return False
+        if hasattr(target_object,'permissions_may_have'):
+            test_list = [True for i in target_object.permissions_may_have.all() if user in i.users.all()]
+            if test_list==[] and target_object.permissions_may_have.all():
+                return False
+        if hasattr(target_object,'program'):
+            if list(target_object.program.all()) != []:
+                test_list=[True for i in getattr(target_object,'program').all() if testPermission(i,user)]
+                if test_list==[]:
+                    return False
     return True
 
 def moveField(target_field,direction):
@@ -1314,7 +1335,7 @@ def testPrerequisites(target_object,guest):
                 return False
             if i.score_is_greater_than:
                 if int(GuestFormsCompleted.objects.get_or_create(guest=guest,form=a)[0].score)<int(i.score_is_greater_than):
-                     return False
+                    return False
         for a in i.prerequisite_field.all():
             if i.is_complete and not GuestData.objects.get_or_create(guest=guest,field=a)[0].value:
                 return False
@@ -1416,9 +1437,6 @@ def manage(request,target_type=None,target_object=None):
             Attachments
         target_object represents a specific instance of the above types
     '''
-    # Check user for permission to manage specific type (e.g. manage forms)
-    if not request.user.has_perm('guestmanagement.manage_{0}'.format(target_type)) and target_type:
-        return beGone('guestmanagement.manage_{0}'.format(target_type))
     # Initialize context
     context=baseContext(request)
     if target_type:
@@ -1427,6 +1445,9 @@ def manage(request,target_type=None,target_object=None):
     # If the main manage screen (no target type picked yet)
     if not target_type:
         return render(request,'guestmanagement/manage.html',context)
+    # Check user for permission to manage or view target type
+    if not testPermission(['or','manage_{0}'.format(target_type),'view_{0}'.format(target_type)],request.user):
+        return beGone(str(['or','manage_{0}'.format(target_type),'view_{0}'.format(target_type)]))
     # If managing a type but not object (e.g. managing forms but not a specific form)
     if not target_object:
         # Get the list of searchable fields from the target type dictionary
@@ -1465,7 +1486,12 @@ def manage(request,target_type=None,target_object=None):
                       if request.POST[i[0]]=='' else
                   Q(**{'{0}__{1}__{2}'.format(i[0],i[2],i[3]):request.POST[i[0]]})
                 for i in filter_list]
-            # Run the query just created and return distinct entries
+            # Get user Content permissions
+            perm_list = Permission.objects.filter(users=request.user)
+            if hasattr(base_table,'program'):
+                program_list = Program.objects.filter(permissions_must_have__in=perm_list)
+                args.append(Q(**{'program__in':program_list}))
+            # Run the query just created (meatballing permissions) and return distinct entries
             raw_object_list = base_table.objects.filter(*args).distinct().order_by('id')
             object_list = []
             # for loop to iterate over the objects returned from the filter and list_display
@@ -1490,29 +1516,32 @@ def manage(request,target_type=None,target_object=None):
         # If a search has not been run
         return render(request,'guestmanagement/manage.html',context)
     # End managing a type but not object
+    # Test Framework Permissions
+    if not testPermission('manage_{0}'.format(target_type),request.user):
+        return beGone('manage_{0}'.format(target_type))
     # Initialize a variable used in moving fields from one form to another
     currentform=False
     # If managing an object (e.g. a particular form)
     # If a new object
     if target_object=='new':
         # Check Permissions
-        if not request.user.has_perm('guestmanagement.add_{0}'.format(target_type.replace('report','reportcode'))):
-            return beGone('guestmanagement.add_{0}'.format(target_type.replace('report','reportcode')))
+        if not testPermission('add_{0}'.format(target_type.replace('report','reportcode')),request.user):
+            return beGone('add_{0}'.format(target_type.replace('report','reportcode')))
         # Set no instance flag
         target_instance = None
         # Set wording to appear on webpage
         create_or_edit = 'Create New'
     else:
-        # Check Permissions
-        if not request.user.has_perm('guestmanagement.change_{0}'.format(target_type.replace('report','reportcode'))):
-            return beGone('guestmanagement.change_{0}'.format(target_type.replace('report','reportcode')))
+        # Check Framework permissions
+        if not testPermission('change_{0}'.format(target_type.replace('report','reportcode')),request.user):
+            return beGone('change_{0}'.format(target_type.replace('report','reportcode')))
         # Pull current database entry for object being managed
         target_instance = target_type_dict[target_type][1].objects.get(pk=target_object)
         # Make target object match target instance (pending cleanup)
         target_object = target_instance
-        if target_type != 'guest' and target_type != 'report':
-            if request.user not in target_object.owner.all():
-                return beGone("You may not edit other people's content")
+        # Check Content permissions
+        if not testPermission(target_object,request.user,owner=True):
+            return beGone('Access to this specific %s'%target_type)
         # user_permission_settings get updated at this point
         if target_type == 'user_permission_settings':
             # Update user_permissions_settings model to include all the permissions the user currently has
@@ -1534,9 +1563,9 @@ def manage(request,target_type=None,target_object=None):
     if request.POST:
         # If deleting the target object
         if request.POST.get('delete_{0}'.format(target_type),''):
-            # Check Permissions
-            if not request.user.has_perm('guestmanagement.delete_{0}'.format(target_type)):
-                return beGone('guestmanagement.delete_{0}'.format(target_type))
+            # Check Framework Permissions
+            if not testPermission('delete_{0}'.format(target_type),request.user):
+                return beGone('delete_{0}'.format(target_type))
             # If deleting the instance, remove any static files related to the instance, then delete the instance itself
             updateStaticPermissions(target_instance,True)
             # if deleting a field, move it to the bottom of the form before deleting to preserve field order
@@ -1582,11 +1611,15 @@ def manage(request,target_type=None,target_object=None):
                     # increase the starting order by one to miss the last field already on the form
                     target_instance.order=starting_order+1
         # There is now a target_instance whether it is just created or being modified
-        # get the new/modify form from the reference dictionary and bind the submitted data to it
+        # Initialize hashpassword flag
         hashpassword=True
+        # If changing a guest but no password provided
         if target_type=='guest' and not request.POST.get('password',''):
+            # Set submitted password to password hash on file
             request.POST['password']=target_instance.password
+            # Set flag to not hash password
             hashpassword=False
+        # get the new/modify form from the reference dictionary and bind the submitted data to it
         form = target_type_dict[target_type][0](request.POST,request.FILES,instance=target_instance)
         # If the form has all the required data
         if form.is_valid():
@@ -1771,8 +1804,8 @@ def unsetcomplete(request,form_id,guest_id):
     View for allowing guests or staff to recomplete a previously completed form
     does not return a template of its own, and is always called as a GET with a next redirect
     '''
-    if not request.user.has_perm('guestmanagement.delete_guestformscompleted'):
-        return beGone('guestmanagement.delete_guestformscompleted')
+    if not testPermission('delete_guestformscompleted',request.user):
+        return beGone('delete_guestformscompleted')
     target_form = Form.objects.get(pk=form_id)
     target_guest = Guest.objects.get(pk=guest_id)
     a = GuestFormsCompleted.objects.get_or_create(guest=target_guest,form=target_form)[0]
@@ -1785,8 +1818,8 @@ def setscore(request,form_id,guest_id):
     View to allow forced setting of scored forms
     will continue to show setscore template until a valid score is entered
     '''
-    if not request.user.has_perm('guestmanagement.change_guestformscompleted'):
-        return beGone('guestmanagement.change_guestformscompleted')
+    if not testPermission('change_guestformscompleted',request.user):
+        return beGone('change_guestformscompleted')
     context = baseContext(request)
     target_form = Form.objects.get(pk=form_id)
     target_guest = Guest.objects.get(pk=guest_id)
@@ -1798,7 +1831,7 @@ def setscore(request,form_id,guest_id):
             a.save()
             return redirect(request.GET['next'])
         except ValueError:
-            pass
+            messages.add_message(request, messages.INFO, 'Invalid Score Value')
     context.update({'target_form':target_form,'target_guest':target_guest})
     return render(request,'guestmanagement/setscore.html',context)
 
@@ -1819,11 +1852,13 @@ def view(request,target_type,target_object,second_object=None):
     '''
     # retrieve the target_object through the database model obtained from the reference dictionary
     target_object = target_type_dict[target_type][1].objects.get(pk=target_object)
-    if not request.user.has_perm('guestmanagement.view_{0}'.format(target_type)) and not testPermission(target_object,request.user,request.session,second_object):
-        return beGone('guestmanagement.view_{0}'.format(target_type))
+    # Test Permission to view or guest permission to view specific object
+    if not testPermission(['or','view_{0}'.format(target_type),target_object],request.user,request.session,second_object):
+        return beGone(str(['or','view_{0}'.format(target_type),target_object]))
+    # If viewing specific instance of target object
     if second_object:
         if not testPrerequisites(target_object,second_object):
-            return beGone('prerequisites unsatisfied')
+            return beGone(str(second_object))
     context=baseContext(request)
     # If the user is not authenticated, it must be a logged in guest to have made it past the above permissions test
     if not request.user.is_authenticated():
@@ -1831,29 +1866,44 @@ def view(request,target_type,target_object,second_object=None):
     link_list = None
     context.update({'target_type':target_type,'target_object':target_object})
     if target_type == 'guest':
-        # Check for permission to view guest's programs
-        permission_test = [True for i in target_object.program.all() if testPermission(i,request.user,request.session,second_object)]
-        if permission_test != []:
-            context.update({'view_image':target_object.image_tag})
-            # create list of forms based on prerequisites and permissions along with status of each and links to view/complete
-            form_list = [(i,{True:'Completed',False:'Incomplete'}[GuestFormsCompleted.objects.get_or_create(guest=target_object,form=i)[0].complete],i.lock_when_complete,GuestFormsCompleted.objects.get_or_create(guest=target_object,form=i)[0].score,i.auto_grade) for i in Form.objects.filter(program__in=target_object.program.all()).distinct() if testPrerequisites(i,target_object) and testPermission(i,request.user,request.session,second_object)]
-            context.update({'form_list':form_list})
-        else:
-            return beGone('Missing permission to view guest program')
+        # Check for permission to view guest
+        if not testPermission(target_object,request.user):
+            return beGone(str(target_object))
+        context.update({'view_image':target_object.image_tag})
+        # create list of forms based on prerequisites and permissions along with status of each and links to view/complete
+        form_list = [(i,{True:'Completed',False:'Incomplete'}[GuestFormsCompleted.objects.get_or_create(guest=target_object,form=i)[0].complete],i.lock_when_complete,GuestFormsCompleted.objects.get_or_create(guest=target_object,form=i)[0].score,i.auto_grade) for i in Form.objects.filter(program__in=target_object.program.all()).distinct() if testPrerequisites(i,target_object) and testPermission(i,request.user,request.session,second_object)]
+        context.update({'form_list':form_list})
     if target_type == 'form':
         form=''
         field_list = Field.objects.filter(form=target_object)
-        # if there is no second_object, no guest is being associated with this form, therefore the posted data relates to moving fields
+        # if there is no second_object, no guest is being associated with this form, therefore any posted data relates to moving fields
         if not second_object:
-            if not request.user.has_perm('guestmanagement.change_form'):
-                return beGone('guestmanagement.change_form')
             if request.POST:
+                # Test Framework and Content permissions
+                if not testPermission(['and','change_form',target_object],request.user):
+                    return beGone(str(['and','change_form',target_object]))
+                # Move Field
                 moveField(Field.objects.get(pk=request.POST['move_field']),request.POST['move_type'])
         else:
             second_object = Guest.objects.get(pk=second_object)
             context.update({'second_object':second_object})
             if request.POST:
                 # If a form is being completed
+                # Test Framework Permissions on staff
+                if request.user.is_authenticated():
+                    if not testPermission('manage_guest',request.user):
+                        return beGone('manage_guest')
+                # Test for completed forms
+                if target_object.lock_when_complete:
+                    completed_form = GuestFormsCompleted.objects.get_or_create(guest=second_object,form=target_object)
+                    if completed_form[1]:
+                        completed_form[0].delete()
+                    else:
+                        # Test for completed forms permissions
+                        completed_form = completed_form[0]
+                        if completed_form.complete:
+                            if not testPermission('change_guestformscompleted',request.user):
+                                return beGone('change_guestformscompleted')
                 # check for incomplete required fields and add appropriate error messages
                 required_test={i:'<ul class="errorlist"><li>This field is required.</li></ul>' for i in field_list.order_by('order') if i.required and not request.POST.get(i.name,'') and i.field_type!='boolean' and testPrerequisites(i,second_object) and testPermission(i,request.user,request.session,second_object)}
                 if not required_test:
@@ -1898,7 +1948,8 @@ def view(request,target_type,target_object,second_object=None):
                             elif i.field_type == 'list':
                                 a.value=request.POST.getlist(i.name)
                             elif i.field_type == 'comment_box' and i.add_only and not request.user.has_perm('guestmanagement.change_fixed_field'):
-                                a.value = a.value.strip()
+                                if a.value:
+                                    a.value = a.value.strip()
                                 if not a.value:
                                     a.value=request.POST.get(i.name)
                                 elif a.value in request.POST.get(i.name,''):
@@ -2008,6 +2059,8 @@ def runreport(request,report_id):
     '''
     View for executing and displaying reports
     '''
+    if not testPermission(ReportCode.objects.get(pk=report_id),request.user):
+        return beGone('You may not view report')
     context=baseContext(request)
     # Retrieve compiled code from report code object
     report_code = json.loads(ReportCode.objects.get(pk=report_id).code)[0]
@@ -2047,18 +2100,18 @@ def editpastform(request,target_guest,target_form,target_guesttimedata=None):
     View for editing past forms
     '''
     # Test permission to change past forms
-    if not request.user.has_perm('guestmanagement.change_guesttimedata'):
-        return beGone('guestmanagement.change_guesttimedata')
+    if not testPermission('change_guesttimedata',request.user):
+        return beGone('change_guesttimedata')
     # Retrieve guest object
     target_guest = Guest.objects.get(pk=target_guest)
     # Verify permission to change guest
     if not testPermission(target_guest,request.user):
-        return beGone('May not access guest')
+        return beGone(str(target_guest))
     # Retrieve form object
     target_form = Form.objects.get(pk=target_form)
     # Test permission to view form
     if not testPermission(target_form,request.user):
-        return beGone('May not access form')
+        return beGone(str(target_form))
     # Set base context
     context=baseContext(request)
     # Retrieve field list for form
@@ -2098,8 +2151,8 @@ def editpastform(request,target_guest,target_form,target_guesttimedata=None):
             # If user trying to delete data
             if request.POST.get('delete_%s'%target_form.name):
                 # If not allowed to delete
-                if not request.user.has_perm('guestmanagement.delete_guesttimedata'):
-                    return beGone('guestmanagement.change_guesttimedata')
+                if not testPermission('delete_guesttimedata',request.user):
+                    return beGone('delete_guesttimedata')
                 # Delete data
                 for i in guesttimedata_list:
                     i.delete()

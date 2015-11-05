@@ -5,17 +5,19 @@
 {% endblock %}
 {% block content %}
     {% if not target_type %}
-        {% if perms.guestmanagement.manage_guest %}<a href='/guestmanagement/manage/guest/'>Guests</a><br/>{% endif %}
-        {% if perms.guestmanagement.manage_form %}<a href='/guestmanagement/manage/form/'>Forms</a><br/>{% endif %}
-        {% if perms.guestmanagement.manage_field %}<a href='/guestmanagement/manage/field/'>Fields</a><br/>{% endif %}
-        {% if perms.guestmanagement.manage_program %}<a href='/guestmanagement/manage/program/'>Programs</a><br/>{% endif %}
-        {% if perms.guestmanagement.manage_prerequisite %}<a href='/guestmanagement/manage/prerequisite/'>Prerequisites</a><br/>{% endif %}
-        {% if perms.guestmanagement.manage_permission %}<a href='/guestmanagement/manage/permission/'>Permissions</a><br/>{% endif %}
-        {% if perms.guestmanagement.manage_report %}<a href='/guestmanagement/manage/report/'>Reports</a><br/>{% endif %}
-        {% if perms.guestmanagement.manage_attachment %}<a href='/guestmanagement/manage/attachment/'>Attachments</a><br/>{% endif %}
-        {% if perms.guestmanagement.manage_permission %}<a href='/guestmanagement/manage/user_permission_setting/'>Set User Permissions</a><br/>{% endif %}
+        {% if perms.guestmanagement.manage_guest or perms.guestmanagement.view_guest %}<a href='/guestmanagement/manage/guest/'>Guests</a><br/>{% endif %}
+        {% if perms.guestmanagement.manage_form or perms.guestmanagement.view_form %}<a href='/guestmanagement/manage/form/'>Forms</a><br/>{% endif %}
+        {% if perms.guestmanagement.manage_field or perms.guestmanagement.view_field %}<a href='/guestmanagement/manage/field/'>Fields</a><br/>{% endif %}
+        {% if perms.guestmanagement.manage_program or perms.guestmanagement.view_program %}<a href='/guestmanagement/manage/program/'>Programs</a><br/>{% endif %}
+        {% if perms.guestmanagement.manage_prerequisite or perms.guestmanagement.view_prerequisite %}<a href='/guestmanagement/manage/prerequisite/'>Prerequisites</a><br/>{% endif %}
+        {% if perms.guestmanagement.manage_permission or perms.guestmanagement.view_permission %}<a href='/guestmanagement/manage/permission/'>Permissions</a><br/>{% endif %}
+        {% if perms.guestmanagement.manage_report or perms.guestmanagement.view_report %}<a href='/guestmanagement/manage/report/'>Reports</a><br/>{% endif %}
+        {% if perms.guestmanagement.manage_attachment or perms.guestmanagement.view_attachment %}<a href='/guestmanagement/manage/attachment/'>Attachments</a><br/>{% endif %}
+        {% if perms.guestmanagement.manage_permission or perms.guestmanagement.view_permission %}<a href='/guestmanagement/manage/user_permission_setting/'>Set User Permissions</a><br/>{% endif %}
     {% elif not target_object %}
-        <a href='/guestmanagement/manage/{{ target_type.split|join:"_" }}/new/'>Create {{ target_type.capitalize }}</a><br/>
+		{% if "guestmanagement.add_"|add:target_type in perms %}
+			<a href='/guestmanagement/manage/{{ target_type.split|join:"_" }}/new/'>Create {{ target_type.capitalize }}</a><br/>
+		{% endif %}
         <h5>Search for {{ target_type }}:</h5>
         <form action='.' method='post' autocomplete="off">
             {% csrf_token %}
@@ -32,20 +34,10 @@
                         {% if not forloop.last %}
                             <td>{{ a }}</td>
                         {% else %}
-                            <td><a href='/guestmanagement/manage/{{ target_type.split|join:"_" }}/{{ a }}/'>Edit {{ target_type.capitalize }}</a></td>
-                            {% if target_type == 'guest' %}
-                                <td>
-                                    <form action='.' method='post'>
-                                        {% csrf_token %}
-                                        <input id='set_guest' type='text' name='set_guest' value='{{ a }}' hidden>
-                                        <input id='search' type='submit' value='Set Guest'>
-                                    </form>
-                                </td>
-                            {% else %}
-                                <td>
-                                    <a href='/guestmanagement/view/{{ target_type.split|join:"_" }}/{{ a }}/'>View {{ target_type }}</a>
-                                </td>
-                            {% endif %}
+							{% if "guestmanagement.manage_"|add:target_type in perms and "guestmanagement.change_"|add:target_type in perms %}
+								<td><a href='/guestmanagement/manage/{{ target_type.split|join:"_" }}/{{ a }}/'>Edit {{ target_type.capitalize }}</a></td>
+							{% endif %}
+                            <td><a href='/guestmanagement/view/{{ target_type.split|join:"_" }}/{{ a }}/'>View {{ target_type.capitalize }}</a></td>
                         {% endif %}
                     {% endfor %}
                     
