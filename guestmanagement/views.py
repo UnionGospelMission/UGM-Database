@@ -198,7 +198,6 @@ class ReportProcessor():
         # Eval both variables and return their difference
         return str(float(self.evalVariables(env,value1)) - float(self.evalVariables(env,value2)))
 
-
     def today(self,env):
         # Return now as a datetime
         return datetime.datetime.now().date()
@@ -1488,8 +1487,8 @@ def manage(request,target_type=None,target_object=None):
                 for i in filter_list]
             # Get user Content permissions
             perm_list = Permission.objects.filter(users=request.user)
-            if hasattr(base_table,'program'):
-                program_list = Program.objects.filter(permissions_must_have__in=perm_list)
+            if hasattr(base_table,'program'): #and not request.user.is_superuser:
+                program_list = Program.objects.filter(Q(permissions_must_have__in=perm_list)|Q(permissions_may_have__in=perm_list))
                 args.append(Q(**{'program__in':program_list}))
             # Run the query just created (meatballing permissions) and return distinct entries
             raw_object_list = base_table.objects.filter(*args).distinct().order_by('id')
