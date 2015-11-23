@@ -65,6 +65,7 @@ class ReportProcessor():
                             'count_bool_days_active':self.countDays,
                             'last_day_bool_activated':self.lastDayActivated,
                             'last_day_bool_deactivated':self.lastDayDeactivated,
+                            'first_day_activated':self.firstDayActivated,
                             'format_picture':self.formatPicture,
                             'add_subtract_dates':self.addSubtractDates,
         }
@@ -177,6 +178,12 @@ class ReportProcessor():
             pass through function to booleanMethods
         '''
         return self.booleanMethods(env,boolean_list,False,False,True)
+
+    def firstDayActivated(self,env,boolean_list):
+        '''
+            pass through function to booleanMethods
+        '''
+        return self.booleanMethods(env,boolean_list,False,False,False,True)
     
     def countBooleans(self,env,boolean_list):
         '''
@@ -263,7 +270,7 @@ class ReportProcessor():
         # Close last row and table
         env['print']('</tr></table>')
 
-    def booleanMethods(self,env,boolean_list,count_days=False,last_day_activated=False,last_day_deactivated=False):
+    def booleanMethods(self,env,boolean_list,count_days=False,last_day_activated=False,last_day_deactivated=False,first_day_activated=False):
         '''
             Function for manipulating timedata boolean list.
                 The list should be in the form [[date1,true/false],[date2,true/false],...]
@@ -291,6 +298,8 @@ class ReportProcessor():
             except IndexError:
                 # If the boolean never activates
                 return 0
+        if first_day_activated:
+            return checkin_date
         # Iterate the remaining list after boolean first activates
         for i in boolean_list:
             # If boolean is now inactive and (counting days or wants last deactivation) and previous record was active
@@ -440,6 +449,15 @@ class ReportProcessor():
             if str(a).isdigit() and str(b).isdigit():
                 a = int(str(a))
                 b = int(str(b))
+            else:
+                try:
+                    a = parse(a)
+                except:
+                    pass
+                try:
+                    b = parse(b)
+                except:
+                    pass
             if operator == '>':
                 if a>b:
                     true = True
@@ -2141,14 +2159,14 @@ def editpastform(request,target_guest,target_form,target_guesttimedata=None):
         context.update({'link_list':link_list})
     else:
         # If date to change selected
+        # Retrieve affected guest time data
+        target_guesttimedata = GuestTimeData.objects.get(pk=target_guesttimedata)
+        # Retrieve all guest time data from that date
+        guesttimedata_list = GuestTimeData.objects.filter(date=target_guesttimedata.date,guest=target_guesttimedata.guest,field__form=target_guesttimedata.field.form).distinct()
         # If posting changes
         if request.POST:
-            # Retrieve affected guest time data
-            target_guesttimedata = GuestTimeData.objects.get(pk=target_guesttimedata)
-            # Retrieve all guest time data from that date
-            guesttimedata_list = GuestTimeData.objects.filter(date=target_guesttimedata.date,guest=target_guesttimedata.guest,field__form=target_guesttimedata.field.form).distinct()
             # If user trying to delete data
-            if request.POST.get('delete_%s'%target_form.name):
+            if request.POST.get('delete'):
                 # If not allowed to delete
                 if not testPermission('delete_guesttimedata',request.user):
                     return beGone('delete_guesttimedata')
@@ -2177,7 +2195,7 @@ def editpastform(request,target_guest,target_form,target_guesttimedata=None):
             # Retrieve potential conflicts
             test_list = GuestTimeData.objects.filter(guest=target_guest,date=new_date)
             # If potential conflicts
-            if len(test_list)>0:
+            if len(test_list)>0 and (request.POST.get('changeDate') or request.POST.get('changeTime')):
                 # Warn user
                 messages.add_message(request, messages.INFO, 'Form already exists in selected date/time slot')
                 # Return to guest view
@@ -2233,7 +2251,10 @@ def editpastform(request,target_guest,target_form,target_guesttimedata=None):
         else:
             # If no update being posted
             # Create form
-            form = createForm(target_field_list,request.user,second_object=target_guest)
+            request.POST = {}
+            for i in guesttimedata_list:
+                request.POST.update({i.field.name:i.value.replace("checked='checked'",'on')})
+            form = createForm(target_field_list,request.user,second_object=target_guest,request=request)
             context.update({'form':form})
     # Serve it up
     context.update({'target_guest':target_guest, 'target_form':target_form})

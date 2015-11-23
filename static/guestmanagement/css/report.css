@@ -71,11 +71,11 @@
 }
 
 .report_viewer_column {
-	width: 120px;
+    width: 120px;
 }
 
 .field_list_header {
-	font-weight: bold;
+    font-weight: bold;
 }
 
 #insert_row{
@@ -83,13 +83,10 @@
 }
 
 .variable_list{
-	padding-bottom: 5%;
+    padding-bottom: 5%;
 }
 
 .report_row{
-	padding-bottom: 5%;
+    padding-bottom: 5%;
 }
 
-tr {
-	display: block;
-}
