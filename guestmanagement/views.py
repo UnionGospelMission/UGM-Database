@@ -20,6 +20,7 @@ from dateutil.parser import parse
 import traceback
 from django.utils import timezone
 from django.contrib.auth.decorators import login_required
+from collections import namedtuple
 
 # Common reference dictionaries
 
@@ -65,7 +66,8 @@ class ReportProcessor():
                             'count_bool_days_active':self.countDays,
                             'last_day_bool_activated':self.lastDayActivated,
                             'last_day_bool_deactivated':self.lastDayDeactivated,
-                            'first_day_activated':self.firstDayActivated,
+                            'first_day_bool_activated':self.firstDayActivated,
+                            'bool_active_during':self.boolActiveDuring,
                             'format_picture':self.formatPicture,
                             'add_subtract_dates':self.addSubtractDates,
         }
@@ -171,19 +173,25 @@ class ReportProcessor():
         '''
             pass through function to booleanMethods
         '''
-        return self.booleanMethods(env,boolean_list,False,True)
+        return self.booleanMethods(env,boolean_list,last_day_activated=True)
+
+    def boolActiveDuring(self,env,boolean_list,start_date,end_date):
+        '''
+            pass through function to booleanMethods
+        '''
+        return self.booleanMethods(env,boolean_list,start_date=start_date,end_date=end_date)
     
     def lastDayDeactivated(self,env,boolean_list):
         '''
             pass through function to booleanMethods
         '''
-        return self.booleanMethods(env,boolean_list,False,False,True)
+        return self.booleanMethods(env,boolean_list,last_day_deactivated=True)
 
     def firstDayActivated(self,env,boolean_list):
         '''
             pass through function to booleanMethods
         '''
-        return self.booleanMethods(env,boolean_list,False,False,False,True)
+        return self.booleanMethods(env,boolean_list,first_day_activated=True)
     
     def countBooleans(self,env,boolean_list):
         '''
@@ -195,7 +203,7 @@ class ReportProcessor():
         '''
             pass through function to booleanMethods
         '''
-        return self.booleanMethods(env,boolean_list,True)
+        return self.booleanMethods(env,boolean_list,count_days=True)
     
     def add(self,env,value1,value2):
         # Eval both variables and return their sum
@@ -270,11 +278,16 @@ class ReportProcessor():
         # Close last row and table
         env['print']('</tr></table>')
 
-    def booleanMethods(self,env,boolean_list,count_days=False,last_day_activated=False,last_day_deactivated=False,first_day_activated=False):
+    def booleanMethods(self,env,boolean_list,count_days=False,last_day_activated=False,last_day_deactivated=False,first_day_activated=False,start_date=False,end_date=False):
         '''
             Function for manipulating timedata boolean list.
                 The list should be in the form [[date1,true/false],[date2,true/false],...]
         '''
+        # Convert start and end dates to date objects
+        if start_date and not isinstance(start_date,datetime.datetime):
+            start_date = parse(self.evalVariables(env,start_date))
+        if end_date and not isinstance(end_date,datetime.datetime):
+            end_date = parse(self.evalVariables(env,end_date))
         # Eval list variable if not already a list
         if not isinstance(boolean_list,list):
             boolean_list = self.evalVariables(env,boolean_list)
@@ -288,6 +301,9 @@ class ReportProcessor():
         checkin_date = current[0]
         # Initialize turned off date
         checkout_date = ""
+        # Initialize active dates
+        # active_dates = [[turned on, turned off],...]
+        active_dates = []
         # Iterate the list until boolean activated
         while current[1] !="checked='checked'":
             try:
@@ -300,14 +316,17 @@ class ReportProcessor():
                 return 0
         if first_day_activated:
             return checkin_date
+        active_dates.append([checkin_date])
         # Iterate the remaining list after boolean first activates
         for i in boolean_list:
             # If boolean is now inactive and (counting days or wants last deactivation) and previous record was active
-            if i[1] == u'' and (count_days or last_day_deactivated) and current[1] =="checked='checked'":
+            if i[1] == u'' and (count_days or last_day_deactivated or start_date) and current[1] =="checked='checked'":
                 # increase days active count
                 count += int(self.subtractDates(env,i[0],checkin_date))
                 # Set deactivated date
                 checkout_date = i[0]
+                # append date to active_dates
+                active_dates[-1].append(checkout_date)
             # If boolean is now active and previous record was not active
             if i[1] == "checked='checked'" and current[1]==u'':
                 # If not counting days
@@ -316,8 +335,32 @@ class ReportProcessor():
                     count += 1
                 # Set activated date
                 checkin_date=i[0]
+                # append date to active_dates
+                active_dates.append([checkin_date])
             # Set previous record to current record for next iteration
             current = i
+        # If active_dates ends checked in
+        if len(active_dates[-1])<2:
+            active_dates[-1].append(datetime.datetime.now())
+        # If testing checked in during
+        if start_date:
+            # Initialize variable of how many days
+            overlap = 0
+            # Create named range of start and end
+            Range = namedtuple('Range', ['start', 'end'])
+            # Initialize comparison range
+            r2 = Range(start=start_date, end=end_date)
+            # Iterate list of active dates
+            for i in active_dates:
+                # Initialize active range
+                r1 = Range(start=i[0], end=i[1])
+                # Find latest start
+                latest_start = max(r1.start, r2.start)
+                # Find latest end
+                earliest_end = min(r1.end, r2.end)
+                # negative comparisons mean no overlap, so ignore them
+                overlap += max(0,(earliest_end - latest_start).days + 1)
+            return overlap
         # If counting days and list ended with active boolean
         if count_days and current[1]=="checked='checked'":
             # Increase count with difference from today to boolean last activated
@@ -406,7 +449,8 @@ class ReportProcessor():
                 env['print']('filter returned more than one value')
             elif len(filter)==1:
                 # Use separator to create a string from the filter's list and append
-                env['print'](separator.join(filter[0]))
+                assert isinstance(separator,(str,unicode)), "Display separator must be string (did you pick the wrong variable name?)"
+                env['print'](separator.join([str(i) for i in filter[0]]))
                 
 
     def newline(self, env):
@@ -2250,10 +2294,11 @@ def editpastform(request,target_guest,target_form,target_guesttimedata=None):
             return redirect('/guestmanagement/view/guest/%s/'%target_guest.id)
         else:
             # If no update being posted
-            # Create form
+            # Build dictionary of current values on particular form
             request.POST = {}
             for i in guesttimedata_list:
                 request.POST.update({i.field.name:i.value.replace("checked='checked'",'on')})
+            # Create form
             form = createForm(target_field_list,request.user,second_object=target_guest,request=request)
             context.update({'form':form})
     # Serve it up
