@@ -1847,9 +1847,9 @@ def manage(request,target_type=None,target_object=None):
         if target_instance:
             context.update({'loaded_report':json.dumps(json.loads(target_instance.code)[1])})
         # Pull all the forms from the database which the user is allowed to see
-        all_forms_list = [i for i in Form.objects.all() if testPermission(i,request.user)]
+        all_forms_list = sorted([i.name for i in Form.objects.all() if testPermission(i,request.user)])
         # Pull all fields from the database which the user is allowed to see
-        all_field_dict = {i.name:[[a.name.replace('(',''),a.field_type] for a in Field.objects.filter(form=i).distinct() if testPermission(a,request.user)] for i in all_forms_list}
+        all_field_dict = {i:sorted([[a.name.replace('(',''),a.field_type] for a in Field.objects.filter(form__name=i).distinct() if testPermission(a,request.user)]) for i in all_forms_list}
         all_field_dict.update({'date':[['date','date']],'guest':[['id','id'],['first_name','text_field'],['middle_name','text_field'],['last_name','text_field'],['ssn','text_field'],['program','list'],['picture','url'],['image_tag','picture']]})
         # Put the list of fields and forms into the context
         context.update({'all_forms_list':all_forms_list,'all_field_dict':json.dumps(all_field_dict),'available_functions':json.dumps([[i,list(report_processor.functions[i].func_code.co_varnames)[:report_processor.functions[i].func_code.co_argcount]] for i in report_processor.functions.keys()])})
