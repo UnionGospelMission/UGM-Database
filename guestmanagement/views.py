@@ -1418,6 +1418,25 @@ def autoGrade(form,guest):
                             or (not i.correct_answer and i.required)]))
     return str(int(round(correct_questions/required_questions*100)))
 
+def deduplicateGuestDatas(e,guest):
+    # Retrieve all data
+    b=GuestData.objects.filter(guest=guest)
+    # Initialize holding dict
+    c={}
+    # Iterate through data
+    for i in b:
+        # If data not in holding dict
+        if not c.get(i.field.name,False):
+            # Update holding dict
+            c[i.field.name]=i
+        elif c[i.field.name].value==i.value:
+            # If data already in holding dict and values match
+            # Delete second data point
+            i.delete()
+        else:
+            # If data already in holding dict and values do not match
+            # Reraise exception
+            raise e
 
 # Views
 
@@ -1971,7 +1990,11 @@ def view(request,target_type,target_object,second_object=None):
                     time_stamp=datetime.datetime.now()
                     for i in field_list.order_by('order'):
                         if testPrerequisites(i,second_object):
-                            a = GuestData.objects.get_or_create(guest=second_object,field=i)[0]
+                            try:
+                                a = GuestData.objects.get_or_create(guest=second_object,field=i)[0]
+                            except MultipleObjectsReturned, e:
+                                deduplicateGuestDatas(e,second_object)
+                                a = GuestData.objects.get_or_create(guest=second_object,field=i)[0]
                             # convert boolean and file fields to appropriate value otherwise take given value and store in database
                             if i.field_type == 'boolean':
                                 if request.POST.get(i.name,'') == 'on':
@@ -2047,24 +2070,8 @@ def view(request,target_type,target_object,second_object=None):
                     form=createForm(field_list,request.user,second_object=second_object)
                 except MultipleObjectsReturned, e:
                     # If guest has more than one datapoint for a field
-                    # Retrieve all data
-                    b=GuestData.objects.filter(guest=second_object)
-                    # Initialize holding dict
-                    c={}
-                    # Iterate through data
-                    for i in b:
-                        # If data not in holding dict
-                        if not c.get(i.field.name,False):
-                            # Update holding dict
-                            c[i.field.name]=i
-                        elif c[i.field.name].value==i.value:
-                            # If data already in holding dict and values match
-                            # Delete second data point
-                            i.delete()
-                        else:
-                            # If data already in holding dict and values do not match
-                            # Reraise exception
-                            raise e
+                    # deduplicate
+                    deduplicateGuestDatas(e, second_object)
                     # Reloop while loop to build form
                     form = ''
 
