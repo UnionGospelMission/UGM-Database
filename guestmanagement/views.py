@@ -648,6 +648,7 @@ class ReportProcessor():
         return retval
 
     def buildFilter(self,env,return_field,timeseries,code):
+        Print('new query')
         '''
             Function to retrieve data from database
         '''
@@ -749,6 +750,8 @@ class ReportProcessor():
                     # Initialize holding dictionary for items matching criteria
                     # holdingdict = {field_name: [[data,data,data,...],...}
                     holdingdict = {}
+                    # Initialize holding dict list for field
+                    holdingdict[i[3].replace('$','').replace(' ','').split('::')[0]] = holdingdict.get(i[3].replace('$','').replace(' ','').split('::')[0],[])
                     # Walk through each record in variable being filtered
                     for a in data:
                         # Set found flag
@@ -759,8 +762,6 @@ class ReportProcessor():
                         # compare values
                         found = self.if_(env,i[1],comparator,value)
                         if found:
-                            # Initialize holding dict list for field
-                            holdingdict[i[3].replace('$','').replace(' ','').split('::')[0]] = holdingdict.get(i[3].replace('$','').replace(' ','').split('::')[0],[])
                             # If this record is not already in the holding dict list for this field
                             if a not in holdingdict[i[3].replace('$','').replace(' ','').split('::')[0]]:
                                 # Append this record to the holding dict list for this field
