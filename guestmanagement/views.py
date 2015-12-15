@@ -1758,8 +1758,8 @@ def manage(request,target_type=None,target_object=None):
             if target_type=='attachment':
                 # set the permissions for the new/modified static file
                 filepermissionlist = DynamicFilePermissions.objects.get_or_create(path=myobject.attachment.url)[0]
-                filepermissionlist.permissions_may_have = myobject.permissions_may_have
-                filepermissionlist.permissions_must_have = myobject.permissions_must_have
+                filepermissionlist.permissions_may_have = myobject.permissions_may_have.all()
+                filepermissionlist.permissions_must_have = myobject.permissions_must_have.all()
                 filepermissionlist.save()
             # Special processing for changing user permissions
             if target_type=='user_permission_setting':
