@@ -103,8 +103,8 @@
 		{% endif %}
 	{% elif target_type == 'report' %}
 		{{ target_object.description }}</br>
+		<script type="text/javascript" src='{% static "guestmanagement/js/report.js" %}'></script>
 		{% if variables %}
-			<script type="text/javascript" src='{% static "guestmanagement/js/report.js" %}'></script>
 			<table>
 				<tr><th>Variable Name</th><th>Value</th></tr>
 				{% for i in variables %}

@@ -33,10 +33,10 @@ document.ready=function (){
     newRow();
     // Variable Select
     if (document.getElementById('helper_variables').value!=''){
-		window.helper_variables = JSON.parse(document.getElementById('helper_variables').value);
-	} else {
-		window.helper_variables = [];
-	}
+        window.helper_variables = JSON.parse(document.getElementById('helper_variables').value);
+    } else {
+        window.helper_variables = [];
+    }
     changeReturnVariable();
 
 }
@@ -135,13 +135,13 @@ function newRow(type,values,insert){
                 } else {
                     new_type.parentNode.children[i+1].checked = values[i];
                 }
-	    		if (i+1==1 && new_type.value=='function'){
-		    		setFunctionName(new_type.parentNode.children[i+1]);
-			    }
-			}
-			catch (err){
+                if (i+1==1 && new_type.value=='function'){
+                    setFunctionName(new_type.parentNode.children[i+1]);
+                }
+            }
+            catch (err){
 
-			}
+            }
         }
     }
 
@@ -157,9 +157,9 @@ function setTarget() {
 }
 
 function typeChange(t,single){
-	if (t instanceof Event) {
-		t=this;
-	}
+    if (t instanceof Event) {
+        t=this;
+    }
     while (t.nextSibling){
         t.parentNode.removeChild(t.nextSibling);
     }
@@ -320,12 +320,12 @@ function typeChange(t,single){
                     name.onchange = changeReturnVariable;
                     name.onclick=alertName;
                 if (t.value=='set'){
-					var value = row.appendChild(document.createElement('input'));
-						value.name = 'code'+row.line_number+'-2';
-						value.setAttribute('title','Set Value');
-						value.onclick=alertName;
-						value.onblur=setTarget;
-				}
+                    var value = row.appendChild(document.createElement('input'));
+                        value.name = 'code'+row.line_number+'-2';
+                        value.setAttribute('title','Set Value');
+                        value.onclick=alertName;
+                        value.onblur=setTarget;
+                }
                 break;
 
             case 'begin table':
@@ -345,25 +345,25 @@ function typeChange(t,single){
 }
 
 function setFunctionName(t){
-	if (t instanceof Event) {
-		t=this;
-	}
-	var variable_name = t.nextSibling;
-	while (variable_name.nextSibling){
-		variable_name.parentNode.removeChild(variable_name.nextSibling);
-	}
-	for (var i=0;i<report_functions.length;i++){
-		if (report_functions[i][0]==t.value){
-			for (var a=2;a<report_functions[i][1].length;a++){
-				var argument = t.parentNode.appendChild(document.createElement('input'));
-					argument.name = 'code'+t.parentNode.line_number+'-'+String(a+1);
+    if (t instanceof Event) {
+        t=this;
+    }
+    var variable_name = t.nextSibling;
+    while (variable_name.nextSibling){
+        variable_name.parentNode.removeChild(variable_name.nextSibling);
+    }
+    for (var i=0;i<report_functions.length;i++){
+        if (report_functions[i][0]==t.value){
+            for (var a=2;a<report_functions[i][1].length;a++){
+                var argument = t.parentNode.appendChild(document.createElement('input'));
+                    argument.name = 'code'+t.parentNode.line_number+'-'+String(a+1);
                     argument.setAttribute('title',report_functions[i][1][a]);
                     argument.onclick=alertName;
                     argument.onblur=setTarget;
-			}
-			break;
-		}
-	}
+            }
+            break;
+        }
+    }
 }
 
 function changeReturnVariable(){
@@ -623,12 +623,13 @@ function alertName(){
 }
 
 function runReport(t){
-	var input = document.getElementsByTagName('input');
-	if (input.length>0){
-		t.href = t.href.split("?")[0] + "?"+input[0].name+'='+input[0].value;
-		for (var i=1;i<input.length;i++){
-			t.href+='&'+input[i].name+'='+input[i].value;
-		}
-	}
-	//alert(document.getElementsByName('variable__test')[0].value);
+    var input = document.getElementsByTagName('input');
+    if (input.length>0){
+        t.href = t.href.split("?")[0] + "?"+input[0].name+'='+input[0].value;
+        for (var i=1;i<input.length;i++){
+            t.href+='&'+input[i].name+'='+input[i].value;
+        }
+    }
+    t.style.display = 'none';
+    //alert(document.getElementsByName('variable__test')[0].value);
 }
