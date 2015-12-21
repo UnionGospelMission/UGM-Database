@@ -70,6 +70,7 @@ class ReportProcessor():
                             'bool_active_during':self.boolActiveDuring,
                             'format_picture':self.formatPicture,
                             'add_subtract_dates':self.addSubtractDates,
+                            'anniversary_check':self.checkAnniversaries,
         }
         # Internal functions (found on the report builder in each line's dropdown)
         self._functions = { 
@@ -133,6 +134,37 @@ class ReportProcessor():
             super(ReportProcessor.Env, self).__setitem__(item,value)
 
     # external functions
+    
+    def checkAnniversaries(self,env,date,from_date,to_date):
+        '''
+            Function to look for an aniversary date within a specified range.
+            Returns the number of years if found or False if not
+        '''
+        # Convert dates into datetime objects
+        date=parse(self.evalVariables(env,date))
+        from_date=parse(self.evalVariables(env,from_date))
+        to_date=parse(self.evalVariables(env,to_date))
+        # Calculate the earliest anniversary date
+        earliest=date+relativedelta(years=from_date.year-date.year)
+        # Calculate the latest anniversary date (if test range overlaps year end)
+        latest=date+relativedelta(years=to_date.year-date.year)
+        # Set return date to earlier
+        return_date = earliest
+        # Test for overlap on earlier date
+        overlap = self.dateRangeOverlap(env,earliest,earliest,from_date,to_date)
+        # If early date does not match and range overlaps year end
+        if not overlap and latest != earliest:
+            # Repeat test with latest date and set return date
+            overlap = self.dateRangeOverlap(env,latest,latest,from_date,to_date)
+            return_date = latest
+        # If anniversary falls within specified range
+        if overlap:
+            # Return number of years
+            return relativedelta(return_date,date).years
+        # Return false if anniversary does not fall in specified range
+        return False
+        
+        
     
     def addSubtractDates(self,env,date,adjustment,days_months_years,operator):
         '''
@@ -283,11 +315,6 @@ class ReportProcessor():
             Function for manipulating timedata boolean list.
                 The list should be in the form [[date1,true/false],[date2,true/false],...]
         '''
-        # Convert start and end dates to date objects
-        if start_date and not isinstance(start_date,datetime.datetime):
-            start_date = parse(self.evalVariables(env,start_date))
-        if end_date and not isinstance(end_date,datetime.datetime):
-            end_date = parse(self.evalVariables(env,end_date))
         # Eval list variable if not already a list
         if not isinstance(boolean_list,list):
             boolean_list = self.evalVariables(env,boolean_list)
@@ -346,20 +373,9 @@ class ReportProcessor():
         if start_date:
             # Initialize variable of how many days
             overlap = 0
-            # Create named range of start and end
-            Range = namedtuple('Range', ['start', 'end'])
-            # Initialize comparison range
-            r2 = Range(start=start_date, end=end_date)
             # Iterate list of active dates
             for i in active_dates:
-                # Initialize active range
-                r1 = Range(start=i[0], end=i[1])
-                # Find latest start
-                latest_start = max(r1.start, r2.start)
-                # Find latest end
-                earliest_end = min(r1.end, r2.end)
-                # negative comparisons mean no overlap, so ignore them
-                overlap += max(0,(earliest_end - latest_start).days + 1)
+                overlap += self.dateRangeOverlap(env,i[0],i[1],start_date,end_date)
             return overlap
         # If counting days and list ended with active boolean
         if count_days and current[1]=="checked='checked'":
@@ -627,6 +643,33 @@ class ReportProcessor():
         self.set_(env,return_variable.replace('$',''),self.functions[function](env,*args))
 
     # system functions
+    
+    def dateRangeOverlap(self,env,start_date1,end_date1,start_date2,end_date2):
+        '''
+            Function to test if two date ranges overlap
+            Returns the number of days overlapped or zero if not overlapped.
+        '''
+        # Convert start and end dates to date objects
+        if not isinstance(start_date1,datetime.datetime):
+            start_date1 = parse(self.evalVariables(env,start_date1))
+        if not isinstance(end_date1,datetime.datetime):
+            end_date1 = parse(self.evalVariables(env,end_date1))
+        if not isinstance(start_date2,datetime.datetime):
+            start_date2 = parse(self.evalVariables(env,start_date2))
+        if not isinstance(end_date2,datetime.datetime):
+            end_date2 = parse(self.evalVariables(env,end_date2))
+        # Create named range of start and end
+        Range = namedtuple('Range', ['start', 'end'])
+        # Initialize active range
+        r1 = Range(start=start_date1, end=end_date1)
+        # Initialize comparison range
+        r2 = Range(start=start_date2, end=end_date2)
+        # Find latest start
+        latest_start = max(r1.start, r2.start)
+        # Find earliest end
+        earliest_end = min(r1.end, r2.end)
+        # negative comparisons mean no overlap, so ignore them
+        return max(0,(earliest_end - latest_start).days + 1)
 
     def do(self, env, *args):
         '''
