@@ -2106,6 +2106,7 @@ def view(request,target_type,target_object,second_object=None):
                 else:
                     # If required field check failed, recreate form with error messages
                     form=createForm(field_list,request.user,request,second_object,required_test)
+                    context.update({'required_failed':True})
             # if no form was created from request.POST or no request.POST submitted
             # Create form
             while not form:

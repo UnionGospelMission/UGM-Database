@@ -44,7 +44,14 @@
 				{% csrf_token %}
 				{{ form }}
 				{% if user.is_authenticated %}
-					<input type='button' value='Update' class="floating_button" onclick='scrollReturn(this)'/>
+					<div class="floating_button">
+						<input type='button' value='Update' class="floating_button" onclick='scrollReturn(this)'/>
+						{% if required_failed %}
+							<br />
+							<br />
+							<p class='errornote'>Enter All Required Fields</p>
+						{% endif %}
+					</div>
 				{% endif %}
 				<input type='submit' value='Submit and Continue' name='submit_form'/>
 			</form>
