@@ -1,6 +1,9 @@
 {% extends "shared/base.html" %}{% load i18n %}{% load staticfiles %}
+{% block title %}
+	{% trans 'Manage' %}{% if target_type %} {% endif %}{{ target_type.capitalize }}{% if target_type and not target_object %}s{% endif %}{% if target_object %} {{ target_object.name }}{% endif %}
+{% endblock %}
 {% block pretitle %}
-    <h1>{% trans 'Manage' %}{% if target_type %} {% endif %}{{ target_type.capitalize }}{% if target_type %}s{% endif %}:</h1><br/>
+    <h1>{% trans 'Manage' %}{% if target_type %} {% endif %}{{ target_type.capitalize }}{% if target_type and not target_object %}s{% endif %}{% if target_object %} {{ target_object.name }}{% endif %}:</h1><br/>
     {% if target_object and not target_object == 'new' %}<a href='/guestmanagement/view/{{ target_type.split|join:"_" }}/{{ target_object.id }}/'>View {{ target_object.name }}</a>{% endif %}</br>
 {% endblock %}
 {% block content %}

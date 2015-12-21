@@ -1,4 +1,7 @@
 {% extends "shared/base.html" %}{% load i18n %}{% load staticfiles %}
+{% block title %}
+	{% trans 'View' %} {{ target_type.capitalize }} {{ target_object.name }}{% if target_object.label %} (aka {{ target_object.label }}){% endif %}
+{% endblock %}
 {% block pretitle %}
 	<h1>{% trans 'View' %} {{ target_type.capitalize }} {{ target_object.name }}{% if target_object.label %} (aka {{ target_object.label }}){% endif %}:</h1><br/>
 	{% if "guestmanagement.manage_"|add:target_type in perms and "guestmanagement.change_"|add:target_type in perms %}
