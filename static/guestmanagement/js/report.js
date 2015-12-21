@@ -14,6 +14,7 @@ document.ready=function (){
     }
     window.field_viewer = document.getElementById('fields');
     window.previous_element = undefined;
+    window.previous_element_inserted = undefined;
     
     if (document.getElementById('report_functions').value!=''){
         window.report_functions = JSON.parse(document.getElementById('report_functions').value);
@@ -38,7 +39,14 @@ document.ready=function (){
         window.helper_variables = [];
     }
     changeReturnVariable();
-
+	// Set global onfocus
+	var focusHandler = function(event) {
+		if (previous_element_inserted){
+			previous_element = undefined;
+			previous_element_inserted = undefined;
+		}
+	};
+	document.body.addEventListener('focus', focusHandler, true);
 }
 
 
@@ -153,7 +161,11 @@ function newRow(type,values,insert){
 }
 
 function setTarget() {
-    window.previous_element = this;
+	if (previous_element_inserted){
+		previous_element_inserted = false;
+	} else {
+		window.previous_element = this;
+	}
 }
 
 function typeChange(t,single){
@@ -209,6 +221,7 @@ function typeChange(t,single){
                 var list_return = row.appendChild(document.createElement('input'));
                     list_return.name = 'code'+row.line_number+'-2';
                     list_return.setAttribute('title','Set List Variable Name');
+                    list_return.onblur = setTarget;
                     list_return.onchange = changeReturnVariable;
                     list_return.onclick=alertName;
                 if (t.value=='list'){
@@ -216,13 +229,16 @@ function typeChange(t,single){
                         num_per_row.name = 'code'+row.line_number+'-3';
                         num_per_row.setAttribute('title','Number of Items Per Row');
                         num_per_row.onclick=alertName;
+                        num_per_row.onblur = setTarget;
                     var rows_per_page = row.appendChild(document.createElement('input'));
                         rows_per_page.name = 'code'+row.line_number+'-4';
                         rows_per_page.setAttribute('title','Number of Rows Per Page');
                         rows_per_page.onclick=alertName;
+                        rows_per_page.onblur = setTarget;
                     var row_separator = row.appendChild(document.createElement('input'));
                         row_separator.name = 'code'+row.line_number+'-5';
                         row_separator.setAttribute('title','Row Separator');
+                        row_separator.onblur = setTarget;
                         row_separator.onclick=alertName;
                         name_offset = 5;
                     }
@@ -241,6 +257,7 @@ function typeChange(t,single){
                         separator.setAttribute('title','Display Separator');
                         name_offset+=1;
                         separator.onclick=alertName;
+                        separator.onblur = setTarget;
                 }
                 var timeseries = row.appendChild(document.createElement('input'));
                     timeseries.type = 'checkbox';
@@ -309,6 +326,7 @@ function typeChange(t,single){
                     function_return.setAttribute('title','Set List Variable');
                     function_return.onchange = changeReturnVariable;
                     function_return.onclick=alertName;
+                    function_return.onblur = setTarget;
                 setFunctionName(function_name);
                 break;
 
@@ -318,6 +336,7 @@ function typeChange(t,single){
                     name.name = 'code'+row.line_number+'-1';
                     name.setAttribute('title','Set Name');
                     name.onchange = changeReturnVariable;
+                    name.onblur = setTarget;
                     name.onclick=alertName;
                 if (t.value=='set'){
                     var value = row.appendChild(document.createElement('input'));
@@ -413,6 +432,8 @@ function insertVariable(){
     var prepend = ' $';
     previous_element.value += prepend + this.innerHTML;
     previous_element.focus();
+    previous_element = undefined;
+    previous_element_inserted = true;
 }
 
 function changeListType(){
@@ -517,6 +538,8 @@ function insertField(){
     }
     previous_element.value = prepend + this.innerHTML;
     previous_element.focus();
+    previous_element = undefined;
+    previous_element_inserted = true;
 }
 
 // Function Select
