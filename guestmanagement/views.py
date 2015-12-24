@@ -1564,6 +1564,7 @@ def quickfilter(request):
     for i in fields:
         field_dict[i.form.name]=field_dict.get(i.form.name,[])
         field_dict[i.form.name].append(i.name)
+    Print(field_dict)
     context.update({'form_list':[i.name for i in Form.objects.all() if testPermission(i,request.user)],
                     'field_list':json.dumps(field_dict),
                     })
