@@ -1555,13 +1555,20 @@ def deduplicateGuestDatas(e,guest):
 @login_required
 def quickfilter(request):
     '''
-        View for executing one filter against the database
+        View for executing one filter against the database and updating multiple records
         NOT YET IMPLEMENTED
     '''
     context=baseContext(request)
+    fields = [i for i in Field.objects.all() if testPermission(i,request.user)]
+    field_dict = {}
+    for i in fields:
+        field_dict[i.form.name]=field_dict.get(i.form.name,[])
+        field_dict[i.form.name].append(i.name)
+    context.update({'form_list':[i.name for i in Form.objects.all() if testPermission(i,request.user)],
+                    'field_list':json.dumps(field_dict),
+                    })
     if request.POST:
         pass
-    context.update({'output':'1'})
     return render(request,'guestmanagement/quickfilter.html',context)
     
 
@@ -2434,23 +2441,3 @@ def reportwiki(request):
     context.update({'internal_documentation':_doc,'external_documentation':doc})
     return render(request,'guestmanagement/reportwiki.html',context)
     
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

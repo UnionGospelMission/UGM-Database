@@ -1,0 +1,17 @@
+{% extends "shared/base.html" %}{% load i18n %}{% load staticfiles %}
+{% block title %}
+	{% trans 'Quick Filter' %}
+{% endblock %}
+{% block pretitle %}
+<h1>Quick Filter:</h1><br />
+{% endblock %}
+{% block content %}
+<h5>Pick Form:</h5>
+<input name='field_list' value="{{ field_list }}" hidden />
+<select name='form_select'>
+	{% for i in form_list %}
+		<option value={{ i }}>{{ i }}</option>
+	{% endfor %}
+</select>
+<script type="text/javascript" src="{% static "guestmanagement/js/quickfilter.js" %}"></script>
+{% endblock %}

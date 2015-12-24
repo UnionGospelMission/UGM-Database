@@ -17,6 +17,7 @@
         {% if perms.guestmanagement.manage_report or perms.guestmanagement.view_report %}<a href='/guestmanagement/manage/report/'>Reports</a><br/>{% endif %}
         {% if perms.guestmanagement.manage_attachment or perms.guestmanagement.view_attachment %}<a href='/guestmanagement/manage/attachment/'>Attachments</a><br/>{% endif %}
         {% if perms.guestmanagement.manage_permission or perms.guestmanagement.view_permission %}<a href='/guestmanagement/manage/user_permission_setting/'>Set User Permissions</a><br/>{% endif %}
+        <a href='/guestmanagement/quickfilter/'>Quick Filter</a><br/>
     {% elif not target_object %}
 		{% if "guestmanagement.add_"|add:target_type in perms %}
 			<a href='/guestmanagement/manage/{{ target_type.split|join:"_" }}/new/'>Create {{ target_type.capitalize }}</a><br/>
