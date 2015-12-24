@@ -452,7 +452,7 @@ function changeListType(){
         }
         switch (this.parentNode.children[0].value){
             case 'list':
-                this.parentNode.children[5].value = String(from)+':'+String(to);
+                this.parentNode.children[6].value = String(from)+':'+String(to);
                 break;
             case 'query':
                 this.parentNode.children[3].value = String(from)+':'+String(to);

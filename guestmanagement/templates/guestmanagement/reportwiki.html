@@ -1,0 +1,286 @@
+{% extends "shared/base.html" %}{% load i18n %}{% load staticfiles %}
+{% block title %}
+	Report Wiki
+{% endblock %}
+{% block content %}
+<h1>Welcome to the report builder wiki</h1><br />
+<h2>Section 1: General overview</h2><br />
+<div class=indented>
+	The report builder is a system whereby you can create dynamic reports from the data stored in the guestmanagement database. <br />
+	The system is divided into two main pannels, the Report Information pane and the Report Builder Pane.<br />
+</div>
+<h2>Section 2: Report Information</h2>
+<div class=indented>
+	On the Report Information Pane, you will find the general information for creating the report.<br />
+	<div class=indented>
+		<h5>Name:</h5>
+		The name of the report must be unique in the database.<br />
+		<h5>Users:</h5>
+		The users who are allowed to see and run the report.<br />
+		<h5>Description:</h5>
+		A brief explanation of the report.
+	</div>
+</div>
+<h2>Section 3: Report Builder</h2>
+<div class=indented>
+	The report builder pane is where you provide the specific instructions for the server to run in building the report.  
+	This pane is divided into five sections.
+	<div class=indented>
+		<h3>Report Title:</h3> The upper left section where the name of the report is displayed.<br />
+		<h3>Select Form:</h3> The top center section where the forms you may access are displayed.  
+		Clicking on these titles will display the fields you may access from that form.<br />
+		<h3>Select Field:</h3> The top right section when fields on the selected form are displayed.
+		Clicking on these fields will insert a reference to the field in the Build Report section.<br />
+		<h3>Defined Variables:</h3> The lower left section contains a list of all the variables defined in the report.
+		These variables include several helper variables as well as any variables defined by the user.  
+		Clicking on a variable name will insert the variable into the report.<br />
+		<div class=indented>
+			<h4>Variable types:</h4> There are two types of variables, strings and lists.  Strings are text just like you are reading now.
+			Lists are collections of strings or lists and are represented by brackets.<br />
+			So, if we were to define "my_first_variable" as a list of "cat" "bird" "dog," we would represent the value of the variable as:<br /><br />
+			["cat", "bird", "dog"]<br /><br />
+			Now, suppose you want to reference this list.  You would click on the name in the Defined Variables Section "my_first_variable"
+			which would insert "$my_first_variable" into your report in the build report section.  When the report is run, the server will 
+			interpret "$my_first_variable" as ["cat", "bird", "dog"].<br /><br />
+			If you wished to reference the third element of the preceeding list ("dog"), you would still click on "my_first_variable" as before, but 
+			this time you would add "::2" to the reference so the Build Report section would contain "$my_first_variable::2" which the server would
+			evaluate to the third element of the list ["cat", "bird", "dog"], or simply "dog". <br /> NOTE: lists are 0 indexed, meaning element 0 is 
+			actually the first element of the list and the length of the list minus 1 is the last element of the list.<br /><br />If you attempt to 
+			refference an element which does not exist, the server will display a crash report when running the report.  So, if your Build Report
+			section contains "$my_first_variable::3" you will see an error when you run the report.<br />
+		</div>
+		<h3>Build Report:</h3> This is where you place the actual instructions for generating the report.  Remember, the lines in this section
+		do not correlate to the lines on the report when displayed.  Each line of the Build Report Section is a specific instruction for the
+		server to execute.<br /><br />
+		Each line begins with a single dropdown box.  This box contains all of the options for what instruction the line might execute.<br />
+		<div class='indented'>
+			{% for i in internal_documentation %}
+				{% if i.1 != "None" %}
+					<h5>{{ i.0 }}:</h5> {{ i.1 }}<br />
+				{% endif %}
+			{% endfor %}
+			<h5>User Input:</h5> Instruction to set a variable to a value specified by whoever runs the report before the report is run.
+		</div>
+		<br />Additional Instructions are:
+		<div class=indented>
+			<h4>extrafield:</h4> This instruction tells the server to include the selected field in the list of fields being retrieved
+			from the database.  Takes the name of the field and whether to search timeseries<br />
+			<h4>and:</h4> This instruction tells the server a criterion to be matched when deciding whether to pull a record from the
+			database.  Takes a comparison, a field to compare, a value to match, and whether to check against timeseries.  All and criterion
+			must be met to return the record.<br />
+			<h4>or:</h4> Same as "and" except if any "or" criterion are met the record is returned.<br />
+		</div>
+		When you select function, you will be given another dropdown list of possible functions.  These are:
+		<div class=indented>
+			{% for i in external_documentation %}
+					<h5>{{ i.0 }}:</h5> {{ i.1 }}<br />
+			{% endfor %}
+		</div>
+	</div>
+</div>
+<h2>Section 4: Practice</h2>
+<div class=indented>
+	Without a known database, building specific reports is impossible.  However, some of the instructions do not require a database to use.<br /><br />
+	<h5>Getting started</h5>
+	<div class=indented>
+		In another tab or browser, create a new report.  Name it "My First Report", select yourself as a user, and describe it "Showing off what I can do" 
+		then click "Submit and Continue Editing".<br /><br />
+		You now have a new (but blank) report.  Hold ctrl and click "View My First Report".  This will open your report for running in a new tab.
+		This new tab will be where users will enter any variable values before running the report.  Click "Run Report" to see what your report
+		looks like.<br /><br />
+		Obviously, you haven't built anything in your report, so your report is blank.  <br /><br />Periodically, I will 
+	tell you to view your report.  To do so, simply click "Submit and Continue Editing", followed by "Report Builder", then switch over to your "My First Report" tab and 
+	refresh the page. <br /><br /> 
+	</div>
+	<h5>Creating a title</h5>
+	<div class=indented>
+		Switch back to the "Manage Report My First Report" tab and click "Report Builder" to view the instruction creation page.<br /><br /> 
+		In line 0000, select "text", pick a bold option in the second box, and enter "My First Report Title" in the box, then view your report.
+		You should now see "My First Report Title" in whatever level of bold you selected.
+	</div>
+	<h5>Creating Variables</h5>
+	<div class=indented>
+		On the report builder, you will already see some variables on the left side, but these are for use in tables.
+		We will cover them later.  On your report, in line 0001, select "set", in the second box enter "My First Variable", and in the third box
+		enter "Hello World".  When you finish, you will note "My First Variable" has been changed to "My_First_Variable".  Spaces are not allowed
+		in variable names, but the system automatically converts to underscores for you.<br /><br />
+		Now, view your report.  You will notice the report has not changed.  While you have set a variable, there are no instructions to display
+		anything new on your report.  So, select line 0002 and pick "display".  You will notice display has added line 0003 and 0004.  In this
+		case, we do not need line 0003, so set the line to blank.  Line 0004 tells the server to end the display instruction, so leave that in
+		place.  On the display line, click the first text box, then click the name of your variable on the left.  You will see "$My_First_Variable"
+		appear in the text box.  Now view your report.<br /><br />
+	</div>
+	<h5>Newlines</h5>
+	<div class=indented>
+		You will see "My First Report TitleHello world".  The report system cannot tell when you want a new line and when you do not.  So, switch
+		back to your report builder.  First, notice how the blank like in the display command has disappear.  When you save a report, any blank
+		lines are stripped out.  Second, click "Insert Row".  This will bring up a box asking where you want to insert a row.  Enter "2" and click
+		"Ok".  You now have a blank row at 0002 and the rest of your report has moved down.  Pick "newline" on row 0002 and view your report.  Now
+		"Hello World" is on the line under "My First Report Title".<br /><br />
+	</div>
+	<h5>User Input</h5>
+	<div class=indented>
+		While you could have simply used a text box to print "Hello World" on the report, it is important to see what variables do.  Now, change
+		line 0001 from "set" to "user input".  Put "My First Variable" in the second box, then view your report.  Oops, you got an error.  This 
+		error is telling you the variable "My_First_Variable" is undefined, meaning it has no value.  Now that your first variable is a user input
+		the system expected the user to define the variable's meaning on the previous page, which you did not do when you refreshed the report.<br />
+		Click the back arrow on your browser.  You will notice the "Run Report" link is missing.  You only get to run the report once per click
+		after which you must refresh this page.  Do so now.  Once the page loads, you will notice not only is the "Run Report" available again,
+		so too is a place to define your variable.  Enter "Still Here World" in the text box and run your report.  You will now see the text you
+		entered displayed below your report title.<br /><br />
+	</div>
+	<h5>If Blocks</h5>
+	<div class=indented>
+		Next, on line 0005, select the "newline" option. Then, on line 0006 of your report, select the "if" option.  You will note, this 
+		indents the following line, but does not provide an "end" instruction.  We will add said instruction once we have completed the if 
+		block.  For now, select "contains" in the second box, enter "World"	in the third box, then click the fourth box and click 
+		"My_First_Variable".<br /><br />
+		On line 0007, select "text" and enter "Your input contains world" and on line 0008 select "end".<br /><br />
+		Now view your report.  You will see how it displays "Your input contains world".  Now click the back button, refresh the page, enter
+		"Some other text" in the variable box, and run the report again.  Notice he report does not display "Your input contains world."<br /><br />
+	</div>
+	<h5>Lists</h5>
+	<div class=indented>
+		Lists iterate over a number of values contained in a list.  To illustrate, first clear lines 0006 through the end of the report.  
+		Now, on line 0006, pick "list" from the selections.  Lists will automatically add an additional instruction and an end instruction.
+		Pick "numbers" from the type of list option and in the resulting two dialogue boxes enter "0" and "10" respectively.  In the third
+		box, enter "each number", enter "1" in the fourth box, leave the fifth box empty, and put a "," in the sixth box.<br /><br />
+		Replace line 0007 with a "display" and pick "each_number" to display.  Remove the extra "and" line created by display and view your
+		report.<br /><br />
+		As you can see, the report iterates over the range of numbers from 0 through 10 and executes the instructions, in this case to
+		display each number, for every item in the range and adds the "," after each row.  Now change the fourth box to "2" and view the
+		report again.  You will notice the "," now displays every other digit.<br /><br />
+		Lists are also nestable.  To demonstrate, change the "2" back to "1" and change "," to "&#60;br />".  Then replace line 0007 with 
+		another "list".  Again, pick number and enter "0" and "10".  Enter "second number" in the third box, "1" in the fourth box, leave 
+		the fifth box blank, and enter "," in the sixth box.  Insert a row at 0008 and pick "display".  Have the display line show "second_
+		number", remove the extra "and" line and view your report again.<br /><br />
+		You will see ten sets of 0 through ten on ten lines.  The first list command iterates 0 through ten, each time executing the second
+		list instruction which iterates over the second set of 0 through 10 appending a comma after each number.  Meanwhile, the first list
+		instruction adds a row break after each time the second list instruction has completed iterating over the second list.<br /><br />
+	</div>
+	<h5>Tables</h5>
+	<div class=indented>
+		Using what you just learned about lists, creating tables is straightforward.  First, insert a new line at 0006 and pick 'begin table'
+		In the second box enter "Outer List,Inner List 1,Inner List 2,Inner List 3,Inner List 4,Inner List 5,Inner List 6,Inner List 7
+		,Inner List 8,Inner List 9,Inner List 10,Inner List 11".  Now, on line 0007, your "&#60;br />" to "$table_new_row".  On line 0008, change the ","
+		to "$table_new_cell".  Now insert a new line 0008 and select "display".  Remove the newly created "and" line and display "tabel_open_cell".
+		Next, insert a row at 0011 and select "display".  Remove the new "and" line and display "each_number".  At line 0014, insert 
+		another row and select "display".  Remove the newly created "and" line and display "table_new_cell.  Insert another row at line 0021,
+		again select "display", and remove the new "and" line.  This time, display "table_close_cell".  Finally on line 0025, select "end table"
+		and view your report.<br /><br />
+		You will see each of the titles you entered on the "begin table" line have been created.  From there, you see the output of each list
+		instruction.  The output in the table is similar to what you saw in the list section, only now the separators are new cells in the
+		table.  So, the first list iterates the numbers zero through ten, each time it opens a new cell, displays the number it is currently
+		iterating, and then executes the next list instruction.  The second list then iterates the numbers zero through ten each time displaying
+		the number being iterated followed by adding a new cell to the table.  Once the second list has iterated completely, the first list
+		instruction closes the last cell and creates a new row.  Once the first list instruction has completely iterated the numbers, the 
+		"end table" instruction closes the last row and closes the table.<br /><br />
+		Notice the extra column of blank cells in your report.  This results from the position of the new cell instructions.  Because the 
+		first list instruction contains an instruction to create a new cell before executing the second list, as the second list creates new
+		cells each number is left with an open new cell.  Thus, when the second list displays the numeral "10", it creates one last cell
+		which is then closed by the first list instruction resulting in an empty cell.<br /><br />
+		To correct this, change line 0012 to "table_close_cell", remove "$table_new_cell" from line 14, insert a new line 0015 and pick 
+		"display".  Remove the new "and" line and display "table_open_cell".  Remove line 0020, insert a new line 0023 and select "end".  
+		Now view your report, the extra column should be gone.<br /><br />
+		This time, instead of the second list instruction appending to a cell created by the previous iteration, each loop creates a single
+		cell, appends the current iteration, and closes the cell.  The rest of the instructions work as before.
+	</div>
+	<h5>Queries</h5>
+	<div class=indented>
+		We are going to create a simple list of some of the guests in your database.  NOTE: If you do not yet have 
+		any guests in your database, go create a couple before preceeding.<br /><br />
+		On row 0024, select "query".  In this case, only fields make sense, so leave the second box alone.  In the third box, enter "guest list",
+		then click on "guest" in the "Select Form" Section.  Add "first_name" to the fourth box on the query line by clicking on the 
+		"first_name" option in the "Select Field" Section.  Change the "and" line to "extrafield" and pick "last_name" from the "Select Field"
+		Section.  Change line 0026, to "and", pick "&#60;" in the second box, enter "10" in the third box, and pick "id" from the "Select Field"
+		Section for the fourth box.  On line 0027 pick "end".  What you just created will ask the database to create a list variable containing
+		a list of first name and last name for the first nine guests in your database.  Your report will not have changed yet, and before we
+		go further, we need to cover list variables.
+	</div>
+	<h5>Lists as variables</h5>
+	<div class=indented>
+		"List" can refer to an instruction type as you were just using.  However, "list" can also refer to a type of variable.  You have already
+		seen string variables, and list variables share much in common with string variables.  However, you cannot simply define a list
+		variable into existence as you can with strings.  Typically, list variables result from queries against the database or against other
+		list variables.<br /><br />
+		On line 0028 pick "display".  Remove the newly created "and" line and pick "guest_list" to display.  Now, view your report.<br /><br />
+		If you had any guests in your database, you should see [['first name','last name'],['first name','last name']].  This is a text display
+		of the list.  If you change line 0028 from $guest_list to $guest_list::0 you will see just the first item from the list you saw 
+		previously when you view your report.  You can then append another "::0" to line 0028 and you will see just the first name of the first
+		guest when you view your report.
+	</div>
+	<h5>Displaying a query</h5>
+	<div class=indented>
+		What you have just done is one method of displaying a query.  Another method is to use the "display" option directly.  Clear lines
+		0028 and 0029.  Now, change line 0024 from "query" to "display".  In the second box, pick first_name from the "Select Field" Section.
+		REMEMBER: You need to select the form first, in this case "guest".  Now, enter a "," in the third box and view your report.  If you
+		have more than one guest in the database, you will see "filter returned more than one value".  "Display" can only show you one record
+		at a time, but it can nicely format all the fields you select from said record.  To demonstrate, change line 0026 from "&#60; 10" to
+		"&#60; 2" and view your report again.  You should see the first name,last name of your first guest.  Obviously, you may want to change
+		your field separator from "," to ", " to make the display more propper.<br /><br />
+		Displaying a single record, while useful, is not suitable for large reports, hence the use of queries.
+	</div>
+	<h5>Queries and Tables Combined</h5>
+	<div class=indented>
+		Change line 0024 back to "query", reenter "guest list" as the variable name, pick the "first_name" from the guests again and 
+		change line 0026 back to 10.  Now, on line 0028, pick "begin table" and enter "First Name,Last Name" as the row titles.  On line 0029,
+		pick "list", enter, "each guest" in the third box, "1" in the fourth box, leave the fifth box empty, pick "table_new_row" for the 
+		sixth box, and pick "guest_list" for the last box.  Change line 0030 to "display" and pick "table_open_cell".  Change line 0031 to "end"
+		and line 0032 to "display".  Display the first element of each guest ("$each_guest::0") on line 0032, then change line 0033 to 
+		"extrafield", display the second element of each guest ("$each_guest::1"), and pick "table_new_cell" for the separator on line 0032.
+		Change line 0035 to "display", change the extra "and" to "end", and display "table_close_cell".  Finally, add an "end table" at the
+		end of your report and view your report.  You should see the first few guests out of your database in a table.
+	</div>
+	<h5>Queries, Lists, and Ifs</h5>
+	<div class=indented>
+		Next, let us add an "id" field to our query.  Add a row at line 0026 and select "extrafield".  Pick id from the guest list for this
+		new field.  Now, insert a row at line 0031 and select "if".  Pick "=" in the second box, enter 1 in the third box, and enter 
+		"$each_guest::2" in the third box.  Set line 0040 to "end" and view your report.  You will see the report now only shows the first
+		guest in the database.
+	</div>
+	<h5>Queries of queries</h5>
+	<div class=indented>
+		Another way to accomplish the same task is a query of query.  Remove the "end" on line 0040 and the "if" on line 0031.  Insert a row
+		at line 0029 and select "query".  Set box three to "first guest" and enter "$guest_list::0" in the fourth box.  Change line 30 to 
+		"extrafield" and pick "$guest_list::1".  Insert a new row 0031 and pick "and", then enter "=" in the second box, "1" in the third box,
+		and "$guest_list::2" in the third box.  This will select all the records out of "guest_list" where the third element equals "1".  On 
+		line 0034, change "$guest_list" to "$first_guest" and view your report.  The report didn't change on the screen, but is being calculated
+		differently behind the scenes.
+	</div>
+	<h5>Functions</h5>
+	<div class=indented>
+		This section will only cover the basics of calling functions and providing arguments.  Without
+		a more complicated database than a few guests, it is impossible to provide specific directions.  However, if you understand this
+		section, and read the descriptions of what each function takes as arguments, you should be able to figure out how to use the more
+		complicated functions in your own database.<br /><br />
+		Start by selecting "function" on line 0044.  The second box will now show a list of functions.  Choose "today" from the list and 
+		enter "current date" in the third box.  Next, display "current_date" at the end of the report.  You will see today's date when you
+		view your report.<br /><br />
+		On line 0047, again pick "function" and this time select "add_subtract_dates".  Enter "new date" in the third box.  This function 
+		takes a date, and adjustment quantity, what type of adjustment (days, months, or years), and an operator (+ or -).  Every function
+		provides a tool tip with the name of the expected argument.  In this case, enter "current_date" for the date, "10" for the adjustment
+		"months" for the adjustment type, and "+" for the operator.  This will now add 10 months to the current date and store the result
+		in the variable "new_date".  NOTE: You can replace a variable with the output.  For example, if you entered "current_date" in place
+		of "new_date", the function would calculate the current date + ten months and store that as "current_date".<br /><br />
+		On line 0048, select "newline" and on line 0049, display "new_date" and view your report.
+	</div>
+	<h5>Functions and Lists</h5>
+	<div class=indented>
+		Functions can be called inside lists and lists can be used to a variable through a function multiple times.  On line 0051, select "newline"
+		and on line 0052 select "list".  In box two, select "numbers" and enter "0" and "10" in the resulting dialog boxes.  Set box three to 
+		"my number", box four to "1", and box 6 to "&#60;br />".  Replace line 0053 with "function" and select "add_subtract_dates", set box
+		three to "current_date", box four to "$current_date", box five to "$my_number", box six to "years", and box seven to "-".  Change line
+		0054 to "display" and display "current_date".  Replace the "and" on line 55 with "end" and view your report.  You will see a list of 
+		dates starting with today -0 years, followed by -1 years, -2 years, etc.<br /><br />
+	</div>
+</div>
+<h1>Section 5: Conclusion</h1>
+<div class=indented>
+	Hopefully this is enough to get you started building reports.  Just remember, build the reports one instruction set at a time and use
+	"display" to verify your variables are what you think they should be.  View your report progress frequently through the writing process
+	to avoid having no idea where you made a mistake.  Also, don't be afraid to try new instruction combinations and just see what they do.
+	No report can write back to the database, so you cannot lose data.  If you try a report and it fails to run, just write a different
+	instruction set and try again.  You have nothing to lose.
+</div>
+
+{% endblock %}

@@ -1,6 +1,5 @@
 from random import randint
-import hashlib,datetime,json
-import os,re, itertools
+import hashlib,datetime,json,os,re, itertools,inspect
 from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from django.core.context_processors import csrf
@@ -47,7 +46,7 @@ class ReportProcessor():
         Main class for handling preparing and running reports
     '''
     def __init__(self):
-        # Helper variables for creating tables
+        ### Helper variables for creating tables
         self.tableVariables = { 'table_new_row':'</tr><tr>',
                                 'table_new_row_with_break':'</tr><tr><td></td></tr><tr>',
                                 'table_new_cell':'</td><td>',
@@ -56,7 +55,7 @@ class ReportProcessor():
                                 'table_open_row':'<tr>',
                                 'table_close_row':'</tr>',
         }
-        # External functions (found on the report builder when "function" is selected)
+        ### External functions (found on the report builder when "function" is selected)
         self.functions = {  'add':self.add,
                             'subtract':self.subtract,
                             'today': self.today,
@@ -72,7 +71,7 @@ class ReportProcessor():
                             'add_subtract_dates':self.addSubtractDates,
                             'anniversary_check':self.checkAnniversaries,
         }
-        # Internal functions (found on the report builder in each line's dropdown)
+        ### Internal functions (found on the report builder in each line's dropdown)
         self._functions = { 
                             'do':self.do,
                             'newline': self.newline,
@@ -88,7 +87,7 @@ class ReportProcessor():
                             'end table':self.endTable,
                             'if':self.if_,
         }
-        # Dictionary to convert report builder operators to django query filters
+        ### Dictionary to convert report builder operators to django query filters
         self.filter_dict = {
                             '=':'exact',
                             '>':'gt',
@@ -133,12 +132,12 @@ class ReportProcessor():
                         break
             super(ReportProcessor.Env, self).__setitem__(item,value)
 
-    # external functions
+    ### external functions
     
     def checkAnniversaries(self,env,date,from_date,to_date):
         '''
-            Function to look for an aniversary date within a specified range.
-            Returns the number of years if found or False if not
+            Function to look for an aniversary date within a specified range.<br />Arguments: date to check, starting date of range, ending 
+            date of range.<br />Returns: the number of years if anniversary falls within the specified range or False if not.
         '''
         # Convert dates into datetime objects
         date=parse(self.evalVariables(env,date))
@@ -168,7 +167,9 @@ class ReportProcessor():
     
     def addSubtractDates(self,env,date,adjustment,days_months_years,operator):
         '''
-            Function to manipulate dates
+            Function to add or subtract time to a date by days, months, or years<br />
+            Arguments: Date to adjust, quantity of adjustment, type of addjustment, addition or subtraction.<br />\
+            Returns: Date after modification.
         '''
         # Evaluate the date variable
         date = self.evalVariables(env,date)
@@ -190,7 +191,11 @@ class ReportProcessor():
 
     def formatPicture(self,env,url,height,width):
         '''
-            function to convert guest picture record to html img tag
+            Function to make guest picture record display capable in a report.<br />
+            Arguments: link to picture, desired height (in pixels), desired width (in pixels)<br />
+            Returns: formatted picture link suitable for display in reports.<br />
+            NOTE: This function does not display the picture.  Use the "display" instruction to actually place
+            picture in report.
         '''
         # Evaluate the url variable
         url = self.evalVariables(env,url)
@@ -203,55 +208,82 @@ class ReportProcessor():
     
     def lastDayActivated(self,env,boolean_list):
         '''
-            pass through function to booleanMethods
+            Function to find the last date on which a boolean field was activated.<br />
+            Arguments: List of timeseries data from the desired boolean field.<br />
+            Returns: Last day the field activated.
         '''
         return self.booleanMethods(env,boolean_list,last_day_activated=True)
 
     def boolActiveDuring(self,env,boolean_list,start_date,end_date):
         '''
-            pass through function to booleanMethods
+            Function to determine whether a boolean field was ever active during a specified date range.<br />
+            Arguments: List of timeseries data from the desired boolean field, date range start, date range end.<br />
+            Returns: Number of days during the given date range when the boolean was active.  Returns 0 if the boolean was
+            not active during that time.
         '''
         return self.booleanMethods(env,boolean_list,start_date=start_date,end_date=end_date)
     
     def lastDayDeactivated(self,env,boolean_list):
         '''
-            pass through function to booleanMethods
+            Function to find the last date on which a boolean field was deactivated.<br />
+            Arguments: List of timeseries data from the desired boolean field.<br />
+            Returns: Last day the field deactivated.
         '''
         return self.booleanMethods(env,boolean_list,last_day_deactivated=True)
 
     def firstDayActivated(self,env,boolean_list):
         '''
-            pass through function to booleanMethods
+            Function to find the first date on which a boolean field was activated.<br />
+            Arguments: List of timeseries data from the desired boolean field.<br />
+            Returns: First day the field activated.
         '''
         return self.booleanMethods(env,boolean_list,first_day_activated=True)
     
     def countBooleans(self,env,boolean_list):
         '''
-            pass through function to booleanMethods
+            Function to count how many times a boolean field was activated.<br />
+            Arguments: List of timeseries data from the desired boolean field.<br />
+            Returns: Number of times boolean activated.
         '''
         return self.booleanMethods(env,boolean_list)
     
     def countDays(self,env,boolean_list):
         '''
-            pass through function to booleanMethods
+            Function to count how many days a boolean field spent active.<br />
+            Arguments: List of timeseries data from the desired boolean field.<br />
+            Returns: Total days boolean has been active.
         '''
         return self.booleanMethods(env,boolean_list,count_days=True)
     
     def add(self,env,value1,value2):
-        # Eval both variables and return their sum
+        '''
+            Function to add two numbers.<br />
+            Arguments: First value, Second value.<br />
+            Returns: Sum of the two values.
+        '''
         return str(float(self.evalVariables(env,value1)) + float(self.evalVariables(env,value2)))
 
     def subtract(self,env,value1,value2):
-        # Eval both variables and return their difference
+        '''
+            Function to subtract two numbers.<br />
+            Arguments: First value, Second value.<br />
+            Returns: Difference of the two values.
+        '''
         return str(float(self.evalVariables(env,value1)) - float(self.evalVariables(env,value2)))
 
     def today(self,env):
-        # Return now as a datetime
+        '''
+            Function to obtain today's date.<br />
+            Arguments: None.<br />
+            Returns: Today's date.
+        '''
         return datetime.datetime.now().date()
         
     def subtractDates(self,env,date1,date2,days_months_years=None):
         '''
-            Function to subtract date 1 from date two
+            Function to subtract two dates.<br />
+            Arguments: First date, Second date, desired unit of difference (days, months, or years).<br />
+            Returns: Number of units between the two dates in days, months, or years.
         '''
         # evaluate variables
         a = self.evalVariables(env,date1)
@@ -283,16 +315,22 @@ class ReportProcessor():
         return str(d.days)
     
     def length(self,env,variable):
+        '''
+            Function to obtain number of elements in a list or number of characters in a string.<br />
+            Arguments: variable.<br />
+            Returns: Length of provided variable.
+        '''
         # Eval variable
         variable = self.evalVariables(env,variable)
         # Return length
         return len(variable)
             
 
-    # internal functions
+    ### internal functions
     def beginTable(self,env,comma_separated_headers):
         '''
-            Helper function to build html table
+            Instruction to begin building a table.
+            Takes a comma separated list of headers and displays them on the report
         '''
         # Split headers variable into list
         headers = comma_separated_headers.split(',')
@@ -307,13 +345,15 @@ class ReportProcessor():
             env['print']('</tr><tr>')
 
     def endTable(self,env):
-        # Close last row and table
+        '''
+            Instruction to end a table.
+        '''
         env['print']('</tr></table>')
 
     def booleanMethods(self,env,boolean_list,count_days=False,last_day_activated=False,last_day_deactivated=False,first_day_activated=False,start_date=False,end_date=False):
         '''
             Function for manipulating timedata boolean list.
-                The list should be in the form [[date1,true/false],[date2,true/false],...]
+            The list should be in the form [[date1,true/false],[date2,true/false],...]
         '''
         # Eval list variable if not already a list
         if not isinstance(boolean_list,list):
@@ -394,7 +434,7 @@ class ReportProcessor():
 
     def text(self, env, bold, value):
         '''
-            Function to put text into html
+            Function to display text on the report.  Takes bold level and text to display as arguments.
         '''
         # If no bold selected
         if bold == 'none':
@@ -406,7 +446,9 @@ class ReportProcessor():
 
     def set_(self,env,key,value):
         '''
-            Function to update environment variable with value
+            Instruction to set variable to value.  Takes a variable name and a value (which can be another variable) 
+            and registers the variable name as being equal to the value provided.  For example: if you provide name as "my_first_variable"
+            and value as "Hello World", then when you reference "$my_first_variable" the server will translate that to "Hello World".
         '''
         # If list element not being updated
         if '::' not in key:
@@ -441,7 +483,12 @@ class ReportProcessor():
     
     def display(self,env,display_value,separator,timeseries, *code):
         '''
-            Function to look up variables and append html
+            Instruction to translate variables or pull data from the database and display the result.
+            This instruction takes a value to display which can be a variable from the Defined Variables Section
+            or a field from the Select Field Section, a separator character for displaying multiple values, whether
+            the request is timeseries (applies to fields only) and additional instructions.  The additional instructions
+            are given as indented lines until an end instruction closes the display instruction.  See the additional 
+            instructions for further details.
         '''
         # Evaluate separator variable
         separator = self.evalVariables(env,separator)
@@ -470,12 +517,18 @@ class ReportProcessor():
                 
 
     def newline(self, env):
-        # Append html new line
+        '''
+            Instruction to insert a line break in the report.
+        '''
         env['print']('<br />')
 
     def query(self, env, list_type,list_variable,list_range, timeseries, *code):
         '''
-            Function to retrive data from database
+            Instruction to retrive data from database.  This instruction takes type of query, a variable name in which to 
+            store the results, the first field to return, whether the first field is timeseries, and additional instructions.  
+            NOTE: While this instruction accepts both fields and numbers as types of query only fields is relevant.  The additional 
+            instructions are given as indented lines until an end instruction closes the display instruction.  See the additional 
+            instructions for further details.
         '''
         # Retrieve filter results
         a = self.buildFilter(env,list_range,timeseries,code)
@@ -484,7 +537,9 @@ class ReportProcessor():
 
     def if_(self,env,operator,value1,value2,*code):
         '''
-            Function to run some code conditionally
+            Instruction to run some code conditionally.  Takes an operator (e.g. =,<,>,!=, etc), and two values to compare, with 
+            instructions to run.  If the comparison condition evaluates to true, then the conditional instructions are executed
+            otherwise, the conditional instructions are ignored.
         '''
         # Evaluate variables to be compared
         a = self.evalVariables(env,value1)
@@ -544,7 +599,15 @@ class ReportProcessor():
 
     def list_(self, env, list_type,list_variable,row_items,row_num,row_separator,list_range, timeseries, *code):
         '''
-            Function for iterating over lists or ranges
+            Instruction to iterate over lists or a range of numbers.  Takes whether a list or numbers, a variable name for use as the list
+            iterates, how many items to iterate before inserting a row break, how many row breaks to insert before inserting a page break,
+            what to insert for row breaks, what field to return (if a field list) or what range of numbers to iterate (if a number range 
+            list), whether the first field is time series (if a field list), additional instructions and instructions to run every 
+            iteration.  The list instruction starts by searching for additional instructions and retrieving the fields/numbers to iterate
+            (see additional instructions for more information).  Once the list to iterate is constructed, the list instruction will set
+            the variable provided to the first value from the list, then execute the instructions provided, then set the variable provided
+            to the second value from the list, then reexecute the instructions provided, then set the variable provided to the third value
+            from the list, and so on until there are no more remaining elements in the list.
         '''
         # Evaluate row separator
         row_separator = self.evalVariables(env,row_separator)
@@ -611,7 +674,9 @@ class ReportProcessor():
 
     def count(self,env,return_field,timeseries,*code):
         '''
-            Function to count number of items returned by filter
+            Instruction to retrieve the requested fields from the database and put into the report how many records were pulled.
+            Takes the field requested, whether to search timeseries, and additional instructions.  See Additional Instructions for more
+            information.
         '''
         # Retrieve filter
         filter = self.buildFilter(env,return_field,timeseries,code)
@@ -620,7 +685,9 @@ class ReportProcessor():
 
     def sum(self,env,return_field,timeseries,*code):
         '''
-            Function to return sum of all items in filter
+            Instruction to retrieve the requested fields from the database and put into the sum of the values returned
+            Takes the field requested, whether to search timeseries, and additional instructions.  See Additional Instructions for more
+            information.
         '''
         # Retrieve filter
         filter = self.buildFilter(env,return_field,timeseries,code)
@@ -639,7 +706,10 @@ class ReportProcessor():
         env['print'](str(retval))
 
     def function(self, env, function, return_variable, *args):
-        # pass through function to specific selected functions
+        '''
+            Instruction to execute a specified function and store result in the provided variable.
+            See the list of functions for more information.
+        '''
         self.set_(env,return_variable.replace('$',''),self.functions[function](env,*args))
 
     # system functions
@@ -672,9 +742,7 @@ class ReportProcessor():
         return max(0,(earliest_end - latest_start).days + 1)
 
     def do(self, env, *args):
-        '''
-            Function to catch code and process it
-        '''
+        #Function to catch code and process it
         ret = ''
         for arg in args:
             ret = self.listProcess(self.Env(env), arg)
@@ -2177,6 +2245,8 @@ def runreport(request,report_id):
     context=baseContext(request)
     # Retrieve compiled code from report code object
     report_code = json.loads(ReportCode.objects.get(pk=report_id).code)[0]
+    # Retrieve report name
+    report_name=ReportCode.objects.get(pk=report_id).name
     # Create a file like buffer
     output = StringIO()
     # Initialize environment
@@ -2198,7 +2268,7 @@ def runreport(request,report_id):
         env['print'](str(report_code))
         env['print']('</pre>')
     # Display results
-    context.update({'report':mark_safe(output.getvalue())})
+    context.update({'report':mark_safe(output.getvalue()),'report_name':report_name})
     return render(request,'guestmanagement/report.html',context)
 
 def logout(request):
@@ -2357,7 +2427,13 @@ def editpastform(request,target_guest,target_form,target_guesttimedata=None):
     context.update({'target_guest':target_guest, 'target_form':target_form})
     return render(request,'guestmanagement/edit.html',context)
 
-
+def reportwiki(request):
+    context = baseContext(request)
+    _doc = [[i,mark_safe(inspect.getdoc(report_processor._functions[i]))] for i in report_processor._functions.keys()]
+    doc = [[i,mark_safe(inspect.getdoc(report_processor.functions[i]))] for i in report_processor.functions.keys()]
+    context.update({'internal_documentation':_doc,'external_documentation':doc})
+    return render(request,'guestmanagement/reportwiki.html',context)
+    
 
 
 
