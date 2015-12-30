@@ -9,7 +9,7 @@ from django.contrib import messages,auth
 from django.db.models import Q,Max
 from django.contrib.auth.models import User
 from django.forms.formsets import formset_factory
-from guestmanagement.models import Guest,GuestmanagementUserSettings,Program,Form,Field,Prerequisite,GuestData,GuestFormsCompleted,Permission,GuestTimeData,ReportCode,Attachment,DynamicFilePermissions,User_Permission_Setting
+from guestmanagement.models import Guest,GuestmanagementUserSettings,Program,Form,Field,Prerequisite,GuestData,GuestFormsCompleted,Permission,GuestTimeData,ReportCode,Attachment,DynamicFilePermissions,User_Permission_Setting,QuickFilter
 from forms import NewGuestForm,NewProgramForm,NewFormForm,NewFieldForm,NewPrerequisiteForm,NewPermissionsForm,NewReportForm,NewAttachmentForm,NewUser_Permission_Setting
 from django.core.exceptions import MultipleObjectsReturned
 from cStringIO import StringIO
@@ -1556,7 +1556,6 @@ def deduplicateGuestDatas(e,guest):
 def quickfilter(request):
     '''
         View for executing one filter against the database and updating multiple records
-        NOT YET IMPLEMENTED
     '''
     context=baseContext(request)
     fields = [i for i in Field.objects.all() if testPermission(i,request.user)]
@@ -1566,55 +1565,92 @@ def quickfilter(request):
         field_dict[i.form.name].append(i.name)
     context.update({'form_list':json.dumps([i.name for i in Form.objects.all() if testPermission(i,request.user)]),
                     'field_list':json.dumps(field_dict),
+                    'query_list':QuickFilter.objects.filter(user=request.user),
                     })
     if request.POST:
-        guest_list = []
-        criteria = []
-        index = '0'
-        while isinstance(index,str):
-            form = request.POST.get('form_select_'+index,False)
-            if form:
-                field = request.POST.get('field_select_'+index,False)
-                if field:
-                    operator = request.POST.get('operator_'+index,False)
-                    if operator:
-                        value = request.POST.get('value_'+index,False)
-                        if value:
-                            criteria.append([form,field,operator,value])
-            index = str(int(index)+1)
-            if not request.POST.get('form_select_'+index,False):
-                index = False
-        for i in criteria:
-            eqkwargs = {}
-            nekwargs = {}
-            if i[0] != 'Guest':
-                eqkwargs['field__name']=i[1]
-                operator = 'value__%s'%report_processor.filter_dict[i[2]]
-                if operator == '<>':
-                    nekwargs[operator]=i[3].replace('True',"checked='checked'")
+        target_field = Field.objects.get(name=request.POST['field_select'])
+        if request.POST.get('load',False) and request.POST['load_query']:
+            quick_filter = QuickFilter.objects.get(name=request.POST['load_query'],user=request.user)
+            context.update({'submission': [quick_filter.form, quick_filter.field, quick_filter.criteria]})
+        elif request.POST.get('search',False):
+            guest_list = []
+            criteria = []
+            index = '0'
+            while isinstance(index,str):
+                form = request.POST.get('form_select_'+index,False)
+                if form:
+                    field = request.POST.get('field_select_'+index,False)
+                    if field:
+                        operator = request.POST.get('operator_'+index,False)
+                        if operator:
+                            value = request.POST.get('value_'+index,False)
+                            if value:
+                                criteria.append([form,field,operator,value])
+                index = str(int(index)+1)
+                if not request.POST.get('form_select_'+index,False) and request.POST.get('form_select_'+index,False)!='':
+                    index = False
+            for i in criteria:
+                eqkwargs = {}
+                nekwargs = {}
+                if i[0] != 'Guest':
+                    eqkwargs['field__name']=i[1]
+                    operator = 'value__%s'%report_processor.filter_dict[i[2]]
+                    if operator == '<>':
+                        nekwargs[operator]=i[3].replace('True',"checked='checked'")
+                    else:
+                        eqkwargs[operator]=i[3].replace('True',"checked='checked'")
+                    current_guest_list = list(GuestData.objects.filter(**eqkwargs).exclude(**nekwargs).values_list('guest',flat=True))
                 else:
-                    eqkwargs[operator]=i[3].replace('True',"checked='checked'")
-                current_guest_list = list(GuestData.objects.filter(**eqkwargs).exclude(**nekwargs).values_list('guest',flat=True))
-            else:
-                operator = '%s__'%i[1]
-                if i[1]=='Program':
-                    operator += 'name__'
-                    operator = operator.lower()
-                operator = operator + report_processor.filter_dict[i[2]]
-                if i[2] == '<>':
-                    nekwargs[operator]=i[3].replace('True',"checked='checked'")
+                    operator = '%s__'%i[1]
+                    if i[1]=='Program':
+                        operator += 'name__'
+                        operator = operator.lower()
+                    operator = operator + report_processor.filter_dict[i[2]]
+                    if i[2] == '<>':
+                        nekwargs[operator]=i[3].replace('True',"checked='checked'")
+                    else:
+                        eqkwargs[operator]=i[3].replace('True',"checked='checked'")
+                    current_guest_list = list(Guest.objects.filter(**eqkwargs).exclude(**nekwargs).distinct().values_list('id',flat=True))
+                if guest_list==[]:
+                    guest_list = set(current_guest_list)
                 else:
-                    eqkwargs[operator]=i[3].replace('True',"checked='checked'")
-                current_guest_list = list(Guest.objects.filter(**eqkwargs).exclude(**nekwargs).distinct().values_list('id',flat=True))
-            if guest_list==[]:
-                guest_list = set(current_guest_list)
+                    guest_list = guest_list & set(current_guest_list)
+            guest_list = list(guest_list)
+            guest_list = [i for i in Guest.objects.filter(id__in=guest_list) if testPermission(i,request.user)]
+            target_form = Form.objects.get(name=request.POST['form_select'])
+            context.update({'submission': [target_form, target_field, json.dumps([[str(i) for i in a] for a in criteria])]})
+            field_types = {'boolean':'<input type="checkbox" name="%s" %s />',
+                            'text_box':'<input name="%s" value="%s" />',
+                            'date':"<input class='datePicker' name='%s' readonly='true' type='text' value='%s' />",
+                            }
+            if field_types.get(target_field.field_type,False):
+                html_return = []
+                for i in sorted(guest_list):
+                    answer = GuestData.objects.get_or_create(guest=i,field=target_field)[0].value
+                    guest_line = '%s %s<br />'%(field_types[target_field.field_type]%(i.id,answer),i.name())
+                    html_return.append(guest_line)
+                html_return = mark_safe(''.join(html_return))
+                context.update({'form':html_return})
             else:
-                guest_list = guest_list & set(current_guest_list)
-        guest_list = list(guest_list)
-        Print(Guest.objects.filter(id__in=guest_list))
-        
-        
-        
+                messages.add_message(request, messages.INFO, 'Invalid Field Type "%s": Pick a Different Field'%target_field.field_type)
+            if request.POST.get('save',False) == 'on' and request.POST.get('save_name',False):
+                quick_filter = QuickFilter.objects.get_or_create(user=request.user,form=target_form,field=target_field,name=request.POST['save_name'])[0]
+                quick_filter.criteria = json.dumps(criteria)
+                quick_filter.save()
+        else:
+            time_stamp = datetime.datetime.now()
+            for i in request.POST.keys():
+                if i.isdigit():
+                    guest = Guest.objects.get(pk=i)
+                    value = request.POST[i]
+                    data = GuestData.objects.get_or_create(guest=guest,field=target_field)[0]
+                    data.value = value
+                    data.save()
+                    if target_field.time_series:
+                        b = GuestTimeData.objects.get_or_create(guest=guest,field=target_field,date=time_stamp)[0]
+                        b.value = data.value
+                        b.save()
+            messages.add_message(request, messages.INFO, 'Commit Completed')
     return render(request,'guestmanagement/quickfilter.html',context)
     
 

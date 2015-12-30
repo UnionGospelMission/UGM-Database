@@ -258,3 +258,13 @@ class ReportCode(models.Model):
             ('view_report', 'Can See Reports'),
             ('manage_report', 'Can Manage Reports'),
         )
+
+class QuickFilter(models.Model):
+    name = models.CharField(max_length=2000, blank=True, null=True, unique=True)
+    field = models.ForeignKey(Field, blank=True, null=True)
+    form = models.ForeignKey(Form, blank=True, null=True)
+    criteria = models.CharField(max_length=200000, blank=True, null=True)
+    user = models.ForeignKey(User)
+
+    def __unicode__(self):
+        return self.name

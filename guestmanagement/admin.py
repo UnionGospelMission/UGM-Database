@@ -1,5 +1,5 @@
 from django.contrib import admin
-from guestmanagement.models import Guest,Program,Form,Field,Prerequisite,GuestData,Permission,GuestTimeData,ReportCode,Attachment,DynamicFilePermissions,GuestmanagementUserSettings,GuestFormsCompleted,User_Permission_Setting
+from guestmanagement.models import Guest,Program,Form,Field,Prerequisite,GuestData,Permission,GuestTimeData,ReportCode,Attachment,DynamicFilePermissions,GuestmanagementUserSettings,GuestFormsCompleted,User_Permission_Setting,QuickFilter
 
 # Register your models here.
 
@@ -48,6 +48,7 @@ class User_Permission_SettingAdmin(admin.ModelAdmin):
 
 admin.site.register(Guest,GuestAdmin)
 admin.site.register(Program)
+admin.site.register(QuickFilter)
 admin.site.register(Form,FormAdmin)
 admin.site.register(Field,FieldAdmin)
 admin.site.register(Prerequisite)

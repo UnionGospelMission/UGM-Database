@@ -8,13 +8,33 @@
 {% block content %}
 <input name='field_list' id='field_list' value="{{ field_list }}" hidden />
 <input name='form_list' id='form_list' value="{{ form_list }}" hidden />
+<input name='submitted_form' id='submitted_form' value="{{ submission.0.name }}" hidden />
+<input name='submitted_field' id='submitted_field' value="{{ submission.1.name }}" hidden />
+<input name='submitted_criteria' id='submitted_criteria' value="{{ submission.2 }}" hidden />
 <script type="text/javascript" src="{% static "guestmanagement/js/quickfilter.js" %}"></script>
 <form action='.' method='post' autocomplete="off" enctype="multipart/form-data">
 	{% csrf_token %}
+	<div id='query_loading'>
+		Load Query:
+		<select name='load_query'>
+			<option value = ''></option>
+			{% for i in query_list %}
+				<option value='{{ i.name }}'>{{ i.name }}</option>
+			{% endfor %}
+		</select>
+		<input id='load' name='load' type='submit' value='Load' />
+	</div>
 	<div id='form_select_div'></div>
 	<div id='field_select_div'></div>
 	<div id='filter_div'></div>
-	<div id='viewer_div'></div>
-	<input id='search' type='submit' value='Submit' hidden>
+	<input id='search' name='search' type='submit' value='Submit' hidden />
+	<label id='save_label' for="save" hidden>Save Query:</label><input id='save' name='save' type='checkbox' onclick='toggleName();' hidden />
+	<label id='save_name_label' for="save_name" hidden>Query Name:</label><input name='save_name' id='save_name' hidden />
+	<div id='viewer_div'>
+		{% if form %}
+		{{ form }}
+		{% endif %}
+		<input id='change' name='change' type='submit' value='Commit' />
+	</div>
 </form>
 {% endblock %}

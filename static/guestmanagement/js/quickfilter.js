@@ -16,6 +16,23 @@ document.ready=function (){
 	form_select.name = "form_select";
 	form_select.onchange = changeForm;
     window.criterion_number = 0;
+    if (document.getElementById('submitted_form').value!=''){
+		form_select.value = document.getElementById('submitted_form').value;
+		var field_select = changeForm(form_select);
+		field_select.value = document.getElementById('submitted_field').value;
+		var new_criterion = setFilter();
+		var criterion_list = JSON.parse(document.getElementById('submitted_criteria').value);
+		for (var i=0;i<criterion_list.length;i++){
+			new_criterion.children[0].value = criterion_list[i][0];
+			var holding = setFields(new_criterion.children[0]);
+			holding = undefined;
+			new_criterion.children[1].value = criterion_list[i][1];
+			new_criterion.children[2].value = criterion_list[i][2];
+			new_criterion.children[3].value = criterion_list[i][3];
+			new_criterion = newCriterion(new_criterion.children[0]);
+		}
+	}
+    
 }
 
 function createFormSelect(t){
@@ -30,7 +47,10 @@ function createFormSelect(t){
 	return select;
 }
 
-function changeForm(){
+function changeForm(t){
+    if (t instanceof Event) {
+        t=this;
+    }
 	var field_select_div = document.getElementById('field_select_div');
 	while (field_select_div.firstChild) {
 		field_select_div.removeChild(field_select_div.firstChild);
@@ -39,22 +59,22 @@ function changeForm(){
 	header.appendChild(document.createTextNode('Pick Field:'));
 	var field_select = field_select_div.appendChild(document.createElement('select'));
 	field_select.appendChild(new Option('',''));
-	for (var i=0;i<field_list[this.value].length;i++){
-		field_select.appendChild(new Option(field_list[this.value][i],field_list[this.value][i]));
+	for (var i=0;i<field_list[t.value].length;i++){
+		field_select.appendChild(new Option(field_list[t.value][i],field_list[t.value][i]));
 	}
 	field_select.onchange = setFilter;
 	field_select.name = "field_select";
+	return field_select;
 }
 
 function setFilter(){
 	criterion_number = 0;
 	var filter_div = document.getElementById('filter_div');
-	while (filter_div.firstChild) {
-		filter_div.removeChild(filter_div.firstChild);
+	if (! filter_div.children[0]){
+		var header = filter_div.appendChild(document.createElement('h5'));
+		header.appendChild(document.createTextNode('Set Criterion:'));
+		return newCriterion(filter_div);
 	}
-	var header = filter_div.appendChild(document.createElement('h5'));
-	header.appendChild(document.createTextNode('Set Criterion:'));
-	newCriterion(filter_div);
 }
 
 function newCriterion(t) {
@@ -91,22 +111,42 @@ function newCriterion(t) {
 	}
 	var submit_button = document.getElementById('search');
 	if (submit_button.offsetParent===null && t.parentNode.nextSibling != null && t.parentNode.tagName!='FORM'){
-		submit_button.style.display = 'block';
+		submit_button.style.display = 'inline';
+		document.getElementById('save').style.display = 'inline';
+		document.getElementById('save_label').style.display = 'inline';
+	}
+	if (new_criterion){
+		return new_criterion;
 	}
 }
 
-function setFields(){
-	t=this.nextSibling;
-	while (t.firstChild) {
-		t.removeChild(t.firstChild);
-	}
-	t.appendChild(new Option('',''));
-	var my_field_list = field_list[this.value];
-	if (my_field_list == undefined){
+function setFields(t){
+    if (t instanceof Event) {
+        t=this;
+    }
+	var my_field_list = field_list[t.value];
+	if (my_field_list == undefined && t.value != ''){
 		my_field_list = ['ID','First Name','Middle Name','Last Name','SSN','Program'];
 	}
-	for (var i=0;i<my_field_list.length;i++){
-		t.appendChild(new Option(my_field_list[i],my_field_list[i]));
+	tn=t.nextSibling;
+	while (tn.firstChild) {
+		tn.removeChild(tn.firstChild);
 	}
+	tn.appendChild(new Option('',''));
+	for (var i=0;i<my_field_list.length;i++){
+		tn.appendChild(new Option(my_field_list[i],my_field_list[i]));
+	}
+	return tn;
 	
+}
+
+function toggleName() {
+	var save = document.getElementById('save');
+	if (save.checked){
+		document.getElementById('save_name').style.display = 'inline';
+		document.getElementById('save_name_label').style.display = 'inline';
+	} else {
+		document.getElementById('save_name').style.display = 'none';
+		document.getElementById('save_name_label').style.display = 'none';
+	}
 }
