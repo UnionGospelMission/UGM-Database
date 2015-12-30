@@ -1568,7 +1568,6 @@ def quickfilter(request):
                     'query_list':QuickFilter.objects.filter(user=request.user),
                     })
     if request.POST:
-        target_field = Field.objects.get(name=request.POST['field_select'])
         if request.POST.get('load',False) and request.POST['load_query']:
             quick_filter = QuickFilter.objects.get(name=request.POST['load_query'],user=request.user)
             context.update({'submission': [quick_filter.form, quick_filter.field, quick_filter.criteria]})
@@ -1616,6 +1615,7 @@ def quickfilter(request):
                 else:
                     guest_list = guest_list & set(current_guest_list)
             guest_list = list(guest_list)
+            target_field = Field.objects.get(name=request.POST['field_select'])
             guest_list = [i for i in Guest.objects.filter(id__in=guest_list) if testPermission(i,request.user)]
             target_form = Form.objects.get(name=request.POST['form_select'])
             context.update({'submission': [target_form, target_field, json.dumps([[str(i) for i in a] for a in criteria])]})
@@ -1639,6 +1639,7 @@ def quickfilter(request):
                 quick_filter.save()
         else:
             time_stamp = datetime.datetime.now()
+            target_field = Field.objects.get(name=request.POST['field_select'])
             for i in request.POST.keys():
                 if i.isdigit():
                     guest = Guest.objects.get(pk=i)
