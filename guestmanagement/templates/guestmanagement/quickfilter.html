@@ -32,9 +32,9 @@
 	<label id='save_name_label' for="save_name" hidden>Query Name:</label><input name='save_name' id='save_name' hidden />
 	<div id='viewer_div'>
 		{% if form %}
-		{{ form }}
+			{{ form }}
+			<input id='change' name='change' type='submit' value='Commit' />
 		{% endif %}
-		<input id='change' name='change' type='submit' value='Commit' />
 	</div>
 </form>
 {% endblock %}
