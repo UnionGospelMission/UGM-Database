@@ -7,17 +7,14 @@
 {% endblock %}
 {% block content %}
 <input name='field_list' id='field_list' value="{{ field_list }}" hidden />
+<input name='form_list' id='form_list' value="{{ form_list }}" hidden />
 <script type="text/javascript" src="{% static "guestmanagement/js/quickfilter.js" %}"></script>
 <form action='.' method='post' autocomplete="off" enctype="multipart/form-data">
-	<h5>Pick Form:</h5>
-	<select name="form_select" onChange="changeForm(this);">
-		<option value=""></option>
-		{% for i in form_list %}
-			<option value="{{ i }}">{{ i }}</option>
-		{% endfor %}
-	</select><br />
+	{% csrf_token %}
+	<div id='form_select_div'></div>
 	<div id='field_select_div'></div>
 	<div id='filter_div'></div>
 	<div id='viewer_div'></div>
+	<input id='search' type='submit' value='Submit' hidden>
 </form>
 {% endblock %}
