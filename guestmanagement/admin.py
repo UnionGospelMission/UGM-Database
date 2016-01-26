@@ -1,5 +1,5 @@
 from django.contrib import admin
-from guestmanagement.models import Guest,Program,Form,Field,Prerequisite,GuestData,Permission,GuestTimeData,ReportCode,Attachment,DynamicFilePermissions,GuestmanagementUserSettings,GuestFormsCompleted,User_Permission_Setting,QuickFilter
+from guestmanagement.models import Guest,Program,Form,Field,Prerequisite,GuestData,Permission,GuestTimeData,Report,Attachment,DynamicFilePermissions,GuestmanagementUserSettings,GuestFormsCompleted,User_Permission_Setting,QuickFilter
 
 # Register your models here.
 
@@ -34,7 +34,7 @@ class GuestFormsCompletedAdmin(admin.ModelAdmin):
 	search_fields = ['guest__last_name']
 	list_display = ('guest','form','complete')
 
-class ReportCodeAdmin(admin.ModelAdmin):
+class ReportAdmin(admin.ModelAdmin):
 	list_display = ('name','user_list')
 
 class AttachmentAdmin(admin.ModelAdmin):
@@ -55,7 +55,7 @@ admin.site.register(Prerequisite)
 admin.site.register(GuestData,GuestDataAdmin)
 admin.site.register(Permission)
 admin.site.register(GuestTimeData,GuestTimeDataAdmin)
-admin.site.register(ReportCode,ReportCodeAdmin)
+admin.site.register(Report,ReportAdmin)
 admin.site.register(Attachment,AttachmentAdmin)
 admin.site.register(DynamicFilePermissions,DynamicFilePermissionsAdmin)
 admin.site.register(GuestmanagementUserSettings)

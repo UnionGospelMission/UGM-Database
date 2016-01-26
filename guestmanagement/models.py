@@ -243,7 +243,7 @@ class GuestmanagementUserSettings(models.Model):
     next_page = models.CharField(max_length=2000, blank=True, null=True)
 
 
-class ReportCode(models.Model):
+class Report(models.Model):
     name = models.CharField(max_length=2000, blank=True, null=True, unique=True)
     description = models.CharField(max_length=2000)
     code = models.CharField(max_length=200000, blank=True, null=True)

@@ -9,7 +9,7 @@ from django.contrib import messages,auth
 from django.db.models import Q,Max
 from django.contrib.auth.models import User
 from django.forms.formsets import formset_factory
-from guestmanagement.models import Guest,GuestmanagementUserSettings,Program,Form,Field,Prerequisite,GuestData,GuestFormsCompleted,Permission,GuestTimeData,ReportCode,Attachment,DynamicFilePermissions,User_Permission_Setting,QuickFilter
+from guestmanagement.models import Guest,GuestmanagementUserSettings,Program,Form,Field,Prerequisite,GuestData,GuestFormsCompleted,Permission,GuestTimeData,Report,Attachment,DynamicFilePermissions,User_Permission_Setting,QuickFilter
 from forms import NewGuestForm,NewProgramForm,NewFormForm,NewFieldForm,NewPrerequisiteForm,NewPermissionsForm,NewReportForm,NewAttachmentForm,NewUser_Permission_Setting
 from django.core.exceptions import MultipleObjectsReturned
 from cStringIO import StringIO
@@ -32,7 +32,7 @@ target_type_dict = {# Reference dictionary for matching the correct new form to 
                     'field':[NewFieldForm,Field,'name'],
                     'prerequisite':[NewPrerequisiteForm,Prerequisite,'name'],
                     'permission':[NewPermissionsForm,Permission,'name'],
-                    'report':[NewReportForm,ReportCode,'name'],
+                    'report':[NewReportForm,Report,'name'],
                     'attachment':[NewAttachmentForm,Attachment,'name'],
                     'user_permission_setting':[NewUser_Permission_Setting,User_Permission_Setting,'user'],
                 }
@@ -1426,7 +1426,7 @@ def testPermission(target_object,user,session={},second_object=None,testurl=Fals
             for i in target_object:
                 if not testPermission(i,user,session,second_object,testurl):
                     return False
-    elif isinstance(target_object,ReportCode):
+    elif isinstance(target_object,Report):
         # If a report is being requested, deny access if the user is not listed
         if user not in target_object.users.all():
             return False
@@ -1807,16 +1807,16 @@ def manage(request,target_type=None,target_object=None):
     # If a new object
     if target_object=='new':
         # Check Permissions
-        if not testPermission('add_{0}'.format(target_type.replace('report','reportcode')),request.user):
-            return beGone('add_{0}'.format(target_type.replace('report','reportcode')))
+        if not testPermission('add_{0}'.format(target_type),request.user):
+            return beGone('add_{0}'.format(target_type))
         # Set no instance flag
         target_instance = None
         # Set wording to appear on webpage
         create_or_edit = 'Create New'
     else:
         # Check Framework permissions
-        if not testPermission('change_{0}'.format(target_type.replace('report','reportcode')),request.user):
-            return beGone('change_{0}'.format(target_type.replace('report','reportcode')))
+        if not testPermission('change_{0}'.format(target_type),request.user):
+            return beGone('change_{0}'.format(target_type))
         # Pull current database entry for object being managed
         target_instance = target_type_dict[target_type][1].objects.get(pk=target_object)
         # Make target object match target instance (pending cleanup)
@@ -2330,13 +2330,13 @@ def runreport(request,report_id):
     '''
     View for executing and displaying reports
     '''
-    if not testPermission(ReportCode.objects.get(pk=report_id),request.user):
+    if not testPermission(Report.objects.get(pk=report_id),request.user):
         return beGone('You may not view report')
     context=baseContext(request)
     # Retrieve compiled code from report code object
-    report_code = json.loads(ReportCode.objects.get(pk=report_id).code)[0]
+    report_code = json.loads(Report.objects.get(pk=report_id).code)[0]
     # Retrieve report name
-    report_name=ReportCode.objects.get(pk=report_id).name
+    report_name=Report.objects.get(pk=report_id).name
     # Create a file like buffer
     output = StringIO()
     # Initialize environment

@@ -1,4 +1,4 @@
-from guestmanagement.models import Guest,Program,Form,Field,Prerequisite,Permission,ReportCode,Attachment,User_Permission_Setting
+from guestmanagement.models import Guest,Program,Form,Field,Prerequisite,Permission,Report,Attachment,User_Permission_Setting
 from django import forms
 from django.utils.safestring import mark_safe
 
@@ -56,7 +56,7 @@ class NewPermissionsForm(forms.ModelForm):
 class NewReportForm(forms.ModelForm):
 	description = forms.CharField(widget=forms.Textarea(),required=False)
 	class Meta:
-		model=ReportCode
+		model=Report
 		exclude=[]
 		fields=['name','users','description']
 		list_filter = [['name','icontains']]
