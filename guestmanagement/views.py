@@ -759,7 +759,6 @@ class ReportProcessor():
         return retval
 
     def buildFilter(self,env,return_field,timeseries,code):
-        Print('new query')
         '''
             Function to retrieve data from database
         '''
@@ -1076,12 +1075,23 @@ class ReportProcessor():
         for i in holding.keys():
             # Add to return each guest's records
             retval.append(holding[i])
-        try:
-            # Try sorting on lower case the first element
-            return sorted(retval, key=lambda s: s[0].lower())
-        except AttributeError:
-            # Other wise just sort list
-            return sorted(retval)
+        # Iterate through sorting possiblities
+        for i in [lambda x: sorted(x, key=self.sortByDateStringsKeys),
+                    lambda x: sorted(x, key=lambda s: s[0].lower()),
+                    ]:
+            # Try each sorting possiblity, continue to the next if it fails
+            try:
+                # Try sorting each pattern
+                return i(retval)
+            except (AttributeError,AssertionError):
+                continue
+        return sorted(retval)
+    
+    def sortByDateStringsKeys(self,el):
+        a=el[0].split('/')
+        assert len(a)==3 or el[0]==""
+        if len(a)==3:
+            return (a[2],a[0],a[1])
     
     def listToSet(self,_list,rev=False):
         '''
