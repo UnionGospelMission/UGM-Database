@@ -58,7 +58,7 @@ class NewReportForm(forms.ModelForm):
 	class Meta:
 		model=Report
 		exclude=[]
-		fields=['name','users','description']
+		fields=['name','owner','description','permissions_must_have','permissions_may_have']
 		list_filter = [['name','icontains']]
 		list_display = ['name','user_list']
 

@@ -52,6 +52,7 @@ class Program(models.Model):
     name = models.CharField(max_length=200)
     permissions_may_have = models.ManyToManyField('Permission', null=True, blank=True, related_name='program_may')
     permissions_must_have = models.ManyToManyField('Permission', null=True, blank=True, related_name='program_must')
+    permissions_write = models.ManyToManyField('Permission', null=True, blank=True, related_name='program_write')
 
     def __unicode__(self):
         return self.name
@@ -70,6 +71,7 @@ class Form(models.Model):
     form_prerequisite = models.ManyToManyField('Prerequisite', null=True, blank=True)
     permissions_must_have = models.ManyToManyField('Permission', null=True, blank=True, related_name='must')
     permissions_may_have = models.ManyToManyField('Permission', null=True, blank=True, related_name='may')
+    permissions_write = models.ManyToManyField('Permission', null=True, blank=True, related_name='form_write')
     guest_completable = models.BooleanField(default=False)
     lock_when_complete = models.BooleanField(default=False)
     auto_grade = models.BooleanField(default=False)
@@ -116,6 +118,7 @@ class Field(models.Model):
     add_only = models.BooleanField(default=False)
     permissions_must_have = models.ManyToManyField('Permission', null=True, blank=True, related_name='field_must')
     permissions_may_have = models.ManyToManyField('Permission', null=True, blank=True, related_name='field_may')
+    permissions_write = models.ManyToManyField('Permission', null=True, blank=True, related_name='field_write')
     correct_answer = models.CharField(max_length=200, blank=True, null=True)
 
     def __unicode__(self):
@@ -247,11 +250,13 @@ class Report(models.Model):
     name = models.CharField(max_length=2000, blank=True, null=True, unique=True)
     description = models.CharField(max_length=2000)
     code = models.CharField(max_length=200000, blank=True, null=True)
-    users = models.ManyToManyField(User,related_name="guestmanagement_report_users")
+    owner = models.ManyToManyField(User,related_name="guestmanagement_report_users")
     variables = models.CharField(max_length=20000, blank=True, null=True)
+    permissions_must_have = models.ManyToManyField('Permission', null=True, blank=True, related_name='report_must')
+    permissions_may_have = models.ManyToManyField('Permission', null=True, blank=True, related_name='report_may')
 
     def user_list(self):
-        return ' | '.join([i.__unicode__() for i in self.users.all()])
+        return ' | '.join([i.__unicode__() for i in self.owner.all()])
 
     class Meta:
         permissions = (

@@ -1415,14 +1415,13 @@ def updateStaticPermissions(target_object,delete=False):
             i.save()
 
 
-def testPermission(target_object,user,session={},second_object=None,testurl=False,owner=False):
+def testPermission(target_object,user,session={},second_object=None,testurl=False,owner=False,write=False):
     '''
     Method of determining based on permissions whether a user has permission to access a form, field, guest, or static file
     '''
     # Return True if a superuser
     if user.is_superuser:
         return True
-    # Initialize allow access flag
     if testurl:
         # If testing a static file, pull the static file permissions record from the database
         target_object = DynamicFilePermissions.objects.get(path=target_object)
@@ -1436,10 +1435,6 @@ def testPermission(target_object,user,session={},second_object=None,testurl=Fals
             for i in target_object:
                 if not testPermission(i,user,session,second_object,testurl):
                     return False
-    elif isinstance(target_object,Report):
-        # If a report is being requested, deny access if the user is not listed
-        if user not in target_object.users.all():
-            return False
     elif session.get('password',''):
         # If a guest is logged in
         # Get the guest's record based on the session
@@ -1465,19 +1460,41 @@ def testPermission(target_object,user,session={},second_object=None,testurl=Fals
         if hasattr(target_object,'owner') and owner:
             if not user in target_object.owner.all():
                 return False
-        if hasattr(target_object,'permissions_must_have'):
-            for i in target_object.permissions_must_have.all():
-                if user not in i.users.all():
+
+        if hasattr(target_object,'permissions_write') and write:
+            if list(target_object.permissions_write.all()) != []:
+                test = [True for i in target_object.permissions_write.all() if user in i.users.all()]
+                if not test:
                     return False
-        if hasattr(target_object,'permissions_may_have'):
-            test_list = [True for i in target_object.permissions_may_have.all() if user in i.users.all()]
-            if test_list==[] and target_object.permissions_may_have.all():
-                return False
+            elif hasattr(target_object,'form'):
+                if not testPermission(target_object.form,user,write=write):
+                    return False
+        else:
+            if hasattr(target_object,'permissions_must_have'):
+                for i in target_object.permissions_must_have.all():
+                    if user not in i.users.all():
+                        return False
+            if hasattr(target_object,'permissions_may_have'):
+                test_list = [True for i in target_object.permissions_may_have.all() if user in i.users.all()]
+                if test_list==[] and target_object.permissions_may_have.all():
+                    return False
+
         if hasattr(target_object,'program'):
             if list(target_object.program.all()) != []:
-                test_list=[True for i in getattr(target_object,'program').all() if testPermission(i,user)]
+                test_list=[True for i in getattr(target_object,'program').all() if testPermission(i,user,write=write)]
                 if test_list==[]:
                     return False
+
+        if second_object:
+            s1 = set(second_object.program.all())
+            if hasattr(target_object,'form'):
+                s2 = set(target_object.form.program.all())
+            else:
+                s2 = set(target_object.program.all())
+            test = [True for i in list(s1.intersection(s2)) if testPermission(i,user,write=write)]
+            if test==[]:
+                return False
+            
     return True
 
 def moveField(target_field,direction):
@@ -1580,7 +1597,12 @@ def quickfilter(request):
     if request.POST:
         if request.POST.get('load',False) and request.POST['load_query']:
             quick_filter = QuickFilter.objects.get(name=request.POST['load_query'],user=request.user)
-            context.update({'submission': [quick_filter.form, quick_filter.field, quick_filter.criteria]})
+            if not testPermission(quick_filter.field,request.user):
+                messages.add_message(request, messages.INFO, 'You may not view field %s.  Did permissions change?'%quick_filter.field)
+            else:
+                context.update({'submission': [quick_filter.form, quick_filter.field, quick_filter.criteria],
+                                'write_perm':testPermission(quick_filter.field,request.user,write=True),
+                                })
         elif request.POST.get('search',False):
             guest_list = []
             criteria = []
@@ -1613,7 +1635,7 @@ def quickfilter(request):
                     operator = '%s__'%i[1]
                     if i[1]=='Program':
                         operator += 'name__'
-                        operator = operator.lower()
+                    operator = operator.lower().replace(' ','_')
                     operator = operator + report_processor.filter_dict[i[2]]
                     if i[2] == '<>':
                         nekwargs[operator]=i[3].replace('True',"checked='checked'")
@@ -1629,18 +1651,22 @@ def quickfilter(request):
             guest_list = [i for i in Guest.objects.filter(id__in=guest_list) if testPermission(i,request.user)]
             target_form = Form.objects.get(name=request.POST['form_select'])
             context.update({'submission': [target_form, target_field, json.dumps([[str(i) for i in a] for a in criteria])]})
-            field_types = {'boolean':'<input type="checkbox" name="%s" %s />',
-                            'text_box':'<input name="%s" value="%s" />',
-                            'date':"<input class='datePicker' name='%s' readonly='true' type='text' value='%s' />",
+            field_types = {'boolean':'<input type="checkbox" name="%s" %s %s />',
+                            'text_box':'<input name="%s" value="%s" %s />',
+                            'date':"<input class='datePicker' name='%s' readonly='true' type='text' value='%s' %s />",
                             }
             if field_types.get(target_field.field_type,False):
                 html_return = []
-                for i in sorted(guest_list):
+                for i in sorted(guest_list,key=lambda x: x.last_name):
                     answer = GuestData.objects.get_or_create(guest=i,field=target_field)[0].value
-                    guest_line = '%s %s<br />'%(field_types[target_field.field_type]%(i.id,answer),i.name())
+                    guest_line = ''
+                    if target_field.field_type=='boolean':
+                        guest_line = '<input name=%s hidden>'%i.id
+                    guest_line += '%s %s<br />'%(field_types[target_field.field_type]%(i.id,answer,{True:'',False:'disabled'}[testPermission(target_field,request.user,second_object=i,write=True)]),i.last_name + ', ' + i.first_name)
                     html_return.append(guest_line)
                 html_return = mark_safe(''.join(html_return))
                 context.update({'form':html_return})
+                context.update({'write_perm':testPermission(target_field,request.user,write=True)})
             else:
                 messages.add_message(request, messages.INFO, 'Invalid Field Type "%s": Pick a Different Field'%target_field.field_type)
             if request.POST.get('save',False) == 'on' and request.POST.get('save_name',False):
@@ -1650,17 +1676,24 @@ def quickfilter(request):
         else:
             time_stamp = datetime.datetime.now()
             target_field = Field.objects.get(name=request.POST['field_select'])
+            if not testPermission(target_field,request.user,write=True):
+                return beGone('No write permission on %s'%target_field)
             for i in request.POST.keys():
                 if i.isdigit():
                     guest = Guest.objects.get(pk=i)
-                    value = request.POST[i]
-                    data = GuestData.objects.get_or_create(guest=guest,field=target_field)[0]
-                    data.value = value
-                    data.save()
-                    if target_field.time_series:
-                        b = GuestTimeData.objects.get_or_create(guest=guest,field=target_field,date=time_stamp)[0]
-                        b.value = data.value
-                        b.save()
+                    if testPermission(target_field,request.user,second_object=guest,write=True):
+                        value = request.POST[i]
+                        if value == 'on' and target_field.field_type=='boolean':
+                            value = "checked='checked'"
+                        data = GuestData.objects.get_or_create(guest=guest,field=target_field)[0]
+                        data.value = value
+                        data.save()
+                        if target_field.time_series:
+                            b = GuestTimeData.objects.get_or_create(guest=guest,field=target_field,date=time_stamp)[0]
+                            b.value = data.value
+                            b.save()
+                    else:
+                        messages.add_message(request, messages.INFO, 'Commit denied for %s'%guest.id)
             messages.add_message(request, messages.INFO, 'Commit Completed')
     return render(request,'guestmanagement/quickfilter.html',context)
     

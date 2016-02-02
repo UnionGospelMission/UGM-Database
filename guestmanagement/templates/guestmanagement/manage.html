@@ -68,13 +68,15 @@
                     <input type='button' value='Insert Row' onclick='insertRow()' id="insert_row" />
                 {% endif %}
                 <div id="standard_form">
-                     {% csrf_token %}
-                       {{ form }}
+					{% if target_type == 'report' %}
+						<a href='/guestmanagement/reportwiki/'>Report Builder wiki</a><br />
+					{% endif %}
+					{% csrf_token %}
+					{{ form }}
                 </div>
-                   {% if target_type == 'report' %}
-                   <a href='/guestmanagement/reportwiki/'>Report Builder wiki</a><br />
+                {% if target_type == 'report' %}
                     <script type="text/javascript" src="{% static "guestmanagement/js/report.js" %}"></script>
-                       <link rel="stylesheet" type="text/css" href="{% static "guestmanagement/css/report.css" %}" />
+                    <link rel="stylesheet" type="text/css" href="{% static "guestmanagement/css/report.css" %}" />
                     <div id='report_form'>
                         <input hidden id='loaded_report' value='{{ loaded_report }}'/>
                         <input hidden id='loaded_fields' value='{{ all_field_dict }}'/>
@@ -106,7 +108,7 @@
                         </div>
                     </div>
                 {% endif %}
-               {% if target_type != 'report' %}<input id='search' type='submit' value='Submit'>{% endif %}
+                {% if target_type != 'report' %}<input id='search' type='submit' value='Submit'>{% endif %}
             </form>
         </div>
     {% endif %}
