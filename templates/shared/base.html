@@ -85,7 +85,9 @@
 			<a href="/guestmanagement/guestlogin/">{% trans 'Guest Login' %}</a> |
 		{% endif %}
 	{% endif %}
-	<a href="{% url 'admin:index' %}">{% trans 'Admin' %}</a> | 
+	{% if user.is_superuser %}
+		<a href="{% url 'admin:index' %}">{% trans 'Admin' %}</a> | 
+	{% endif %}
 	{% if title %} &rsaquo; {{ title }}{% endif %}
 	</div>
 	{% endblock %}

@@ -1,5 +1,8 @@
 from django.contrib.sessions.models import Session
 from django.contrib.auth.models import User
+from django.core.urlresolvers import reverse
+from django.shortcuts import redirect
+
 
 def interactiveConsole(a,b=None):
     import code
@@ -19,7 +22,11 @@ class setBaseSite():
         if request.session.session_key:
             uid = Session.objects.get(pk=request.session.session_key).get_decoded().get('_auth_user_id')
             if uid:
-                print User.objects.get(pk=uid)
+                user = User.objects.get(pk=uid)
+                print user
+                if request.path.startswith(reverse('admin:index')) and not user.is_superuser:
+                    return redirect('/guestmanagement/')
+                    
             else:
                 print "Anonymous"
         else:
