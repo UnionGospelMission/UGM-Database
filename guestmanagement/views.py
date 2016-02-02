@@ -2212,9 +2212,10 @@ def view(request,target_type,target_object,second_object=None):
         field_list = Field.objects.filter(form=target_object)
         # if there is no second_object, no guest is being associated with this form, therefore any posted data relates to moving fields
         if not second_object:
+            # Verify ownership
             if request.POST:
                 # Test Framework and Content permissions
-                if not testPermission(['and','change_form',target_object],request.user):
+                if not testPermission(['and','change_form',target_object],request.user,owner=True):
                     return beGone(str(['and','change_form',target_object]))
                 # Move Field
                 moveField(Field.objects.get(pk=request.POST['move_field']),request.POST['move_type'])
@@ -2225,8 +2226,8 @@ def view(request,target_type,target_object,second_object=None):
                 # If a form is being completed
                 # Test Framework Permissions on staff
                 if request.user.is_authenticated():
-                    if not testPermission('manage_guest',request.user):
-                        return beGone('manage_guest')
+                    if not testPermission(target_object,request.user,second_object=second_object,write=True):
+                        return beGone('No write permission on %s or %s'%(target_object,second_object.id))
                 # Test for completed forms
                 if target_object.lock_when_complete:
                     completed_form = GuestFormsCompleted.objects.get_or_create(guest=second_object,form=target_object)
@@ -2243,6 +2244,10 @@ def view(request,target_type,target_object,second_object=None):
                 if not required_test:
                     time_stamp=datetime.datetime.now()
                     for i in field_list.order_by('order'):
+                        # Test write permission on field
+                        if not testPermission(i,request.user,second_object=second_object,write=True):
+                            messages.add_message(request, messages.INFO, 'No write permission on %s for %s...skipped'%(i.name,second_object.id))
+                            continue
                         if testPrerequisites(i,second_object):
                             try:
                                 a = GuestData.objects.get_or_create(guest=second_object,field=i)[0]
@@ -2424,19 +2429,13 @@ def editpastform(request,target_guest,target_form,target_guesttimedata=None):
     '''
     View for editing past forms
     '''
-    # Test permission to change past forms
-    if not testPermission('change_guesttimedata',request.user):
-        return beGone('change_guesttimedata')
     # Retrieve guest object
     target_guest = Guest.objects.get(pk=target_guest)
-    # Verify permission to change guest
-    if not testPermission(target_guest,request.user):
-        return beGone(str(target_guest))
     # Retrieve form object
     target_form = Form.objects.get(pk=target_form)
-    # Test permission to view form
-    if not testPermission(target_form,request.user):
-        return beGone(str(target_form))
+    # Test permission to change past forms
+    if not testPermission(['and','change_guesttimedata',target_form],request.user,second_object=target_guest,write=True):
+        return beGone('change_guesttimedata')
     # Set base context
     context=baseContext(request)
     # Retrieve field list for form
