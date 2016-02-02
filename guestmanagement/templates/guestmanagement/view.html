@@ -46,7 +46,7 @@
 			<form action='.' method='post' enctype="multipart/form-data">
 				{% csrf_token %}
 				{{ form }}
-				{% if user.is_authenticated %}
+				{% if user.is_authenticated and write_perm%}
 					<div class="floating_button">
 						<input type='button' value='Update' class="floating_button" onclick='scrollReturn(this)'/>
 						{% if required_failed %}
@@ -56,7 +56,11 @@
 						{% endif %}
 					</div>
 				{% endif %}
-				<input type='submit' value='Submit and Continue' name='submit_form'/>
+				{% if write_perm %}
+					<input type='submit' value='Submit and Continue' name='submit_form'/>
+				{% else %}
+					<input type='submit' value='Continue' name='submit_form'/>
+				{% endif %}
 			</form>
 		{% else %}
 			<table>
@@ -65,38 +69,40 @@
 					<tr>
 						<td><a href='/guestmanagement/view/field/{{ i.id }}/'>{{ i.label }}</a></td>
 						<td>{{ i.order }}</td>
-						<td>
-							<form action='.' method='post'>
-								{% csrf_token %}
-								<input id='move_type' type='text' name='move_type' value='up' hidden>
-								<input id='move_field' type='text' name='move_field' value='{{ i.id }}' hidden>
-								<input id='search' type='submit' value='Up'>
-							</form>
-						</td>
-						<td>
-							<form action='.' method='post'>
-								{% csrf_token %}
-								<input id='move_type' type='text' name='move_type' value='down' hidden>
-								<input id='move_field' type='text' name='move_field' value='{{ i.id }}' hidden>
-								<input id='search' type='submit' value='Down'>
-							</form>
-						</td>
-						<td>
-							<form action='.' method='post'>
-								{% csrf_token %}
-								<input id='move_type' type='text' name='move_type' value='top' hidden>
-								<input id='move_field' type='text' name='move_field' value='{{ i.id }}' hidden>
-								<input id='search' type='submit' value='Top'>
-							</form>
-						</td>
-						<td>
-							<form action='.' method='post'>
-								{% csrf_token %}
-								<input id='move_type' type='text' name='move_type' value='bottom' hidden>
-								<input id='move_field' type='text' name='move_field' value='{{ i.id }}' hidden>
-								<input id='search' type='submit' value='Bottom'>
-							</form>
-						</td>
+						{% if write_perm %}
+							<td>
+								<form action='.' method='post'>
+									{% csrf_token %}
+									<input id='move_type' type='text' name='move_type' value='up' hidden>
+									<input id='move_field' type='text' name='move_field' value='{{ i.id }}' hidden>
+									<input id='search' type='submit' value='Up'>
+								</form>
+							</td>
+							<td>
+								<form action='.' method='post'>
+									{% csrf_token %}
+									<input id='move_type' type='text' name='move_type' value='down' hidden>
+									<input id='move_field' type='text' name='move_field' value='{{ i.id }}' hidden>
+									<input id='search' type='submit' value='Down'>
+								</form>
+							</td>
+							<td>
+								<form action='.' method='post'>
+									{% csrf_token %}
+									<input id='move_type' type='text' name='move_type' value='top' hidden>
+									<input id='move_field' type='text' name='move_field' value='{{ i.id }}' hidden>
+									<input id='search' type='submit' value='Top'>
+								</form>
+							</td>
+							<td>
+								<form action='.' method='post'>
+									{% csrf_token %}
+									<input id='move_type' type='text' name='move_type' value='bottom' hidden>
+									<input id='move_field' type='text' name='move_field' value='{{ i.id }}' hidden>
+									<input id='search' type='submit' value='Bottom'>
+								</form>
+							</td>
+						{% endif %}
 					</tr>
 				{% endfor %}
 			</table>
