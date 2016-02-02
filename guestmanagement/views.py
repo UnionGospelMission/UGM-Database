@@ -1785,11 +1785,14 @@ def manage(request,target_type=None,target_object=None):
         # Returns /view/guest/guest id if a guest was selected
         # Returns a dynamically generated table of search results otherwise
         if request.POST:
+            '''
+            Should be defunct, pending removal - 2/2/2016
             if request.POST.get('set_guest',''):
                 a = GuestmanagementUserSettings.objects.get_or_create(user=request.user)[0]
                 a.guest=Guest.objects.get(pk=request.POST['set_guest'])
                 a.save()
                 return redirect('/guestmanagement/view/guest/%s/'%a.guest.id)
+            '''
             # Get the list of fields to display for that target type
             list_display = list(target_type_dict[target_type][0].Meta.list_display)
             # Add the id field to whatever list was created
@@ -1822,6 +1825,7 @@ def manage(request,target_type=None,target_object=None):
             # for loop to iterate over the objects returned from the filter and list_display
             # and create a list of lists of viewable fields
             for i in raw_object_list:
+                # Run exact test on permission to view object
                 if testPermission(i,request.user):
                     b = []
                     for a in list_display:
@@ -1838,7 +1842,7 @@ def manage(request,target_type=None,target_object=None):
             context.update({'object_list':object_list,
                             'table_header_html':mark_safe(table_header_html),
                             })
-        # If a search has not been run
+        # Whether or not a search has been run
         return render(request,'guestmanagement/manage.html',context)
     # End managing a type but not object
     # Test Framework Permissions
@@ -1862,22 +1866,23 @@ def manage(request,target_type=None,target_object=None):
             return beGone('change_{0}'.format(target_type))
         # Pull current database entry for object being managed
         target_instance = target_type_dict[target_type][1].objects.get(pk=target_object)
-        # Make target object match target instance (pending cleanup)
-        target_object = target_instance
         # Check Content permissions
-        if not testPermission(target_object,request.user,owner=True):
+        if not testPermission(target_instance,request.user,owner=True):
             return beGone('Access to this specific %s'%target_type)
+        # If changing a guest, verify write permission on program
+        if isinstance(target_instance,Guest) and not testPermission(target_instance,request.user,write=True):
+            return beGone('Write access to this specific %s'%target_type)
         # user_permission_settings get updated at this point
         if target_type == 'user_permission_settings':
             # Update user_permissions_settings model to include all the permissions the user currently has
-            target_object.permissions = Permission.object.filter(users__id=target_object.user.id)
-            target_object.save()
+            target_instance.permissions = Permission.objects.filter(users__id=target_instance.user.id)
+            target_instance.save()
         # Store the current form associate with the target field if applicable
         if target_type == 'field':
-            currentform=target_object.form
+            currentform=target_instance.form
         # If loading a report, attach current code to context
         if target_type == 'report':
-            context.update({'loaded_report':target_object.code})
+            context.update({'loaded_report':target_instance.code})
         # Set wording to appear on webpage
         create_or_edit = 'Modify'
     # Add wording to context
@@ -2129,10 +2134,12 @@ def unsetcomplete(request,form_id,guest_id):
     View for allowing guests or staff to recomplete a previously completed form
     does not return a template of its own, and is always called as a GET with a next redirect
     '''
-    if not testPermission('delete_guestformscompleted',request.user):
-        return beGone('delete_guestformscompleted')
     target_form = Form.objects.get(pk=form_id)
     target_guest = Guest.objects.get(pk=guest_id)
+    if not testPermission('delete_guestformscompleted',request.user):
+        return beGone('delete_guestformscompleted')
+    if not testPermission(target_form,request.user,second_object=target_guest,write=True):
+        return beGone('Write Permission %s'%target_guest.id)
     a = GuestFormsCompleted.objects.get_or_create(guest=target_guest,form=target_form)[0]
     a.complete = False
     a.save()
@@ -2143,11 +2150,13 @@ def setscore(request,form_id,guest_id):
     View to allow forced setting of scored forms
     will continue to show setscore template until a valid score is entered
     '''
-    if not testPermission('change_guestformscompleted',request.user):
-        return beGone('change_guestformscompleted')
     context = baseContext(request)
     target_form = Form.objects.get(pk=form_id)
     target_guest = Guest.objects.get(pk=guest_id)
+    if not testPermission('change_guestformscompleted',request.user):
+        return beGone('change_guestformscompleted')
+    if not testPermission(target_form,request.user,second_object=target_guest,write=True):
+        return beGone('Write Permission %s'%target_guest.id)
     if request.POST:
         try:
             score = int(request.POST.get('score',''))
