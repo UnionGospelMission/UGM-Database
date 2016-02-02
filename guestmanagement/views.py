@@ -1009,8 +1009,12 @@ class ReportProcessor():
                         current_guest_list = list(current_guest_list)
                     # Merge guest list and current guest list deduplicating
                     guest_list = self.distinct(guest_list + current_guest_list)
-        # Convert list of guest ids to list of guest objects
-        guest_list = list(Guest.objects.filter(id__in=list(guest_list)).distinct())
+        # Test view_guest permission
+        if not testPermission('view_guest',env['user']):
+            guest_list = []
+        else:
+            # Convert list of guest ids to list of guest objects
+            guest_list = [i for i in Guest.objects.filter(id__in=list(guest_list)).distinct() if testPermission(i,env['user'])]
         # Initialize Retval
         # retval = [[[record1],[record2],...],[[record1],[record2],...],...]
         retval = []
@@ -1038,8 +1042,12 @@ class ReportProcessor():
                         holding[a].append(str(self.safegetattr(a,field)))
             else:
                 # If table is field
-                # Retrieve filter from database where field name matches and guest is in guest list
-                filter = self.filter_dict['field'][i[1]].objects.filter(guest__in=guest_list,field__name=field).distinct()
+                # Test permission to view field
+                if not testPermission(['and',Field.objects.get(name=field),Field.objects.get(name=field).form],env['user']):
+                    filter = self.filter_dict['field'][i[1]].objects.filter(guest__in=[])
+                else:
+                    # Retrieve filter from database where field name matches and guest is in guest list
+                    filter = self.filter_dict['field'][i[1]].objects.filter(guest__in=guest_list,field__name=field).distinct()
                 # Make a copy of guest list
                 guest_list_copy = deepcopy(guest_list)
                 # Initialize timeseries agregation
