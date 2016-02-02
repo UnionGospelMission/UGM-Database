@@ -1344,16 +1344,16 @@ def createForm(field_list,user,request=None,second_object=None,error_flags={}):
     if not isinstance(field_list,list):
         field_list = field_list.order_by('order')
     field_type_options={# reference dictionary relating field types (found in the Field model) to specific html
-                        # 'field_type' : "html to display" (must have 4 %s locations)
-                        'text_box':"<input id='%s' name='%s' type='text' value='%s'></br>\n%s",
-                        'comment_box':"<textarea cols='40' id='%s' name='%s' rows='10' size='100'>%s</textarea></br>\n%s",
-                        'drop_down':"<select id='%s' name='%s' value='%s'>\n%s</select></br>",
-                        'boolean':"<input id='%s' name='%s' %s type='checkbox' />\n%s</br>",
-                        'list':"<select multiple='multiple' id='%s' name='%s' value='%s'>\n%s</select></br>",
-                        'date':"<input class='datePicker' id='%s' name='%s' readonly='true' type='text' value='%s'></br>\n%s",
-                        'url':'<iframe %s%s width="560" height="345" src="%s?rel=0" frameborder="0" allowfullscreen>%s</iframe></br>',
-                        'attachment':'<a %s%s href="%s">%s</a></br>',
-                        'file':'</br>&nbsp;&nbsp;&nbsp;&nbsp;Change File: <input id="%s" name="%s" type="file" /></br>&nbsp;&nbsp;&nbsp;&nbsp;<a href="%s">%s</a></br>',
+                        # 'field_type' : "html to display" (must have 5 %s locations)
+                        'text_box':"<input %s id='%s' name='%s' type='text' value='%s'></br>\n%s",
+                        'comment_box':"<textarea %s cols='40' id='%s' name='%s' rows='10' size='100'>%s</textarea></br>\n%s",
+                        'drop_down':"<select %s id='%s' name='%s' value='%s'>\n%s</select></br>",
+                        'boolean':"<input %s id='%s' name='%s' %s type='checkbox' />\n%s</br>",
+                        'list':"<select %s multiple='multiple' id='%s' name='%s' value='%s'>\n%s</select></br>",
+                        'date':"<input %s class='datePicker' id='%s' name='%s' readonly='true' type='text' value='%s'></br>\n%s",
+                        'url':'<iframe %s %s%s width="560" height="345" src="%s?rel=0" frameborder="0" allowfullscreen>%s</iframe></br>',
+                        'attachment':'<a %s %s%s href="%s">%s</a></br>',
+                        'file':'</br>&nbsp;&nbsp;&nbsp;&nbsp;Change File: <input %s id="%s" name="%s" type="file" /></br>&nbsp;&nbsp;&nbsp;&nbsp;<a href="%s">%s</a></br>',
                         }
     # return html string of form for display in template.
     return mark_safe(
@@ -1363,6 +1363,7 @@ def createForm(field_list,user,request=None,second_object=None,error_flags={}):
                                     i.label,
                                     ' *' if i.required else '',
                                     field_type_options[i.field_type]%(
+                                        {True:'',False:'Disabled'}[testPermission(i,user,second_object=second_object,write=True)],
                                         i.name,
                                         i.name,
                                         i.attachment.attachment.url

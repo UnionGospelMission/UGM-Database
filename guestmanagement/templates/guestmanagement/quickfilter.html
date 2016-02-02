@@ -6,7 +6,7 @@
 <h1>Quick Filter:</h1><br />
 {% endblock %}
 {% block content %}
-{{ write_perm }}
+{{ form_list }}
 <input name='field_list' id='field_list' value="{{ field_list }}" hidden />
 <input name='form_list' id='form_list' value="{{ form_list }}" hidden />
 <input name='submitted_form' id='submitted_form' value="{{ submission.0.name }}" hidden />
