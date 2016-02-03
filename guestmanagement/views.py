@@ -1,5 +1,5 @@
 from random import randint
-import hashlib,datetime,json,os,re, itertools,inspect
+import hashlib,datetime,json,os,re, itertools,inspect,openpyxl,shutil
 from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from django.core.context_processors import csrf
@@ -20,6 +20,8 @@ import traceback
 from django.utils import timezone
 from django.contrib.auth.decorators import login_required
 from collections import namedtuple
+from HTMLParser import HTMLParser
+from django.core.files.temp import NamedTemporaryFile
 
 # Common reference dictionaries
 
@@ -36,6 +38,54 @@ target_type_dict = {# Reference dictionary for matching the correct new form to 
                     'attachment':[NewAttachmentForm,Attachment,'name'],
                     'user_permission_setting':[NewUser_Permission_Setting,User_Permission_Setting,'user'],
                 }
+
+# HTML parser
+class HTMLToExcel(HTMLParser):
+    def __init__(self):
+        HTMLParser.__init__(self)
+        self.row = 1
+        self.column = 1
+        self.wb = openpyxl.Workbook()
+        self.ws = self.wb.active
+        self.border = openpyxl.styles.borders.Border(left=openpyxl.styles.borders.Side(style='thin'), right=openpyxl.styles.borders.Side(style='thin'), top=openpyxl.styles.borders.Side(style='thin'), bottom=openpyxl.styles.borders.Side(style='thin'))
+        self.font_dict = {  'h1':openpyxl.styles.Font(size=18,bold=True),
+                            'h2':openpyxl.styles.Font(size=16,bold=True),
+                            'h3':openpyxl.styles.Font(size=14,bold=True),
+                            'h4':openpyxl.styles.Font(size=14),
+                            'h5':openpyxl.styles.Font(size=12),
+                            None:openpyxl.styles.Font(),
+                            'th':openpyxl.styles.Font(italic=True),
+                            'td':openpyxl.styles.Font(),
+                            'tr':openpyxl.styles.Font(),
+                         }
+        self.current_tag = [None]
+        self.highest_column = 1
+    def handle_starttag(self, tag, attrs):
+        self.current_tag.append(tag)
+    def handle_endtag(self, tag):
+        if tag in self.current_tag:
+            while len(self.current_tag) != 1 and tag != self.current_tag.pop(-1):
+                pass
+            if tag == 'br' or tag == 'tr' or tag == 'table' or tag.startswith('h'):
+                test1 = [True for i in range(self.column,0,-1) if self.ws['%s%s'%(chr(i+64),self.row)].value]
+                test2=[]
+                if self.row>1:
+                    test2 = [True for i in range(self.highest_column,0,-1) if self.ws['%s%s'%(chr(i+64),self.row-1)].value]
+                if test1 or test2:
+                    self.row += 1
+                self.column = 1
+            if tag == 'td' or tag == 'th':
+                self.ws['%s%s'%(chr(self.column+64),self.row)].border = self.border
+                self.column += 1
+            self.highest_column = max(self.column,self.highest_column)
+    def handle_data(self, data):
+        self.ws['%s%s'%(chr(self.column+64),self.row)] = data
+        self.ws['%s%s'%(chr(self.column+64),self.row)].font = self.font_dict[self.current_tag[-1]]
+
+# End HTML parser
+
+
+
 
 #Report method class
 
@@ -2426,7 +2476,8 @@ def runreport(request,report_id):
     env = {'print':output.write,'user':request.user}
     # Add user defined variables to environment
     for k,v in request.GET.iteritems():
-        env[k.replace('variable__','')]=v
+        if k.startswith('variable__'):
+            env[k.replace('variable__','')]=v
     # Add external functions, helper variables, internal functions to report environment
     env.update(report_processor.functions)
     env.update(report_processor.tableVariables)
@@ -2441,7 +2492,27 @@ def runreport(request,report_id):
         env['print'](str(report_code))
         env['print']('</pre>')
     # Display results
-    context.update({'report':mark_safe(output.getvalue()),'report_name':report_name})
+    download_path = request.get_full_path()
+    if "?" not in download_path:
+        download_path += '?filename=%s.xlsx'%report_name
+    else:
+        download_path += '&filename=%s.xlsx'%report_name
+    context.update({'report':mark_safe(output.getvalue()),'report_name':report_name,'download_path':download_path})
+    if request.GET.get('filename',''):
+        parser = HTMLToExcel()
+        parser.feed(output.getvalue())
+        parser.wb.save(request.GET['filename'])
+        parser.close()
+        i = open(request.GET['filename'],'rb')
+        dl = NamedTemporaryFile(suffix='.xlsx')
+        shutil.copyfileobj(i,dl)
+        i.close()
+        os.remove(request.GET['filename'])
+        dl.seek(0,0)
+        response = HttpResponse(dl, content_type='application/vnd.ms-excel')
+        response['Content-Disposition'] = 'attachment; filename="%s"' % request.GET['filename']
+        response['Content-Length'] = os.path.getsize(dl.name)
+        return response
     return render(request,'guestmanagement/report.html',context)
 
 def logout(request):
