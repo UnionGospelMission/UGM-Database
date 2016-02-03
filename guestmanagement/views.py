@@ -80,7 +80,7 @@ class HTMLToExcel(HTMLParser):
             self.highest_column = max(self.column,self.highest_column)
     def handle_data(self, data):
         self.ws['%s%s'%(chr(self.column+64),self.row)] = data
-        self.ws['%s%s'%(chr(self.column+64),self.row)].font = self.font_dict[self.current_tag[-1]]
+        self.ws['%s%s'%(chr(self.column+64),self.row)].font = self.font_dict.get(self.current_tag[-1],openpyxl.styles.Font())
 
 # End HTML parser
 
