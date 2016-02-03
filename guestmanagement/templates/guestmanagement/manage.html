@@ -41,7 +41,9 @@
 							{% if "guestmanagement.manage_"|add:target_type in perms and "guestmanagement.change_"|add:target_type in perms %}
 								<td><a href='/guestmanagement/manage/{{ target_type.split|join:"_" }}/{{ a }}/'>Edit {{ target_type.capitalize }}</a></td>
 							{% endif %}
-                            <td><a href='/guestmanagement/view/{{ target_type.split|join:"_" }}/{{ a }}/'>View {{ target_type.capitalize }}</a></td>
+							{% if target_type != 'user_permission_setting' %}
+								<td><a href='/guestmanagement/view/{{ target_type.split|join:"_" }}/{{ a }}/'>View {{ target_type.capitalize }}</a></td>
+							{% endif %}
                         {% endif %}
                     {% endfor %}
                     

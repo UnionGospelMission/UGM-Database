@@ -1927,9 +1927,6 @@ def manage(request,target_type=None,target_object=None):
         created=False
         # If this is a new object being created there will not yet be a target_instance
         if not target_instance:
-            # Convert user id to user object if dealing with a user_permission_setting
-            if target_type == 'user_permission_setting':
-                request.POST['user'] = User.objects.get(pk=request.POST['user'])
             # Guests are tracked by the id field, which needs to have a default added to the post
             if target_type == 'guest':
                 targetid=Guest.objects.all().order_by("-id")
@@ -1939,7 +1936,8 @@ def manage(request,target_type=None,target_object=None):
                     targetid=targetid[0].id+1
                 request.POST['id']=targetid
             # get the search_field from the reference dictionary for the target_type and link it to the value from the submitted form
-            kwargs = {'{0}'.format(target_type_dict[target_type][2]):request.POST[target_type_dict[target_type][2]]}
+            kwargs = {'{0}'.format(target_type_dict[target_type][2]):request.POST[target_type_dict[target_type][2]]
+                                                                        if target_type != 'user_permission_setting' else User.objects.get(pk=request.POST['user'])}
             # get the database model object from the reference dictionary and dump the unique identifier into it
             target_instance,created = target_type_dict[target_type][1].objects.get_or_create(**kwargs)
             # if a new object was not created (user trying to reuse the unique identifier)
@@ -2030,12 +2028,12 @@ def manage(request,target_type=None,target_object=None):
             # Special processing for changing user permissions
             if target_type=='user_permission_setting':
                 # Remove user from all permissions
-                permission_list = Permission.objects.filter(users__id=target_object.user.id)
+                permission_list = Permission.objects.filter(users__id=target_instance.user.id)
                 for i in permission_list:
-                    i.users.remove(target_object.user)
+                    i.users.remove(target_instance.user)
                 # Update all affected permissions
-                for i in target_object.permissions.all():
-                    i.users.add(target_object.user)
+                for i in target_instance.permissions.all():
+                    i.users.add(target_instance.user)
             # Special processing for reports
             if target_type=='report':
                 # Turn POST into standard dictionary
@@ -2142,7 +2140,7 @@ def manage(request,target_type=None,target_object=None):
         # Put helper variables in context
         context.update({'helper_variables':json.dumps(report_processor.tableVariables.keys())})
     # Add the form and instance to the context
-    context.update({'form':form.as_p(),'target_object':target_instance})
+    context.update({'form':form.as_p(),'target_object':target_instance or target_object})
     # Serve up the page :)
     return render(request,'guestmanagement/manage.html',context)
 
