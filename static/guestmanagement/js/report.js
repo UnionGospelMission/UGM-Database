@@ -210,7 +210,7 @@ function typeChange(t,single){
 
             case 'list':
             case 'query':
-                name_offset = 2;
+                name_offset = 3;
                 var list_type = row.appendChild(document.createElement('select'));
                     list_type.appendChild(new Option('fields','fields'));
                     list_type.appendChild(new Option('numbers','numbers'));
@@ -224,23 +224,28 @@ function typeChange(t,single){
                     list_return.onblur = setTarget;
                     list_return.onchange = changeReturnVariable;
                     list_return.onclick=alertName;
+                var sort_by = row.appendChild(document.createElement('input'));
+                    sort_by.name = 'code'+row.line_number+'-3';
+                    sort_by.setAttribute('title','Set Sort By');
+                    sort_by.onblur = setTarget;
+                    sort_by.onclick=alertName;
                 if (t.value=='list'){
                     var num_per_row = row.appendChild(document.createElement('input'));
-                        num_per_row.name = 'code'+row.line_number+'-3';
+                        num_per_row.name = 'code'+row.line_number+'-4';
                         num_per_row.setAttribute('title','Number of Items Per Row');
                         num_per_row.onclick=alertName;
                         num_per_row.onblur = setTarget;
                     var rows_per_page = row.appendChild(document.createElement('input'));
-                        rows_per_page.name = 'code'+row.line_number+'-4';
+                        rows_per_page.name = 'code'+row.line_number+'-5';
                         rows_per_page.setAttribute('title','Number of Rows Per Page');
                         rows_per_page.onclick=alertName;
                         rows_per_page.onblur = setTarget;
                     var row_separator = row.appendChild(document.createElement('input'));
-                        row_separator.name = 'code'+row.line_number+'-5';
+                        row_separator.name = 'code'+row.line_number+'-6';
                         row_separator.setAttribute('title','Row Separator');
                         row_separator.onblur = setTarget;
                         row_separator.onclick=alertName;
-                        name_offset = 5;
+                        name_offset = 6;
                     }
             case 'extrafield':
             case 'display':

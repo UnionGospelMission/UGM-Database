@@ -40,12 +40,25 @@ target_type_dict = {# Reference dictionary for matching the correct new form to 
                 }
 
 # HTML parser
+
+class Workbook(openpyxl.Workbook):
+    def save(self):
+        from openpyxl.writer.excel import ExcelWriter
+        from StringIO import StringIO
+        from zipfile import ZipFile, ZIP_DEFLATED
+        io = StringIO()
+        zf = ZipFile(io, 'w', ZIP_DEFLATED, allowZip64=True)
+        w = ExcelWriter(self)
+        w.write_data(zf, False)
+        return io
+        
+
 class HTMLToExcel(HTMLParser):
     def __init__(self):
         HTMLParser.__init__(self)
         self.row = 1
         self.column = 1
-        self.wb = openpyxl.Workbook()
+        self.wb = Workbook()
         self.ws = self.wb.active
         self.border = openpyxl.styles.borders.Border(left=openpyxl.styles.borders.Side(style='thin'), right=openpyxl.styles.borders.Side(style='thin'), top=openpyxl.styles.borders.Side(style='thin'), bottom=openpyxl.styles.borders.Side(style='thin'))
         self.font_dict = {  'h1':openpyxl.styles.Font(size=18,bold=True),
@@ -555,7 +568,7 @@ class ReportProcessor():
                 env['print'](str(retval))
         else:
             # Build filter from variables
-            filter = self.buildFilter(env,display_value,timeseries,code)
+            filter = self.buildFilter(env,display_value,0,timeseries,code)
             # If filter returns more than one record
             if len(filter)>1:
                 # Warn user
@@ -572,7 +585,7 @@ class ReportProcessor():
         '''
         env['print']('<br />')
 
-    def query(self, env, list_type,list_variable,list_range, timeseries, *code):
+    def query(self, env, list_type,list_variable,sort_by,list_range, timeseries, *code):
         '''
             Instruction to retrive data from database.  This instruction takes type of query, a variable name in which to 
             store the results, the first field to return, whether the first field is timeseries, and additional instructions.  
@@ -581,7 +594,7 @@ class ReportProcessor():
             instructions for further details.
         '''
         # Retrieve filter results
-        a = self.buildFilter(env,list_range,timeseries,code)
+        a = self.buildFilter(env,list_range,sort_by,timeseries,code)
         # Save filter results into parent environment
         env.parent.parent[list_variable.replace('!','')] = a
 
@@ -647,7 +660,7 @@ class ReportProcessor():
         else:
             return true
 
-    def list_(self, env, list_type,list_variable,row_items,row_num,row_separator,list_range, timeseries, *code):
+    def list_(self, env, list_type,list_variable,sort_by,row_items,row_num,row_separator,list_range, timeseries, *code):
         '''
             Instruction to iterate over lists or a range of numbers.  Takes whether a list or numbers, a variable name for use as the list
             iterates, how many items to iterate before inserting a row break, how many row breaks to insert before inserting a page break,
@@ -676,7 +689,7 @@ class ReportProcessor():
             a = xrange(int(start), int(stop)+1)
         else:
             # build filter to iterate
-            a = self.buildFilter(env,list_range,timeseries,code)
+            a = self.buildFilter(env,list_range,sort_by,timeseries,code)
             # Remove filter from code
             while c[0][0]=='and' or c[0][0]=='or' or c[0][0]=='extrafield':
                 c.pop(0)
@@ -808,7 +821,7 @@ class ReportProcessor():
                 retval.append(i)
         return retval
 
-    def buildFilter(self,env,return_field,timeseries,code):
+    def buildFilter(self,env,return_field,sort_by,timeseries,code):
         '''
             Function to retrieve data from database
         '''
@@ -976,14 +989,14 @@ class ReportProcessor():
                     # Append return list into retval
                     retval.append(return_list)
             # Return filter results
-            return self.mySort(retval)
+            return self.mySort(env,retval,sort_by)
 
 
         # If filtering against the database
         # If no criteria
         if filter==[]:
             # Return all guests
-            guest_list = [i for i in Guest.objects.all() if testPermission(i,env['user'])]
+            guest_list = [i.id for i in Guest.objects.all() if testPermission(i,env['user'])]
         else:
             # Initialize guest list
             # guest_list = [guest1,guest2,...]
@@ -1134,17 +1147,21 @@ class ReportProcessor():
             # Add to return each guest's records
             retval.append(holding[i])
         # Iterate through sorting possiblities
-        return self.mySort(retval)
+        return self.mySort(env,retval,sort_by)
     
-    def sortByDateStringsKeys(self,el):
-        a=el[0].split('/')
-        assert len(a)==3 or el[0]==""
+    def sortByDateStringsKeys(self,el,sb=0):
+        a=el[sb].split('/')
+        assert len(a)==3 or el[sb]==""
         if len(a)==3:
             return (a[2],a[0],a[1])
 
-    def mySort(self,retval):
-        for i in [lambda x: sorted(x, key=self.sortByDateStringsKeys),
-                    lambda x: sorted(x, key=lambda s: s[0].lower()),
+    def mySort(self,env,retval,sort_by=0):
+        sort_by = self.evalVariables(env,sort_by)
+        if isinstance(sort_by,(str,unicode)):
+            sort_by = int(sort_by) if sort_by.isdigit() else 0
+        sort_by = sort_by if sort_by < len(retval[0]) else 0
+        for i in [lambda x: sorted(x, key=lambda y: self.sortByDateStringsKeys(y,sort_by)),
+                    lambda x: sorted(x, key=lambda s: s[sort_by].lower()),
                     ]:
             # Try each sorting possiblity, continue to the next if it fails
             try:
@@ -2504,17 +2521,12 @@ def runreport(request,report_id):
     if request.GET.get('filename',''):
         parser = HTMLToExcel()
         parser.feed(output.getvalue())
-        parser.wb.save(request.GET['filename'])
+        dl=parser.wb.save()
         parser.close()
-        i = open(request.GET['filename'],'rb')
-        dl = NamedTemporaryFile(suffix='.xlsx')
-        shutil.copyfileobj(i,dl)
-        i.close()
-        os.remove(request.GET['filename'])
         dl.seek(0,0)
         response = HttpResponse(dl, content_type='application/vnd.ms-excel')
         response['Content-Disposition'] = 'attachment; filename="%s"' % request.GET['filename']
-        response['Content-Length'] = os.path.getsize(dl.name)
+        response['Content-Length'] = dl.len
         return response
     return render(request,'guestmanagement/report.html',context)
 
