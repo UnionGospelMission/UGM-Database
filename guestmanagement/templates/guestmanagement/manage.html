@@ -4,7 +4,7 @@
 {% endblock %}
 {% block pretitle %}
     <h1>{% trans 'Manage' %}{% if target_type %} {% endif %}{{ target_type.capitalize }}{% if target_type and not target_object %}s{% endif %}{% if target_object %} {{ target_object.name }}{% endif %}:</h1><br/>
-    {% if target_object and not target_object == 'new' %}<a href='/guestmanagement/view/{{ target_type.split|join:"_" }}/{{ target_object.id }}/'>View {{ target_object.name }}</a>{% endif %}</br>
+    {% if target_object and not target_object == 'new' and view_perm %}<a href='/guestmanagement/view/{{ target_type.split|join:"_" }}/{{ target_object.id }}/'>View {{ target_object.name }}</a>{% endif %}</br>
 {% endblock %}
 {% block content %}
     {% if not target_type %}
@@ -36,12 +36,17 @@
                 <tr>
                     {% for a in i %}
                         {% if not forloop.last %}
-                            <td>{{ a }}</td>
+							{% if not forloop.first %}
+								<td>{{ a }}</td>
+							{% endif %}
                         {% else %}
-							{% if "guestmanagement.manage_"|add:target_type in perms and "guestmanagement.change_"|add:target_type in perms %}
+							{% if i.0.0 %}
 								<td><a href='/guestmanagement/manage/{{ target_type.split|join:"_" }}/{{ a }}/'>Edit {{ target_type.capitalize }}</a></td>
 							{% endif %}
-							{% if target_type != 'user_permission_setting' %}
+							{% if target_type != 'user_permission_setting' and i.0.1 %}
+								{% if not i.0.0 %}
+									<td></td>
+								{% endif %}
 								<td><a href='/guestmanagement/view/{{ target_type.split|join:"_" }}/{{ a }}/'>View {{ target_type.capitalize }}</a></td>
 							{% endif %}
                         {% endif %}
@@ -53,13 +58,13 @@
     {% else %}
         <h5>{{ create_or_edit }} {{ target_type }}:</h5>
         {% if create_or_edit == 'Modify' %}
-            <form action='.' method='post' autocomplete="off" name="DeleteForm">
-                {% csrf_token %}
-                {% if "guestmanagement.delete_"|add:target_type in perms %}
-                    <input id='delete_{{ target_type }}' type='text' name='delete_{{ target_type }}' value='delete_{{ target_type }}' hidden>
-                    <input id='search' type='submit' value='Delete {{ target_type.capitalize }}' onsubmit="formSubmitConfirm('DeleteForm','Confirm Delete {{ target_type.capitalize }}')">
-                {% endif %}
-            </form>
+            {% if "guestmanagement.delete_"|add:target_type in perms %}
+				<form action='.' method='post' autocomplete="off" name="DeleteForm">
+					{% csrf_token %}
+						<input id='delete_{{ target_type }}' type='text' name='delete_{{ target_type }}' value='delete_{{ target_type }}' hidden>
+						<input id='search' type='submit' value='Delete {{ target_type.capitalize }}' onsubmit="formSubmitConfirm('DeleteForm','Confirm Delete {{ target_type.capitalize }}')">
+				</form>
+            {% endif %}
         {% endif %}
         <div class='form_container'>
             <form action='.' method='post' autocomplete="off" enctype="multipart/form-data">
