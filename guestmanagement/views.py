@@ -563,7 +563,7 @@ class ReportProcessor():
             elif len(filter)==1:
                 # Use separator to create a string from the filter's list and append
                 assert isinstance(separator,(str,unicode)), "Display separator must be string (did you pick the wrong variable name?)"
-                env['print'](separator.join([str(i) for i in filter[0]]))
+                env['print'](separator.join([str(i) if not isinstance(i, (datetime.datetime,datetime.date)) else i.strftime('%m/%d/%Y') for i in filter[0]]))
                 
 
     def newline(self, env):
@@ -976,7 +976,7 @@ class ReportProcessor():
                     # Append return list into retval
                     retval.append(return_list)
             # Return filter results
-            return retval
+            return self.mySort(retval)
 
 
         # If filtering against the database
@@ -1134,6 +1134,15 @@ class ReportProcessor():
             # Add to return each guest's records
             retval.append(holding[i])
         # Iterate through sorting possiblities
+        return self.mySort(retval)
+    
+    def sortByDateStringsKeys(self,el):
+        a=el[0].split('/')
+        assert len(a)==3 or el[0]==""
+        if len(a)==3:
+            return (a[2],a[0],a[1])
+
+    def mySort(self,retval):
         for i in [lambda x: sorted(x, key=self.sortByDateStringsKeys),
                     lambda x: sorted(x, key=lambda s: s[0].lower()),
                     ]:
@@ -1144,12 +1153,6 @@ class ReportProcessor():
             except (AttributeError,AssertionError):
                 continue
         return sorted(retval)
-    
-    def sortByDateStringsKeys(self,el):
-        a=el[0].split('/')
-        assert len(a)==3 or el[0]==""
-        if len(a)==3:
-            return (a[2],a[0],a[1])
     
     def listToSet(self,_list,rev=False):
         '''

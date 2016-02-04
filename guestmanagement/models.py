@@ -255,7 +255,7 @@ class Report(models.Model):
     permissions_must_have = models.ManyToManyField('Permission', null=True, blank=True, related_name='report_must')
     permissions_may_have = models.ManyToManyField('Permission', null=True, blank=True, related_name='report_may')
 
-    def user_list(self):
+    def owner_list(self):
         return ' | '.join([i.__unicode__() for i in self.owner.all()])
 
     class Meta:

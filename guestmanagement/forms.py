@@ -60,7 +60,7 @@ class NewReportForm(forms.ModelForm):
 		exclude=[]
 		fields=['name','owner','description','permissions_must_have','permissions_may_have']
 		list_filter = [['name','icontains']]
-		list_display = ['name','user_list']
+		list_display = ['name','owner_list']
 
 class NewAttachmentForm(forms.ModelForm):
 	class Meta:
