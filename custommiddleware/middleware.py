@@ -33,7 +33,7 @@ class setBaseSite():
             print "Anonymous"
         if request.path == '/':
             request.session['base_site']=''
-        if not request.session.get('base_site',''):
+        if not request.session.get('base_site','') in request.path:
             if 'guestmanagement' in request.path:
                 request.session['base_site']='guestmanagement'
             elif 'purchaseorder' in request.path:
