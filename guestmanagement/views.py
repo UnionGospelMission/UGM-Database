@@ -1496,10 +1496,11 @@ def updateStaticPermissions(target_object,delete=False):
             i.save()
 
 
-def testPermission(target_object,user,session={},second_object=None,testurl=False,owner=False,write=False):
+def testPermission(target_object,user,session={},second_object=None,testurl=False,owner=False,write=False,owner_override=False):
     '''
     Method of determining based on permissions whether a user has permission to access a form, field, guest, or static file
     '''
+    owner_override = owner or owner_override
     try:
         # Return True if a superuser
         if user.is_superuser:
@@ -1557,11 +1558,13 @@ def testPermission(target_object,user,session={},second_object=None,testurl=Fals
                 if hasattr(target_object,'permissions_must_have'):
                     for i in target_object.permissions_must_have.all():
                         if user not in i.users.all():
-                            return False
+                            if not hasattr(target_object,'owner') or not (owner_override and user in target_object.owner.all()):
+                                return False
                 if hasattr(target_object,'permissions_may_have'):
                     test_list = [True for i in target_object.permissions_may_have.all() if user in i.users.all()]
                     if test_list==[] and target_object.permissions_may_have.all():
-                        return False
+                        if not hasattr(target_object,'owner') or not (owner_override and user in target_object.owner.all()):
+                            return False
 
             if hasattr(target_object,'program'):
                 if list(target_object.program.all()) != []:
@@ -1907,16 +1910,21 @@ def manage(request,target_type=None,target_object=None):
             perm_list = Permission.objects.filter(users=request.user)
             if hasattr(base_table,'program'): #and not request.user.is_superuser:
                 program_list = Program.objects.filter(Q(permissions_must_have__in=perm_list)|Q(permissions_may_have__in=perm_list))
-                args.append(Q(**{'program__in':program_list}))
+                args.append(Q(program__in=program_list))
+            # pull in anything owned by the user
+            owner_override = []
+            if hasattr(base_table,'owner'):
+                owner_override = [Q(owner=request.user)]
             # Run the query just created (meatballing permissions) and return distinct entries
-            raw_object_list = base_table.objects.filter(*args).distinct().order_by('id')
+            raw_object_list = base_table.objects.filter(Q(*args)|Q(*owner_override)).distinct().order_by('id')
             object_list = []
             # for loop to iterate over the objects returned from the filter and list_display
             # and create a list of lists of viewable fields
             for i in raw_object_list:
                 # Run exact test on permission to view object
-                if testPermission(i,request.user):
-                    b = []
+                if testPermission(i,request.user,owner_override=True):
+                    # Determine edit and view permissions on the current object
+                    b = [[testPermission(i,request.user,owner=True) if target_type != 'guest' else testPermission(i,request.user,write=True),testPermission(i,request.user)]]
                     for a in list_display:
                         if not callable(getattr(i,a)):
                             b.append(getattr(i,a))
@@ -1974,6 +1982,8 @@ def manage(request,target_type=None,target_object=None):
             context.update({'loaded_report':target_instance.code})
         # Set wording to appear on webpage
         create_or_edit = 'Modify'
+        # Check view permission
+        context.update({'view_perm':testPermission(target_instance,request.user)})
     # Add wording to context
     context.update({'create_or_edit':create_or_edit})
     # Initialize form variable
@@ -2274,7 +2284,7 @@ def view(request,target_type,target_object,second_object=None):
     # retrieve the target_object through the database model obtained from the reference dictionary
     target_object = target_type_dict[target_type][1].objects.get(pk=target_object)
     # Test Permission to view or guest permission to view specific object
-    if not testPermission(['or','view_{0}'.format(target_type),target_object],request.user,request.session,second_object):
+    if not testPermission(['or' if target_type != 'report' else 'and','view_{0}'.format(target_type),target_object],request.user,request.session,second_object):
         return beGone('lacking%s view_%s%s'%(' either' if second_object else "",
                                                 target_type,
                                                 ' or view guest %s'%second_object if second_object else "",
