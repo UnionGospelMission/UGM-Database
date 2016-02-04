@@ -60,12 +60,11 @@ class HTMLToExcel(HTMLParser):
         self.column = 1
         self.wb = Workbook()
         self.ws = self.wb.active
-        self.border = openpyxl.styles.borders.Border(left=openpyxl.styles.borders.Side(style='thin'), right=openpyxl.styles.borders.Side(style='thin'), top=openpyxl.styles.borders.Side(style='thin'), bottom=openpyxl.styles.borders.Side(style='thin'))
         self.font_dict = {  'h1':openpyxl.styles.Font(size=18,bold=True),
                             'h2':openpyxl.styles.Font(size=16,bold=True),
                             'h3':openpyxl.styles.Font(size=14,bold=True),
                             'h4':openpyxl.styles.Font(size=14),
-                            'h5':openpyxl.styles.Font(size=12),
+                            'h5':openpyxl.styles.Font(size=12,bold=True),
                             None:openpyxl.styles.Font(),
                             'th':openpyxl.styles.Font(italic=True),
                             'td':openpyxl.styles.Font(),
@@ -73,13 +72,21 @@ class HTMLToExcel(HTMLParser):
                          }
         self.current_tag = [None]
         self.highest_column = 1
+        self.multicell = None
     def handle_starttag(self, tag, attrs):
         self.current_tag.append(tag)
+        if tag=='td' or tag=='th':
+            if not self.multicell:
+                self.multicell = [[self.column],self.row,self.row]
+            else:
+                self.multicell[0].append(self.column)
     def handle_endtag(self, tag):
         if tag in self.current_tag:
             while len(self.current_tag) != 1 and tag != self.current_tag.pop(-1):
                 pass
-            if tag == 'br' or tag == 'tr' or tag == 'table' or tag.startswith('h'):
+            if tag.startswith('h') and tag != 'h1' and not self.multicell:
+                self.column += 1
+            if tag == 'br' or tag == 'tr' or tag == 'table' or tag=='h1':
                 test1 = [True for i in range(self.column,0,-1) if self.ws['%s%s'%(chr(i+64),self.row)].value]
                 test2=[]
                 if self.row>1:
@@ -87,13 +94,35 @@ class HTMLToExcel(HTMLParser):
                 if test1 or test2:
                     self.row += 1
                 self.column = 1
+                if self.multicell:
+                    if tag=='br' or tag=='h1':
+                        self.column = self.multicell[0][-1]
+                        self.multicell[2] = max(self.multicell[2],self.row)
+                    if tag=='tr' or tag=='table':
+                        self.makeBorder()
+                        if test1 or test2:
+                            self.row = self.multicell[2]+1
+                        self.multicell = []
             if tag == 'td' or tag == 'th':
-                self.ws['%s%s'%(chr(self.column+64),self.row)].border = self.border
                 self.column += 1
+                self.row = self.multicell[1]
             self.highest_column = max(self.column,self.highest_column)
     def handle_data(self, data):
-        self.ws['%s%s'%(chr(self.column+64),self.row)] = data
+        self.ws['%s%s'%(chr(self.column+64),self.row)]=self.ws['%s%s'%(chr(self.column+64),self.row)].value or "" + data
         self.ws['%s%s'%(chr(self.column+64),self.row)].font = self.font_dict.get(self.current_tag[-1],openpyxl.styles.Font())
+    def makeBorder(self,desc = None):
+        desc = desc or self.multicell
+        if not desc:
+            return
+        for a in desc[0]:
+            my_column = chr(a + 64)
+            if desc[1] == desc[2]:
+                self.ws['%s%s'%(my_column,desc[1])].border = openpyxl.styles.borders.Border(left=openpyxl.styles.borders.Side(style='thin'), right=openpyxl.styles.borders.Side(style='thin'), top=openpyxl.styles.borders.Side(style='thin'), bottom=openpyxl.styles.borders.Side(style='thin'))
+            else:
+                self.ws['%s%s'%(my_column,desc[1])].border = openpyxl.styles.borders.Border(left=openpyxl.styles.borders.Side(style='thin'), right=openpyxl.styles.borders.Side(style='thin'), top=openpyxl.styles.borders.Side(style='thin'))
+                for i in range(desc[1]+1,desc[2]):
+                    self.ws['%s%s'%(my_column,i)].border = openpyxl.styles.borders.Border(left=openpyxl.styles.borders.Side(style='thin'), right=openpyxl.styles.borders.Side(style='thin'))
+                self.ws['%s%s'%(my_column,desc[2])].border = openpyxl.styles.borders.Border(left=openpyxl.styles.borders.Side(style='thin'), right=openpyxl.styles.borders.Side(style='thin'), bottom=openpyxl.styles.borders.Side(style='thin'))
 
 # End HTML parser
 
