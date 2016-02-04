@@ -4,13 +4,13 @@
 {% endblock %}
 {% block content %}
 	{% if base_site == 'guestmanagement' %}
-		{% trans 'Would you like to' %} <a href='/guestmanagement/manage/'>{% trans 'manage' %}</a> {% trans 'or' %} <a href='/guestmanagement/manage/guest/'>{% trans 'Find Guest' %}</a>?
+		{% trans 'Would you like to' %} <a href='/guestmanagement/manage/'>{% trans 'Manage' %}</a> {% trans 'or' %} <a href='/guestmanagement/manage/guest/'>{% trans 'Find Guest' %}</a>?
     {% elif base_site == 'purchaseorder' %}
         <a href='/purchaseorder/view/'>View Purchase Order</a><br />
         <a href='/purchaseorder/create/'>Create Purchase Order</a><br />
 	{% else %}
 		{% if user.is_authenticated %}
-			{% trans 'Would you like to' %} <a href='/admin/'>{% trans 'manage' %}</a> {% trans 'or' %} <a href='/truckmanagement/schedule/'>{% trans 'schedule' %}</a>?
+			{% trans 'Would you like to' %} <a href='/admin/'>{% trans '<anage' %}</a> {% trans 'or' %} <a href='/truckmanagement/schedule/'>{% trans 'schedule' %}</a>?
 		{% else %}
 			{% trans 'Would you like to' %} <a href='/admin/login/?next=/truckmanagement/'>{% trans 'login' %}</a> or <a href='/truckmanagement/schedule/'>{% trans 'schedule' %}</a>?
 		{% endif %}

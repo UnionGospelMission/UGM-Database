@@ -22,6 +22,7 @@ from django.contrib.auth.decorators import login_required
 from collections import namedtuple
 from HTMLParser import HTMLParser
 from django.core.files.temp import NamedTemporaryFile
+from UGM_Database import settings
 
 # Common reference dictionaries
 
@@ -1432,7 +1433,11 @@ def baseContext(request):
         a = GuestmanagementUserSettings.objects.get_or_create(user=request.user)[0]
         a.next_page = request.GET['next']
         a.save()
-    context = {'nexturl':request.path,'base_site':request.session.get('base_site','')}
+    context = {'nexturl':request.path,
+                'base_site':request.session.get('base_site',''),
+                'org_title':settings.MYSETTINGS['TITLE'],
+                'logo':settings.MYSETTINGS['LOGOFILE'],
+                }
     context.update(csrf(request))
     return context
 
@@ -1535,7 +1540,7 @@ def testPermission(target_object,user,session={},second_object=None,testurl=Fals
     owner_override = owner or owner_override
     try:
         # Return True if a superuser
-        if user.is_superuser:
+        if user and user.is_superuser:
             return True
         if testurl:
             # If testing a static file, pull the static file permissions record from the database

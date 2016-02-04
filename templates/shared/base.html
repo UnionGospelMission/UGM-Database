@@ -4,11 +4,11 @@
 <title>
 	{% block title %}
 		{% if base_site == 'guestmanagement' %}
-			{% trans 'UGM Guest Database' %}
+			{{ org_title }}{% trans ' Guest Database' %}
         {% elif base_site == 'purchaseorder' %}
-            {% trans 'Purchase Order System' %}
+            {% trans '{{ org_title }} Purchase Order System' %}
 		{% else %}
-			{% trans 'UGM Truckmanagement' %}
+			{% trans '{{ org_title }} Truckmanagement' %}
 		{% endif %}
 	{% endblock %}
 </title>
@@ -48,13 +48,18 @@
 	<div id="header">
 		<div id="branding">
 			{% block branding %}
-				{% if base_site == 'guestmanagement' %}
-					<h1>UGM Guest Database</h1>
-                {% elif base_site == 'purchaseorder' %}
-                    <h1>UGM Purchase Order System</h1>
-				{% else %}
-					<h1>UGM Truck Management</h1>
+				{% if logo %}
+					<img src="{% static logo %}" width='50 px' height='50 px'/>
 				{% endif %}
+				<h1>{{ org_title }} 
+					{% if base_site == 'guestmanagement' %}
+						Guest Database
+					{% elif base_site == 'purchaseorder' %}
+						Purchase Order System
+					{% else %}
+						Truck Management
+					{% endif %}
+				</h1>
 			{% endblock %}
 		</div>
 		{% if user.is_authenticated %}

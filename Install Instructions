@@ -10,10 +10,23 @@
 *Copy settings.conf to productionsettings.conf (cp settings.conf productionsettings.conf)
 *set database_name, database_username, database_user_password in productionsettings.conf
 *Specify ALLOWED_HOSTS in productionsettings.conf
+*set your organization's title in productionsettings.conf
+*If you have a logo you want displayed, copy it into the static folder and put the name under LOGO in productionsettings.conf
+
+
+
 *Migrate Auth (python manage.py migrate auth)
 *Apply migrations (python manage.py migrate)
 *Create admin user (python manage.py createsuperuser)
 ** [Migrate old databases]
+
+
+
+
+
+
 *start webserver (./startserver)
 
 
+
+**NOTE** If you have an error trying to download reports, try updating your openpyxl (sudo pip install --update openpyxl)
