@@ -617,10 +617,10 @@ class ReportProcessor():
     def query(self, env, list_type,list_variable,sort_by,list_range, timeseries, *code):
         '''
             Instruction to retrive data from database.  This instruction takes type of query, a variable name in which to 
-            store the results, the first field to return, whether the first field is timeseries, and additional instructions.  
-            NOTE: While this instruction accepts both fields and numbers as types of query only fields is relevant.  The additional 
-            instructions are given as indented lines until an end instruction closes the display instruction.  See the additional 
-            instructions for further details.
+            store the results, which column to sort by, the first field to return, whether the first field is timeseries, and additional 
+            instructions.  NOTE: While this instruction accepts both fields and numbers as types of query only fields is relevant.  The 
+            additional instructions are given as indented lines until an end instruction closes the display instruction.  See the 
+            additional instructions for further details.
         '''
         # Retrieve filter results
         a = self.buildFilter(env,list_range,sort_by,timeseries,code)
@@ -692,14 +692,14 @@ class ReportProcessor():
     def list_(self, env, list_type,list_variable,sort_by,row_items,row_num,row_separator,list_range, timeseries, *code):
         '''
             Instruction to iterate over lists or a range of numbers.  Takes whether a list or numbers, a variable name for use as the list
-            iterates, how many items to iterate before inserting a row break, how many row breaks to insert before inserting a page break,
-            what to insert for row breaks, what field to return (if a field list) or what range of numbers to iterate (if a number range 
-            list), whether the first field is time series (if a field list), additional instructions and instructions to run every 
-            iteration.  The list instruction starts by searching for additional instructions and retrieving the fields/numbers to iterate
-            (see additional instructions for more information).  Once the list to iterate is constructed, the list instruction will set
-            the variable provided to the first value from the list, then execute the instructions provided, then set the variable provided
-            to the second value from the list, then reexecute the instructions provided, then set the variable provided to the third value
-            from the list, and so on until there are no more remaining elements in the list.
+            iterates, which column to sort by, how many items to iterate before inserting a row break, how many row breaks to insert 
+            before inserting a page break, what to insert for row breaks, what field to return (if a field list) or what range of numbers 
+            to iterate (if a number range list), whether the first field is time series (if a field list), additional instructions and 
+            instructions to run every iteration.  The list instruction starts by searching for additional instructions and retrieving the 
+            fields/numbers to iterate (see additional instructions for more information).  Once the list to iterate is constructed, the 
+            list instruction will set the variable provided to the first value from the list, then execute the instructions provided, then 
+            set the variable provided to the second value from the list, then reexecute the instructions provided, then set the variable 
+            provided to the third value from the list, and so on until there are no more remaining elements in the list.
         '''
         # Evaluate row separator
         row_separator = self.evalVariables(env,row_separator)

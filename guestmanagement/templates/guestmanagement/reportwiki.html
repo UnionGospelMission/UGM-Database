@@ -144,16 +144,16 @@
 		Lists iterate over a number of values contained in a list.  To illustrate, first clear lines 0006 through the end of the report.  
 		Now, on line 0006, pick "list" from the selections.  Lists will automatically add an additional instruction and an end instruction.
 		Pick "numbers" from the type of list option and in the resulting two dialogue boxes enter "0" and "10" respectively.  In the third
-		box, enter "each number", enter "1" in the fourth box, leave the fifth box empty, and put a "," in the sixth box.<br /><br />
+		box, enter "each number", leave the fourth, fifth, and sixth boxes empty, and put a "," in the seventh box.<br /><br />
 		Replace line 0007 with a "display" and pick "each_number" to display.  Remove the extra "and" line created by display and view your
 		report.<br /><br />
 		As you can see, the report iterates over the range of numbers from 0 through 10 and executes the instructions, in this case to
-		display each number, for every item in the range and adds the "," after each row.  Now change the fourth box to "2" and view the
+		display each number, for every item in the range and adds the "," after each row.  Now change the fifth box to "2" and view the
 		report again.  You will notice the "," now displays every other digit.<br /><br />
 		Lists are also nestable.  To demonstrate, change the "2" back to "1" and change "," to "&#60;br />".  Then replace line 0007 with 
-		another "list".  Again, pick number and enter "0" and "10".  Enter "second number" in the third box, "1" in the fourth box, leave 
-		the fifth box blank, and enter "," in the sixth box.  Insert a row at 0008 and pick "display".  Have the display line show "second_
-		number", remove the extra "and" line and view your report again.<br /><br />
+		another "list".  Again, pick number and enter "0" and "10".  Enter "second number" in the third box, "1" in the fifth box, leave 
+		the sixth box blank, and enter "," in the seventh box.  Insert a row at 0008 and pick "display".  Have the display line show 
+		"second_number", remove the extra "and" line and view your report again.<br /><br />
 		You will see ten sets of 0 through ten on ten lines.  The first list command iterates 0 through ten, each time executing the second
 		list instruction which iterates over the second set of 0 through 10 appending a comma after each number.  Meanwhile, the first list
 		instruction adds a row break after each time the second list instruction has completed iterating over the second list.<br /><br />
@@ -190,10 +190,10 @@
 		We are going to create a simple list of some of the guests in your database.  NOTE: If you do not yet have 
 		any guests in your database, go create a couple before preceeding.<br /><br />
 		On row 0024, select "query".  In this case, only fields make sense, so leave the second box alone.  In the third box, enter "guest list",
-		then click on "guest" in the "Select Form" Section.  Add "first_name" to the fourth box on the query line by clicking on the 
+		then click on "guest" in the "Select Form" Section.  Add "first_name" to the fifth box on the query line by clicking on the 
 		"first_name" option in the "Select Field" Section.  Change the "and" line to "extrafield" and pick "last_name" from the "Select Field"
 		Section.  Change line 0026, to "and", pick "&#60;" in the second box, enter "10" in the third box, and pick "id" from the "Select Field"
-		Section for the fourth box.  On line 0027 pick "end".  What you just created will ask the database to create a list variable containing
+		Section for the fifth box.  On line 0027 pick "end".  What you just created will ask the database to create a list variable containing
 		a list of first name and last name for the first nine guests in your database.  Your report will not have changed yet, and before we
 		go further, we need to cover list variables.
 	</div>
@@ -224,8 +224,8 @@
 	<div class=indented>
 		Change line 0024 back to "query", reenter "guest list" as the variable name, pick the "first_name" from the guests again and 
 		change line 0026 back to 10.  Now, on line 0028, pick "begin table" and enter "First Name,Last Name" as the row titles.  On line 0029,
-		pick "list", enter, "each guest" in the third box, "1" in the fourth box, leave the fifth box empty, pick "table_new_row" for the 
-		sixth box, and pick "guest_list" for the last box.  Change line 0030 to "display" and pick "table_open_cell".  Change line 0031 to "end"
+		pick "list", enter, "each guest" in the third box, "1" in the fifth box, leave the sixth box empty, pick "table_new_row" for the 
+		seventh box, and pick "guest_list" for the last box.  Change line 0030 to "display" and pick "table_open_cell".  Change line 0031 to "end"
 		and line 0032 to "display".  Display the first element of each guest ("$each_guest::0") on line 0032, then change line 0033 to 
 		"extrafield", display the second element of each guest ("$each_guest::1"), and pick "table_new_cell" for the separator on line 0032.
 		Change line 0035 to "display", change the extra "and" to "end", and display "table_close_cell".  Finally, add an "end table" at the
@@ -241,7 +241,7 @@
 	<h5>Queries of queries</h5>
 	<div class=indented>
 		Another way to accomplish the same task is a query of query.  Remove the "end" on line 0040 and the "if" on line 0031.  Insert a row
-		at line 0029 and select "query".  Set box three to "first guest" and enter "$guest_list::0" in the fourth box.  Change line 30 to 
+		at line 0029 and select "query".  Set box three to "first guest" and enter "$guest_list::0" in the fifth box.  Change line 30 to 
 		"extrafield" and pick "$guest_list::1".  Insert a new row 0031 and pick "and", then enter "=" in the second box, "1" in the third box,
 		and "$guest_list::2" in the third box.  This will select all the records out of "guest_list" where the third element equals "1".  On 
 		line 0034, change "$guest_list" to "$first_guest" and view your report.  The report didn't change on the screen, but is being calculated
