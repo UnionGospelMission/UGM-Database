@@ -742,7 +742,7 @@ class ReportProcessor():
             information.
         '''
         # Retrieve filter
-        filter = self.buildFilter(env,return_field,timeseries,code)
+        filter = self.buildFilter(env,return_field,0,timeseries,code)
         # Update html with number of items returned
         env['print'](str(len(filter)))
 
@@ -753,7 +753,7 @@ class ReportProcessor():
             information.
         '''
         # Retrieve filter
-        filter = self.buildFilter(env,return_field,timeseries,code)
+        filter = self.buildFilter(env,return_field,0,timeseries,code)
         # Initialize sum
         retval = 0.0
         # Iterate filter
