@@ -1156,6 +1156,8 @@ class ReportProcessor():
             return (a[2],a[0],a[1])
 
     def mySort(self,env,retval,sort_by=0):
+        if len(retval)==0:
+            return retval
         sort_by = self.evalVariables(env,sort_by)
         if isinstance(sort_by,(str,unicode)):
             sort_by = int(sort_by) if sort_by.isdigit() else 0
