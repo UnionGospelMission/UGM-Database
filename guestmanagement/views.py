@@ -741,6 +741,9 @@ class ReportProcessor():
                 env[list_variable] = i
             # Execute code
             self.listProcess(self.Env(env), deepcopy(c))
+            # Ensure number of rows is an integer
+            row_items = row_items or '1'
+            row_items = row_items if row_items.isdigit() else '1'
             # If number of items iterated is multiple of items per row
             if rowcount % int(row_items) == 0:
                 # If number of rows per page specified
