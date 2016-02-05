@@ -17,7 +17,7 @@ def index(request):
              'purchaseorder':'Purchase Orders',
     }
     if len(test)==1:
-        return redirect('/%s'%test[0])
+        return redirect('/%s/'%test[0])
     html = ' or '.join(["<a href='/%s/'>%s</a>"%(i,sites[i]) for i in test])
     return HttpResponse(html)
 
