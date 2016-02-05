@@ -472,18 +472,18 @@ function changeListType(){
         }
         switch (this.parentNode.children[0].value){
             case 'list':
-                this.parentNode.children[6].value = String(from)+':'+String(to);
+                this.parentNode.children[7].value = String(from)+':'+String(to);
                 break;
             case 'query':
-                this.parentNode.children[3].value = String(from)+':'+String(to);
+                this.parentNode.children[4].value = String(from)+':'+String(to);
         }
     } else {
         switch (this.parentNode.children[0].value){
             case 'list':
-                this.parentNode.children[5].value = '';
+                this.parentNode.children[7].value = '';
                 break;
             case 'query':
-                this.parentNode.children[3].value = '';
+                this.parentNode.children[4].value = '';
         }
     }
 }
