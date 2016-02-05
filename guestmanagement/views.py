@@ -163,6 +163,7 @@ class ReportProcessor():
                             'format_picture':self.formatPicture,
                             'add_subtract_dates':self.addSubtractDates,
                             'anniversary_check':self.checkAnniversaries,
+                            'merge_lists':self.mergeLists,
         }
         ### Internal functions (found on the report builder in each line's dropdown)
         self._functions = { 
@@ -228,22 +229,13 @@ class ReportProcessor():
 
     ### external functions
     
-    def link(self,env,guest=None,form=None,text=None):
+    def mergeLists(self,env,list1,list2):
         '''
-            Function to create a link to a particular guest's record or a particular form for a particular guest
+            Function which combines two lists into one
         '''
-        # Eval variables
-        guest = self.evalVariables(env,guest)
-        form = self.evalVariables(env,form)
-        text = self.evalVariables(env,text)
-        if form and not form.isdigit():
-            form = Form.objects.get(name=form).id
-        env['print']('<a href="/guestmanagement/view/')
-        if guest and not form:
-            env['print']('guest/%s/'%guest)
-        else:
-            env['print']('form/%s/%s/'.replace('//','/')%(form,guest))
-        env['print']('">%s</a>'%text)
+        list1 = self.evalVariables(env,list1)
+        list2 = self.evalVariables(env,list2)
+        return list1 + list2
     
     def checkAnniversaries(self,env,date,from_date,to_date):
         '''
@@ -708,6 +700,23 @@ class ReportProcessor():
         else:
             return true
 
+    def link(self,env,guest=None,form=None,text=None):
+        '''
+            Function to create a link to a particular guest's record or a particular form for a particular guest
+        '''
+        # Eval variables
+        guest = self.evalVariables(env,guest)
+        form = self.evalVariables(env,form)
+        text = self.evalVariables(env,text)
+        if form and not form.isdigit():
+            form = Form.objects.get(name=form).id
+        env['print']('<a href="/guestmanagement/view/')
+        if guest and not form:
+            env['print']('guest/%s/'%guest)
+        else:
+            env['print']('form/%s/%s/'.replace('//','/')%(form,guest))
+        env['print']('">%s</a>'%text)
+    
     def list_(self, env, list_type,list_variable,sort_by,row_items,row_num,row_separator,list_range, timeseries, *code):
         '''
             Instruction to iterate over lists or a range of numbers.  Takes whether a list or numbers, a variable name for use as the list
