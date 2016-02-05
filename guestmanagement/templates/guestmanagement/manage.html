@@ -66,6 +66,19 @@
 				</form>
             {% endif %}
         {% endif %}
+        {% if other_reports %}
+			<form action='.' method='post' autocomplete="off" name="DeleteForm">
+				{% csrf_token %}
+					<select id='copy_report' name='copy_report'>
+						<option value=""></option>
+						{% for i in other_reports %}
+							<option value="{{ i.0 }}" >{{ i.1 }}</option>
+						{% endfor %}
+					</select>
+					
+					<input id='search' type='submit' value='Copy' >
+			</form>
+        {% endif %}
         <div class='form_container'>
             <form action='.' method='post' autocomplete="off" enctype="multipart/form-data">
                 {% if target_type == 'report' %}

@@ -2021,6 +2021,9 @@ def manage(request,target_type=None,target_object=None):
         create_or_edit = 'Modify'
         # Check view permission
         context.update({'view_perm':testPermission(target_instance,request.user)})
+    # If a report add all copyable reports to context
+    if target_type == 'report':
+        context.update({'other_reports':[[i.id,i.name] for i in Report.objects.all() if testPermission(i,request.user)]})
     # Add wording to context
     context.update({'create_or_edit':create_or_edit})
     # Initialize form variable
@@ -2042,6 +2045,27 @@ def manage(request,target_type=None,target_object=None):
             # Notify the user of success
             messages.add_message(request, messages.INFO, '%s deleted'%target_type)
             return redirect('/guestmanagement/manage/%s/'%target_type)
+        if 'copy_report' in request.POST.keys():
+            if not request.POST['copy_report']:
+                messages.add_message(request, messages.INFO, 'Choose report to copy')
+                return redirect(request.get_full_path())
+            copy_report = Report.objects.get(pk=request.POST['copy_report'])
+            if not target_instance:
+                name = copy_report.name+' (copy)'
+                target_instance,created = Report.objects.get_or_create(name=name)
+                while not created:
+                    name = name + ' (copy)'
+                    target_instance,created = Report.objects.get_or_create(name=name)
+            target_instance.description = copy_report.description
+            target_instance.code = copy_report.code
+            target_instance.owner = [request.user]
+            target_instance.variables = copy_report.variables
+            target_instance.permissions_must_have = copy_report.permissions_must_have.all()
+            target_instance.permissions_may_have = copy_report.permissions_may_have.all()
+            target_instance.save()
+            return redirect('/guestmanagement/manage/report/%s/'%target_instance.id)
+
+                
         # Initialize created flag
         created=False
         # If this is a new object being created there will not yet be a target_instance
