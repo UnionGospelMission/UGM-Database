@@ -2023,7 +2023,7 @@ def manage(request,target_type=None,target_object=None):
         context.update({'view_perm':testPermission(target_instance,request.user)})
     # If a report add all copyable reports to context
     if target_type == 'report':
-        context.update({'other_reports':[[i.id,i.name] for i in Report.objects.all() if testPermission(i,request.user)]})
+        context.update({'other_reports':[[i.id,i.name] for i in Report.objects.all() if testPermission(i,request.user,owner_override = True)]})
     # Add wording to context
     context.update({'create_or_edit':create_or_edit})
     # Initialize form variable
@@ -2050,6 +2050,9 @@ def manage(request,target_type=None,target_object=None):
                 messages.add_message(request, messages.INFO, 'Choose report to copy')
                 return redirect(request.get_full_path())
             copy_report = Report.objects.get(pk=request.POST['copy_report'])
+            if not testPermission(copy_report,request.user,owner_override=True):
+                messages.add_message(request, messages.INFO, 'You have no permission to copy that report')
+                return redirect(request.get_full_path())
             if not target_instance:
                 name = copy_report.name+' (copy)'
                 target_instance,created = Report.objects.get_or_create(name=name)
