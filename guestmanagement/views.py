@@ -2112,8 +2112,21 @@ def manage(request,target_type=None,target_object=None):
             hashpassword=False
         # get the new/modify form from the reference dictionary and bind the submitted data to it
         form = target_type_dict[target_type][0](request.POST,request.FILES,instance=target_instance)
+        # Set sanity check flag
+        sanity_check = True
+        # Run sanity check on fields
+        if target_type == 'field':
+            if (request.POST['field_type']=='list' or request.POST['field_type']=='drop_down') and not request.POST['dropdown_options']:
+                messages.add_message(request, messages.INFO, '%s requires drop down options'%request.POST['field_type'])
+                sanity_check = False
+            if request.POST['field_type']=='attachment' and not request.POST['attachment']:
+                messages.add_message(request, messages.INFO, 'Select an attachment')
+                sanity_check = False
+            if request.POST['field_prerequisite'] and request.POST['required']:
+                messages.add_message(request, messages.INFO, 'Fields with prerequisites cannot be required')
+                sanity_check = False
         # If the form has all the required data
-        if form.is_valid():
+        if form.is_valid() and sanity_check:
             # Special Handling for fields before saving if a field is being modified and moved from one form to another
             if target_type=='field' and not created and target_instance.form!=currentform:
                 # Variable to remember where the field needs to end up
