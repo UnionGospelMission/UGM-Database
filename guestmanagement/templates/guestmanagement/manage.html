@@ -62,12 +62,12 @@
 				<form action='.' method='post' autocomplete="off" name="DeleteForm">
 					{% csrf_token %}
 						<input id='delete_{{ target_type }}' type='text' name='delete_{{ target_type }}' value='delete_{{ target_type }}' hidden>
-						<input id='search' type='submit' value='Delete {{ target_type.capitalize }}' onsubmit="formSubmitConfirm('DeleteForm','Confirm Delete {{ target_type.capitalize }}')">
+						<input type='button' value='Delete {{ target_type.capitalize }}' onclick="formSubmitConfirm('DeleteForm','Confirm Delete {{ target_type.capitalize }}')">
 				</form>
             {% endif %}
         {% endif %}
         {% if other_reports %}
-			<form action='.' method='post' autocomplete="off" name="DeleteForm">
+			<form action='.' method='post' autocomplete="off" name="CopyForm">
 				{% csrf_token %}
 					<select id='copy_report' name='copy_report'>
 						<option value=""></option>
@@ -76,7 +76,7 @@
 						{% endfor %}
 					</select>
 					
-					<input id='search' type='submit' value='Copy' >
+					<input type='button' value='Copy' onclick="formSubmitConfirm('CopyForm','Confirm Copy')">
 			</form>
         {% endif %}
         <div class='form_container'>

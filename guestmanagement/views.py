@@ -2272,7 +2272,7 @@ def manage(request,target_type=None,target_object=None):
     if target_type == 'report':
         # Bind current code
         if target_instance:
-            context.update({'loaded_report':json.dumps(json.loads(target_instance.code)[1])})
+            context.update({'loaded_report':json.dumps(json.loads(target_instance.code)[1]) if target_instance.code else json.dumps([])})
         # Pull all the forms from the database which the user is allowed to see
         all_forms_list = sorted([i.name for i in Form.objects.all() if testPermission(i,request.user)])
         # Pull all fields from the database which the user is allowed to see
