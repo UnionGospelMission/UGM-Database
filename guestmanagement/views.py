@@ -179,6 +179,7 @@ class ReportProcessor():
                             'begin table':self.beginTable,
                             'end table':self.endTable,
                             'if':self.if_,
+                            'link':self.link,
         }
         ### Dictionary to convert report builder operators to django query filters
         self.filter_dict = {
@@ -226,6 +227,23 @@ class ReportProcessor():
             super(ReportProcessor.Env, self).__setitem__(item,value)
 
     ### external functions
+    
+    def link(self,env,guest=None,form=None,text=None):
+        '''
+            Function to create a link to a particular guest's record or a particular form for a particular guest
+        '''
+        # Eval variables
+        guest = self.evalVariables(env,guest)
+        form = self.evalVariables(env,form)
+        text = self.evalVariables(env,text)
+        if form and not form.isdigit():
+            form = Form.objects.get(name=form).id
+        env['print']('<a href="/guestmanagement/view/')
+        if guest and not form:
+            env['print']('guest/%s/'%guest)
+        else:
+            env['print']('form/%s/%s/'.replace('//','/')%(form,guest))
+        env['print']('">%s</a>'%text)
     
     def checkAnniversaries(self,env,date,from_date,to_date):
         '''

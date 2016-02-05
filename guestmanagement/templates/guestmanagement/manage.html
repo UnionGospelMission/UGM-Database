@@ -80,7 +80,7 @@
 			</form>
         {% endif %}
         <div class='form_container'>
-            <form action='.' method='post' autocomplete="off" enctype="multipart/form-data">
+            <form action='.' method='post' autocomplete="off" enctype="multipart/form-data" name='TotalForm'>
                 {% if target_type == 'report' %}
                     <input type='button' value='Report Builder' onclick="toggleReportView()" id="report_view_toggle" />
                     <input type='button' value='Submit' id='search' onclick='processReport(this)' />
