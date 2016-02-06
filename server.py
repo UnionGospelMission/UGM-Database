@@ -2,6 +2,7 @@
 
 import sys
 import os
+import urllib
 from twisted.application import internet, service
 from twisted.web import server, resource, wsgi, static
 from twisted.python import threadpool
@@ -26,6 +27,15 @@ class ThreadPoolService(service.Service):
     def stopService(self):
         service.Service.stopService(self)
         self.pool.stop()
+
+def testVersion():
+	remote_version = urllib.urlopen('https://raw.githubusercontent.com/lperkin1/UGM-Database/master/release').read()
+	local_version = open('release','r').read()
+	reactor.callLater(int(settings.MYSETTINGS['NEWVERSIONCHECK']),testVersion)
+	if remote_version!=local_version:
+		settings.ADMIN_BROADCAST_MESSAGE = "New Version Available"
+
+testVersion()
 
 # Environment setup for your Django project files:
 sys.path.insert(0, os.getcwd())

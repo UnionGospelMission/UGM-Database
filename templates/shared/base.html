@@ -98,12 +98,13 @@
 	{% endblock %}
 	{% endif %}
 	{% block messages %}
-		{% if messages or broadcast_message %}
+		{% if messages or broadcast_message or admin_broadcast_message %}
 			<ul class="messagelist">
 				{% for message in messages %}
 						<li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message|capfirst }}</li>
 				{% endfor %}
 				<li>{{ broadcast_message }}</li>
+				<li>{{ admin_broadcast_message }}</li>
 			</ul>
 		{% endif %}
 	{% endblock messages %}

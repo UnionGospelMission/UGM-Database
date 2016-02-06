@@ -8,4 +8,6 @@ def addBaseSite(request):
 def addBroadcastMessages(request):
     if getattr(settings, 'BROADCAST_MESSAGE', ''):
         return {'broadcast_message': settings.BROADCAST_MESSAGE}
+    if getattr(settings, 'ADMIN_BROADCAST_MESSAGE', '') and request.user.is_superuser:
+        return {'admin_broadcast_message': settings.ADMIN_BROADCAST_MESSAGE}
     return {}
