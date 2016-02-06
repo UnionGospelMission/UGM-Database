@@ -1751,12 +1751,13 @@ def quickfilter(request):
                     'query_list':QuickFilter.objects.filter(user=request.user),
                     })
     if request.POST:
+        Print(request.POST)
         if request.POST.get('load',False) and request.POST['load_query']:
             quick_filter = QuickFilter.objects.get(name=request.POST['load_query'],user=request.user)
             if not testPermission(quick_filter.field,request.user):
                 messages.add_message(request, messages.INFO, 'You may not view field %s.  Did permissions change?'%quick_filter.field)
             else:
-                context.update({'submission': [quick_filter.form, quick_filter.field, quick_filter.criteria],
+                context.update({'submission': [quick_filter.form.name, quick_filter.field.name, quick_filter.criteria],
                                 'write_perm':testPermission(quick_filter.field,request.user,write=True),
                                 })
         elif request.POST.get('search',False):
@@ -1803,10 +1804,15 @@ def quickfilter(request):
                 else:
                     guest_list = guest_list & set(current_guest_list)
             guest_list = list(guest_list)
+            if not request.POST['field_select'] or not request.POST['form_select']:
+                messages.add_message(request, messages.INFO, "No form/field selected... sorry, I have no idea what you wanted, let's start over.")
+                return redirect(request.get_full_path())
             target_field = Field.objects.get(name=request.POST['field_select'])
             guest_list = [i for i in Guest.objects.filter(id__in=guest_list) if testPermission(i,request.user)]
             target_form = Form.objects.get(name=request.POST['form_select'])
-            context.update({'submission': [target_form, target_field, json.dumps([[str(i) for i in a] for a in criteria])]})
+            if not testPermission(['and',target_field,target_form],request.user):
+                return beGone('get lost hacker')
+            context.update({'submission': [target_form.name, target_field.name, json.dumps([[str(i) for i in a] for a in criteria])]})
             field_types = {'boolean':'<input type="checkbox" name="%s" %s %s />',
                             'text_box':'<input name="%s" value="%s" %s />',
                             'date':"<input class='datePicker' name='%s' readonly='true' type='text' value='%s' %s />",

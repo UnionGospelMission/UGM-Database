@@ -150,3 +150,26 @@ function toggleName() {
 		document.getElementById('save_name_label').style.display = 'none';
 	}
 }
+
+function verifySubmit(t) {
+	var form = document.getElementsByName('form_select')[0];
+	var field = document.getElementsByName('field_select')[0];
+	var submission = document.getElementsByTagName('form')[0]
+	if (! form.value){
+		alert('Pick Form!');
+		return;
+	}
+	if (! field.value){
+		alert('Pick Field!');
+		return;
+	}
+	if (t.name == 'search'){
+		var submit_type = document.createElement('input');
+		submit_type.style.display='none';
+		submit_type.name='search';
+		submit_type.value='1';
+		submission.appendChild(submit_type);
+		
+	}
+	submission.submit()
+}
