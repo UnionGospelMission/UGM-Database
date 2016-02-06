@@ -102,9 +102,9 @@
                         <input hidden id='loaded_fields' value='{{ all_field_dict }}'/>
                         <input hidden id='report_functions' value='{{ available_functions }}'/>
                         <input hidden id='helper_variables' value='{{ helper_variables }}'/>
-                        <div id='report_title'>title</div>
+                        <div id='report_title' style="background-color:{{ report_title_background }}">title</div>
                         <div id='field_select'>
-                            <div id='form_select'>
+                            <div id='form_select' style="background-color:{{ report_formselect_background }}">
                                 <h1>Select Form</h1>
                                 <ul>
                                     <li onclick='selectForm(this)'>date</li>
@@ -114,13 +114,13 @@
                                     {% endfor %}
                                 </ul>
                             </div>
-                            <div id='fields'>
+                            <div id='fields' style="background-color:{{ report_fields_background }}">
                                 <h1>Select Field</h1>
                                 <table></table>
                             </div>
                         </div>
-                        <div id='report_builder'><div><h1>Build Report</h1></div></div>
-                        <div id='function_select'>
+                        <div id='report_builder' style="background-color:{{ report_builder_background }}"><div><h1>Build Report</h1></div></div>
+                        <div id='function_select' style="background-color:{{ report_functionselect_background }}">
                             <h1>Defined Variables</h1>
                             <ul>
                             <li>hello world</li>

@@ -1464,6 +1464,11 @@ def baseContext(request):
                 'base_site':request.session.get('base_site',''),
                 'org_title':settings.MYSETTINGS['TITLE'],
                 'logo':settings.MYSETTINGS['LOGOFILE'],
+                "report_title_background": settings.MYSETTINGS["REPORTBUILDERBACKGROUNDS"]["TITLE"],
+                "report_builder_background": settings.MYSETTINGS["REPORTBUILDERBACKGROUNDS"]["BUILDER"],
+                'report_functionselect_background':settings.MYSETTINGS["REPORTBUILDERBACKGROUNDS"]["FUNCTIONSELECT"],
+                'report_formselect_background':settings.MYSETTINGS["REPORTBUILDERBACKGROUNDS"]["FORMSELECT"],
+                'report_fields_background':settings.MYSETTINGS["REPORTBUILDERBACKGROUNDS"]["FIELDS"],
                 }
     context.update(csrf(request))
     return context
