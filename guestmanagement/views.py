@@ -2154,13 +2154,13 @@ def manage(request,target_type=None,target_object=None):
         sanity_check = True
         # Run sanity check on fields
         if target_type == 'field':
-            if (request.POST['field_type']=='list' or request.POST['field_type']=='drop_down') and not request.POST['dropdown_options']:
+            if (request.POST.get('field_type','')=='list' or request.POST['field_type']=='drop_down') and not request.POST.get('dropdown_options',''):
                 messages.add_message(request, messages.INFO, '%s requires drop down options'%request.POST['field_type'])
                 sanity_check = False
-            if request.POST['field_type']=='attachment' and not request.POST['attachment']:
+            if request.POST.get('field_type','')=='attachment' and not request.POST.get('attachment',''):
                 messages.add_message(request, messages.INFO, 'Select an attachment')
                 sanity_check = False
-            if request.POST['field_prerequisite'] and request.POST['required']:
+            if request.POST.get('field_prerequisite','') and request.POST.get('required',''):
                 messages.add_message(request, messages.INFO, 'Fields with prerequisites cannot be required')
                 sanity_check = False
         # If the form has all the required data

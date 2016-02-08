@@ -4,6 +4,6 @@ Release #
 	Changed:
 		Update notification to include new commits
 	Fixed:
-		
+		#90 Improper request.POST test in field update
 	Removed:
 		
