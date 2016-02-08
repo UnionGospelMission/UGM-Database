@@ -5,5 +5,6 @@ Release #
 		Update notification to include new commits
 	Fixed:
 		#90 Improper request.POST test in field update
+		#88 Global Message lines appearing even when empty
 	Removed:
 		
