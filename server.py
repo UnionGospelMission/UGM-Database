@@ -29,11 +29,16 @@ class ThreadPoolService(service.Service):
         self.pool.stop()
 
 def testVersion():
+	settings.ADMIN_BROADCAST_MESSAGE=''
 	remote_version = urllib.urlopen('https://raw.githubusercontent.com/lperkin1/UGM-Database/master/release').read()
 	local_version = open('release','r').read()
 	reactor.callLater(int(settings.MYSETTINGS['NEWVERSIONCHECK']),testVersion)
 	if remote_version!=local_version:
-		settings.ADMIN_BROADCAST_MESSAGE = "New Version Available"
+		settings.ADMIN_BROADCAST_MESSAGE = "New Stable Version Available"
+	remote_changelog = urllib.urlopen('https://raw.githubusercontent.com/lperkin1/UGM-Database/master/currentchanges').read()
+	local_changelog = open('currentchanges','r').read()
+	if remote_changelog!=local_changelog:
+		settings.ADMIN_BROADCAST_MESSAGE += "New Unreleased Updates Available"
 
 testVersion()
 
