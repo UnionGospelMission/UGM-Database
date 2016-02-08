@@ -1165,12 +1165,12 @@ class ReportProcessor():
                         holding[a].append(str(self.safegetattr(a,field)))
             else:
                 # If table is field
+                # Retrieve filter from database where field name matches and guest is in guest list
+                filter = self.filter_dict['field'][i[1]].objects.filter(guest__in=guest_list,field__name=field).distinct()
                 # Test permission to view field
                 if not testPermission(['and',Field.objects.get(name=field),Field.objects.get(name=field).form],env['user']):
-                    filter = self.filter_dict['field'][i[1]].objects.filter(guest__in=[])
-                else:
-                    # Retrieve filter from database where field name matches and guest is in guest list
-                    filter = self.filter_dict['field'][i[1]].objects.filter(guest__in=guest_list,field__name=field).distinct()
+					if not (Field.objects.get(name=field).permissions_may_have.all() or Field.objects.get(name=field).permissions_may_have.all()) or not testPermission(Field.objects.get(name=field),env['user']):
+						filter = self.filter_dict['field'][i[1]].objects.filter(guest__in=[])
                 # Make a copy of guest list
                 guest_list_copy = deepcopy(guest_list)
                 # Initialize timeseries agregation

@@ -6,5 +6,6 @@ Release #
 	Fixed:
 		#90 Improper request.POST test in field update
 		#88 Global Message lines appearing even when empty
+		#91 Reports cannot allow field access without form access
 	Removed:
 		
