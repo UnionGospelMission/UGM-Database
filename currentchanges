@@ -1,4 +1,11 @@
 Release #
+	Added:
+	
+	Changed:
+		Update notifications will not show unreleased changes if a new release available.
+	Fixed:
+	
+	Removed:
 
 Release #1.2.20160222.0
 	Added:
