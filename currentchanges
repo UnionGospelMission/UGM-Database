@@ -1,11 +1,12 @@
 Release #
 	Added:
-		Report builder function "string concatenation"
+		#86 Report builder function "string concatenation"
 	Changed:
 		Update notification to include new commits
 	Fixed:
 		#90 Improper request.POST test in field update
 		#88 Global Message lines appearing even when empty
 		#91 Reports cannot allow field access without form access
+		#89 Write permissions not displaying on viewing objects
 	Removed:
 		

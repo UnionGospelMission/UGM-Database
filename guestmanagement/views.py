@@ -2575,6 +2575,7 @@ def view(request,target_type,target_object,second_object=None):
                     ['Programs using form','program',target_object.program.all()],
                     ['May have permissions','permission',target_object.permissions_may_have.all()],
                     ['Must have permissions','permission',target_object.permissions_must_have.all()],
+                    ['Write Permissions','permission',target_object.permissions_write.all()],
                 ]
     if target_type == 'field':
         # Update general information at the bottom of the screen
@@ -2583,6 +2584,7 @@ def view(request,target_type,target_object,second_object=None):
                     ['Required prerequisites','prerequisite',target_object.field_prerequisite.all()],
                     ['May have permissions','permission',target_object.permissions_may_have.all()],
                     ['Must have permissions','permission',target_object.permissions_must_have.all()],
+                    ['Write Permissions','permission',target_object.permissions_write.all()],
                 ]
     if target_type == 'prerequisite':
         # Update general information at the bottom of the screen
@@ -2606,6 +2608,7 @@ def view(request,target_type,target_object,second_object=None):
         link_list=[['Forms in program','form',Form.objects.filter(program=target_object).distinct()],
                     ['May have permissions','permission',target_object.permissions_may_have.all()],
                     ['Must have permissions','permission',target_object.permissions_must_have.all()],
+                    ['Write Permissions','permission',target_object.permissions_write.all()],
                 ]
     # if not a guest logged in
     if not request.session.get('password',''):
