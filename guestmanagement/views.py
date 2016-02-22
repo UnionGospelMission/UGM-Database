@@ -164,6 +164,7 @@ class ReportProcessor():
                             'add_subtract_dates':self.addSubtractDates,
                             'anniversary_check':self.checkAnniversaries,
                             'merge_lists':self.mergeLists,
+                            'concatenate':self.concatenateStrings,
         }
         ### Internal functions (found on the report builder in each line's dropdown)
         self._functions = { 
@@ -228,6 +229,14 @@ class ReportProcessor():
             super(ReportProcessor.Env, self).__setitem__(item,value)
 
     ### external functions
+    
+    def concatenateStrings(self,env,string1,string2):
+		'''
+			Function which combines two strings into one
+		'''
+		string1 = self.evalVariables(env,string1)
+		string2 = self.evalVariables(env,string2)
+		return string1 + string2
     
     def mergeLists(self,env,list1,list2):
         '''

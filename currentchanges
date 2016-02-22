@@ -1,6 +1,6 @@
 Release #
 	Added:
-		
+		Report builder function "string concatenation"
 	Changed:
 		Update notification to include new commits
 	Fixed:
