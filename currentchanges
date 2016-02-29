@@ -4,6 +4,7 @@ Release #
 	Changed:
 		Update notifications will not show unreleased changes if a new release available.
 		deduplicateGuestDatas is now deduplicateGuestInfo and accepts either guestdatas or guestformscompleted
+		Guest pictures now overwrite.
 	Fixed:
 		#92 Fixed duplicate guestdata entries in testPrerequisite
 			Fixed duplicate guestformscompleted entries in view

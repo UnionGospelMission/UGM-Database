@@ -1,6 +1,14 @@
 from django.db import models
 from django.utils.safestring import mark_safe
 from django.contrib.auth.models import User
+from django.core.files.storage import FileSystemStorage
+from django.conf import settings
+import os
+
+class OverwriteStorage(FileSystemStorage):
+    def get_available_name(self, name):
+        self.delete(name)
+        return name
 
 # Create your models here.
 
@@ -141,7 +149,7 @@ class Guest(models.Model):
     last_name = models.CharField(max_length=200, blank=True, null=True)
     ssn = models.CharField(max_length=9, blank=True, null=True)
     program = models.ManyToManyField(Program)
-    picture = models.ImageField(upload_to='guestpictures')
+    picture = models.ImageField(upload_to='guestpictures',storage=OverwriteStorage())
     password = models.CharField(max_length=2000, blank=True, null=True)
 
     def clean(self):
