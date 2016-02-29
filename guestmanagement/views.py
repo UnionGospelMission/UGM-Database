@@ -231,12 +231,12 @@ class ReportProcessor():
     ### external functions
     
     def concatenateStrings(self,env,string1,string2):
-		'''
-			Function which combines two strings into one
-		'''
-		string1 = self.evalVariables(env,string1)
-		string2 = self.evalVariables(env,string2)
-		return string1 + string2
+        '''
+            Function which combines two strings into one
+        '''
+        string1 = self.evalVariables(env,string1)
+        string2 = self.evalVariables(env,string2)
+        return string1 + string2
     
     def mergeLists(self,env,list1,list2):
         '''
@@ -1178,8 +1178,8 @@ class ReportProcessor():
                 filter = self.filter_dict['field'][i[1]].objects.filter(guest__in=guest_list,field__name=field).distinct()
                 # Test permission to view field
                 if not testPermission(['and',Field.objects.get(name=field),Field.objects.get(name=field).form],env['user']):
-					if not (Field.objects.get(name=field).permissions_may_have.all() or Field.objects.get(name=field).permissions_may_have.all()) or not testPermission(Field.objects.get(name=field),env['user']):
-						filter = self.filter_dict['field'][i[1]].objects.filter(guest__in=[])
+                    if not (Field.objects.get(name=field).permissions_may_have.all() or Field.objects.get(name=field).permissions_may_have.all()) or not testPermission(Field.objects.get(name=field),env['user']):
+                        filter = self.filter_dict['field'][i[1]].objects.filter(guest__in=[])
                 # Make a copy of guest list
                 guest_list_copy = deepcopy(guest_list)
                 # Initialize timeseries agregation
@@ -1700,19 +1700,26 @@ def testPrerequisites(target_object,guest):
     '''
     prerequisite_list=getattr(target_object,'{0}_prerequisite'.format({True:'form',False:'field'}[isinstance(target_object,Form)])).all()
     for i in prerequisite_list:
-        for a in i.prerequisite_form.all():
-            if not GuestFormsCompleted.objects.get_or_create(guest=guest,form=a)[0].complete:
-                return False
-            if i.score_is_greater_than:
-                if int(GuestFormsCompleted.objects.get_or_create(guest=guest,form=a)[0].score)<int(i.score_is_greater_than):
-                    return False
-        for a in i.prerequisite_field.all():
-            if i.is_complete and not GuestData.objects.get_or_create(guest=guest,field=a)[0].value:
-                return False
-            elif GuestData.objects.get_or_create(guest=guest,field=a)[0].value != i.is_value and i.is_value:
-                return False
-            elif i.contains not in GuestData.objects.get_or_create(guest=guest,field=a)[0].value and i.contains:
-                return False
+        success = False
+        while not success:
+            try:
+                for a in i.prerequisite_form.all():
+                    if not GuestFormsCompleted.objects.get_or_create(guest=guest,form=a)[0].complete:
+                        return False
+                    if i.score_is_greater_than:
+                        if int(GuestFormsCompleted.objects.get_or_create(guest=guest,form=a)[0].score)<int(i.score_is_greater_than):
+                            return False
+                for a in i.prerequisite_field.all():
+                    if i.is_complete and not GuestData.objects.get_or_create(guest=guest,field=a)[0].value:
+                        return False
+                    elif GuestData.objects.get_or_create(guest=guest,field=a)[0].value != i.is_value and i.is_value:
+                        return False
+                    elif i.contains not in GuestData.objects.get_or_create(guest=guest,field=a)[0].value and i.contains:
+                        return False
+                success = True
+            except MultipleObjectsReturned, e:
+                deduplicateGuestInfo(e,guest)
+                success = False
     return True
 
 def autoGrade(form,guest):
@@ -1727,18 +1734,25 @@ def autoGrade(form,guest):
                             or (not i.correct_answer and i.required)]))
     return str(int(round(correct_questions/required_questions*100)))
 
-def deduplicateGuestDatas(e,guest):
+def deduplicateGuestInfo(e,guest,table=GuestData):
     # Retrieve all data
-    b=GuestData.objects.filter(guest=guest)
+    b=table.objects.filter(guest=guest)
     # Initialize holding dict
     c={}
     # Iterate through data
     for i in b:
+        # Obtain key based on table type
+        if isinstance(i,GuestData):
+            key=i.field.name
+            value = 'value'
+        elif isinstance(i,GuestFormsCompleted):
+            key=i.form.name
+            value = 'complete'
         # If data not in holding dict
-        if not c.get(i.field.name,False):
+        if not c.get(key,False):
             # Update holding dict
-            c[i.field.name]=i
-        elif c[i.field.name].value==i.value:
+            c[key]=i
+        elif getattr(c[key],value)==getattr(i,value):
             # If data already in holding dict and values match
             # Delete second data point
             i.delete()
@@ -2432,7 +2446,11 @@ def view(request,target_type,target_object,second_object=None):
             return beGone('view guest %s'%target_object.id)
         context.update({'view_image':target_object.image_tag})
         # create list of forms based on prerequisites and permissions along with status of each and links to view/complete
-        form_list = [(i,{True:'Completed',False:'Incomplete'}[GuestFormsCompleted.objects.get_or_create(guest=target_object,form=i)[0].complete],i.lock_when_complete,GuestFormsCompleted.objects.get_or_create(guest=target_object,form=i)[0].score,i.auto_grade) for i in Form.objects.filter(program__in=target_object.program.all()).distinct() if testPrerequisites(i,target_object) and testPermission(i,request.user,request.session,second_object)]
+        try:
+            form_list = [(i,{True:'Completed',False:'Incomplete'}[GuestFormsCompleted.objects.get_or_create(guest=target_object,form=i)[0].complete],i.lock_when_complete,GuestFormsCompleted.objects.get_or_create(guest=target_object,form=i)[0].score,i.auto_grade) for i in Form.objects.filter(program__in=target_object.program.all()).distinct() if testPrerequisites(i,target_object) and testPermission(i,request.user,request.session,second_object)]
+        except MultipleObjectsReturned, e:
+            deduplicateGuestInfo(e,target_object,GuestFormsCompleted)
+            form_list = [(i,{True:'Completed',False:'Incomplete'}[GuestFormsCompleted.objects.get_or_create(guest=target_object,form=i)[0].complete],i.lock_when_complete,GuestFormsCompleted.objects.get_or_create(guest=target_object,form=i)[0].score,i.auto_grade) for i in Form.objects.filter(program__in=target_object.program.all()).distinct() if testPrerequisites(i,target_object) and testPermission(i,request.user,request.session,second_object)]
         context.update({'form_list':form_list})
     if target_type == 'form':
         form=''
@@ -2484,7 +2502,7 @@ def view(request,target_type,target_object,second_object=None):
                             try:
                                 a = GuestData.objects.get_or_create(guest=second_object,field=i)[0]
                             except MultipleObjectsReturned, e:
-                                deduplicateGuestDatas(e,second_object)
+                                deduplicateGuestInfo(e,second_object)
                                 a = GuestData.objects.get_or_create(guest=second_object,field=i)[0]
                             # convert boolean and file fields to appropriate value otherwise take given value and store in database
                             if i.field_type == 'boolean':
@@ -2563,7 +2581,7 @@ def view(request,target_type,target_object,second_object=None):
                 except MultipleObjectsReturned, e:
                     # If guest has more than one datapoint for a field
                     # deduplicate
-                    deduplicateGuestDatas(e, second_object)
+                    deduplicateGuestInfo(e, second_object)
                     # Reloop while loop to build form
                     form = ''
 
