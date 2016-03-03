@@ -2014,7 +2014,7 @@ def manage(request,target_type=None,target_object=None):
             if hasattr(base_table,'owner'):
                 owner_override = [Q(owner=request.user)]
             # Run the query just created (meatballing permissions) and return distinct entries
-            raw_object_list = base_table.objects.filter(Q(*args)|Q(*owner_override)).distinct().order_by('id')
+            raw_object_list = base_table.objects.filter(Q(*args)|Q(*owner_override)).distinct().filter(*args).order_by('id')
             object_list = []
             # for loop to iterate over the objects returned from the filter and list_display
             # and create a list of lists of viewable fields
