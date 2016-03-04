@@ -9,6 +9,7 @@ Release #
 		#92 Fixed duplicate guestdata entries in testPrerequisite
 			Fixed duplicate guestformscompleted entries in view
 		#93 Search for objects returning all owned objects regardless of filter
+			Fixed guest pictures uploading to file based on selected file name (and overwriting other guest pictures)
 	Removed:
 
 Release #1.2.20160222.0

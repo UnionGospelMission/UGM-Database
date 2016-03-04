@@ -10,6 +10,9 @@ class OverwriteStorage(FileSystemStorage):
         self.delete(name)
         return name
 
+def guestPictureNamer(instance, filename):
+	return 'guestpictures/%s.%s'%(instance.id,filename.split('.')[-1])
+
 # Create your models here.
 
 class User_Permission_Setting(models.Model):
@@ -149,7 +152,7 @@ class Guest(models.Model):
     last_name = models.CharField(max_length=200, blank=True, null=True)
     ssn = models.CharField(max_length=9, blank=True, null=True)
     program = models.ManyToManyField(Program)
-    picture = models.ImageField(upload_to='guestpictures',storage=OverwriteStorage())
+    picture = models.ImageField(upload_to=guestPictureNamer,storage=OverwriteStorage())
     password = models.CharField(max_length=2000, blank=True, null=True)
 
     def clean(self):
