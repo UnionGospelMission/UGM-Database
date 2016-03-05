@@ -10,6 +10,7 @@ Release #
 			Fixed duplicate guestformscompleted entries in view
 		#93 Search for objects returning all owned objects regardless of filter
 			Fixed guest pictures uploading to file based on selected file name (and overwriting other guest pictures)
+		#94 Fixed guests being created into programs user cannot write to
 	Removed:
 
 Release #1.2.20160222.0

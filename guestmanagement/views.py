@@ -2186,6 +2186,11 @@ def manage(request,target_type=None,target_object=None):
             if request.POST.get('field_prerequisite','') and request.POST.get('required',''):
                 messages.add_message(request, messages.INFO, 'Fields with prerequisites cannot be required')
                 sanity_check = False
+        if target_type == 'guest':
+            test = [True for i in Program.objects.filter(id__in=request.POST.getlist('program')) if testPermission(i,request.user,write=True) and testPermission(i,request.user)]
+            if not test:
+                messages.add_message(request, messages.INFO, 'You lack write permission on any of the selected programs')
+                sanity_check = False
         # If the form has all the required data
         if form.is_valid() and sanity_check:
             # Special Handling for fields before saving if a field is being modified and moved from one form to another
