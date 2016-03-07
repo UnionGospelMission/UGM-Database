@@ -1579,93 +1579,99 @@ def testPermission(target_object,user,session={},second_object=None,testurl=Fals
     Method of determining based on permissions whether a user has permission to access a form, field, guest, or static file
     '''
     owner_override = owner or owner_override
-    try:
-        # Return True if a superuser
-        if user and user.is_superuser:
-            return True
-        if testurl:
-            # If testing a static file, pull the static file permissions record from the database
-            target_object = DynamicFilePermissions.objects.get(path=target_object)
-        if isinstance(target_object,list):
-            option = target_object.pop(0)
-            if option == 'or':
-                test = [True for i in target_object if testPermission(i,user,session,second_object,testurl)]
-                if not test:
-                    return False
+    # Return True if a superuser
+    if user and user.is_superuser:
+        return True
+    if testurl:
+        # If testing a static file, pull the static file permissions record from the database
+        target_object,created = DynamicFilePermissions.objects.get_or_create(path=target_object)
+        if created:
+            if 'guestpictures' in target_object.path:
+                base_guest = Guest.objects.get(picture=target_object.path)
+                target_object.permissions_may_have = base_guest.permissions_may_have.all()
+                target_object.permissions_must_have = base_guest.permissions_must_have.all()
+                target_object.permissions_write = base_guest.permissions_write.all()
             else:
-                for i in target_object:
-                    if not testPermission(i,user,session,second_object,testurl):
-                        return False
-        elif session.get('password',''):
-            # If a guest is logged in
-            # Get the guest's record based on the session
-            target_guest = Guest.objects.get(pk=session['guest'])
-            # Deny access if a guest is requesting a different guest's records
-            if isinstance(target_object,Guest) and not target_object==target_guest:
-                return False
-            if isinstance(target_object,(Form,Field)):
-                if isinstance(target_object,Field):
-                    target_object = target_object.form
-                if not getattr(target_object,'guest_completable'):
-                    return False
-                # If the form being tested is for a specific guest, and locks when completed, and has been completed
-                if second_object and target_object.lock_when_complete and GuestFormsCompleted.objects.filter(guest=target_guest,form=target_object)[0].complete:
-                    return False
-            if isinstance(target_object,DynamicFilePermissions):
-                # If the requested url does not belong to the requesting guest and belongs to a guest
-                if not target_guest == target_object.guest and target_object.guest:
-                    return False
-        elif isinstance(target_object,str):
-            # If testing Framework level permission
-            if not user.has_perm('guestmanagement.' + str(target_object)):
+                path = target_object.path
+                target_object.delete()
+                raise ValueError('Missing DynamicFilePermission for %s'%path)
+    if isinstance(target_object,list):
+        option = target_object.pop(0)
+        if option == 'or':
+            test = [True for i in target_object if testPermission(i,user,session,second_object,testurl)]
+            if not test:
                 return False
         else:
-            if hasattr(target_object,'owner') and owner:
-                if not user in target_object.owner.all():
+            for i in target_object:
+                if not testPermission(i,user,session,second_object,testurl):
                     return False
+    elif session.get('password',''):
+        # If a guest is logged in
+        # Get the guest's record based on the session
+        target_guest = Guest.objects.get(pk=session['guest'])
+        # Deny access if a guest is requesting a different guest's records
+        if isinstance(target_object,Guest) and not target_object==target_guest:
+            return False
+        if isinstance(target_object,(Form,Field)):
+            if isinstance(target_object,Field):
+                target_object = target_object.form
+            if not getattr(target_object,'guest_completable'):
+                return False
+            # If the form being tested is for a specific guest, and locks when completed, and has been completed
+            if second_object and target_object.lock_when_complete and GuestFormsCompleted.objects.filter(guest=target_guest,form=target_object)[0].complete:
+                return False
+        if isinstance(target_object,DynamicFilePermissions):
+            # If the requested url does not belong to the requesting guest and belongs to a guest
+            if not target_guest == target_object.guest and target_object.guest:
+                return False
+    elif isinstance(target_object,str):
+        # If testing Framework level permission
+        if not user.has_perm('guestmanagement.' + str(target_object)):
+            return False
+    else:
+        if hasattr(target_object,'owner') and owner:
+            if not user in target_object.owner.all():
+                return False
 
-            if hasattr(target_object,'permissions_write') and write:
-                if list(target_object.permissions_write.all()) != []:
-                    test = [True for i in target_object.permissions_write.all() if user in i.users.all()]
-                    if not test:
-                        return False
-                elif hasattr(target_object,'form'):
-                    if not testPermission(target_object.form,user,write=write):
-                        return False
-            else:
-                if hasattr(target_object,'permissions_must_have'):
-                    for i in target_object.permissions_must_have.all():
-                        if user not in i.users.all():
-                            if not hasattr(target_object,'owner') or not (owner_override and user in target_object.owner.all()):
-                                return False
-                if hasattr(target_object,'permissions_may_have'):
-                    test_list = [True for i in target_object.permissions_may_have.all() if user in i.users.all()]
-                    if test_list==[] and target_object.permissions_may_have.all():
+        if hasattr(target_object,'permissions_write') and write:
+            if list(target_object.permissions_write.all()) != []:
+                test = [True for i in target_object.permissions_write.all() if user in i.users.all()]
+                if not test:
+                    return False
+            elif hasattr(target_object,'form'):
+                if not testPermission(target_object.form,user,write=write):
+                    return False
+        else:
+            if hasattr(target_object,'permissions_must_have'):
+                for i in target_object.permissions_must_have.all():
+                    if user not in i.users.all():
                         if not hasattr(target_object,'owner') or not (owner_override and user in target_object.owner.all()):
                             return False
-
-            if hasattr(target_object,'program'):
-                if list(target_object.program.all()) != []:
-                    test_list=[True for i in getattr(target_object,'program').all() if testPermission(i,user,write=write)]
-                    if test_list==[]:
+            if hasattr(target_object,'permissions_may_have'):
+                test_list = [True for i in target_object.permissions_may_have.all() if user in i.users.all()]
+                if test_list==[] and target_object.permissions_may_have.all():
+                    if not hasattr(target_object,'owner') or not (owner_override and user in target_object.owner.all()):
                         return False
 
-            if second_object:
-                if isinstance(second_object,(str,unicode)):
-                    second_object = Guest.objects.get(pk=second_object)
-                s1 = set(second_object.program.all())
-                if hasattr(target_object,'form'):
-                    s2 = set(target_object.form.program.all())
-                else:
-                    s2 = set(target_object.program.all())
-                test = [True for i in list(s1.intersection(s2)) if testPermission(i,user,write=write)]
-                if test==[]:
+        if hasattr(target_object,'program'):
+            if list(target_object.program.all()) != []:
+                test_list=[True for i in getattr(target_object,'program').all() if testPermission(i,user,write=write)]
+                if test_list==[]:
                     return False
-                
-        return True
-    except:
-        print traceback.format_exc()
-        interactiveConsole(locals(),globals())
+
+        if second_object:
+            if isinstance(second_object,(str,unicode)):
+                second_object = Guest.objects.get(pk=second_object)
+            s1 = set(second_object.program.all())
+            if hasattr(target_object,'form'):
+                s2 = set(target_object.form.program.all())
+            else:
+                s2 = set(target_object.program.all())
+            test = [True for i in list(s1.intersection(s2)) if testPermission(i,user,write=write)]
+            if test==[]:
+                return False
+            
+    return True
 
 def moveField(target_field,direction):
     '''
