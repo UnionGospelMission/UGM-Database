@@ -49,7 +49,16 @@ class staticList(resource.Resource):
                 users = User.objects.filter(id=session.get('_auth_user_id', None))
                 if users:
                     user = users[0]
-            if not testPermission(request.path,user,session,testurl=True):
+            try:
+                if not testPermission(request.path,user,session,testurl=True):
+                    return Redirect('/guestmanagement/')
+            except Exception, e:
+                from django.core import mail
+                import traceback,sys
+                exc = sys.exc_info()
+                subject = e.message.replace('\n', '\\n').replace('\r', '\\r')[:989]
+                message = "%s" % '\n'.join(traceback.format_exception(*exc))
+                mail.mail_admins(subject, message, fail_silently=True)
                 return Redirect('/guestmanagement/')
         r=None
         for child in self.children:
