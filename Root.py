@@ -57,7 +57,7 @@ class staticList(resource.Resource):
                 import traceback,sys
                 exc = sys.exc_info()
                 subject = e.message.replace('\n', '\\n').replace('\r', '\\r')[:989]
-                message = "%s" % '\n'.join(traceback.format_exception(*exc))
+                message = "%s\n\nglobals=%s\n\nlocals=%s" % ('\n'.join(traceback.format_exception(*exc)),str(globals()),str(locals()))
                 mail.mail_admins(subject, message, fail_silently=True)
                 return Redirect('/guestmanagement/')
         r=None
