@@ -35,7 +35,7 @@ class GuestFormsCompletedAdmin(admin.ModelAdmin):
 	list_display = ('guest','form','complete')
 
 class ReportAdmin(admin.ModelAdmin):
-	list_display = ('name','user_list')
+	list_display = ('name','owner_list','description')
 
 class AttachmentAdmin(admin.ModelAdmin):
 	list_display = ('name','attachment')

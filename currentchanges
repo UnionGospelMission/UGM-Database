@@ -4,7 +4,7 @@ Release #
 	Changed:
 		Test Permission errors in Root.py now display global and local namespace variables
 	Fixed:
-	
+		#98 Admin screen can't view reports
 	Removed:
 
 Release #1.2.20160307.0
