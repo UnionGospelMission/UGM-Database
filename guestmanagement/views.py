@@ -1351,7 +1351,10 @@ class ReportProcessor():
                     user_variables = user_variables + sub_user_variables
                 elif line[0] == 'user input':
                     # If user input requested, add to list of user variables
-                    user_variables.append(line[1])
+                    if line[2]:
+                        user_variables.append([line[1],line[2].split(',')])
+                    else:
+                        user_variables.append([line[1],[]])
                 else:
                     # Add current instructions to return value
                     retval.append(line)

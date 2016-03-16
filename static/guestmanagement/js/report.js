@@ -340,12 +340,13 @@ function typeChange(t,single){
                     name.onchange = changeReturnVariable;
                     name.onblur = setTarget;
                     name.onclick=alertName;
+                var dropdown = row.appendChild(document.createElement('input'));
+					dropdown.name = 'code'+row.line_number+'-2';
+                    dropdown.setAttribute('title','Comma Separated Options');
+                    dropdown.onclick=alertName;
                 if (t.value=='set'){
-                    var value = row.appendChild(document.createElement('input'));
-                        value.name = 'code'+row.line_number+'-2';
-                        value.setAttribute('title','Set Value');
-                        value.onclick=alertName;
-                        value.onblur=setTarget;
+                        dropdown.setAttribute('title','Set Value');
+                        dropdown.onblur=setTarget;
                 }
                 break;
 
@@ -671,6 +672,17 @@ function runReport(t){
         t.href = t.href.split("?")[0] + "?"+input[0].name+'='+input[0].value;
         for (var i=1;i<input.length;i++){
             t.href+='&'+input[i].name+'='+input[i].value;
+        }
+    }
+    var select = document.getElementsByTagName('select');
+    if (select.length>0){
+		var i=0;
+		if (input.length==0){
+			t.href = t.href.split("?")[0] + "?"+select[0].name+'='+select[0].value;
+			i=1;
+		}
+        for (i;i<select.length;i++){
+            t.href+='&'+select[i].name+'='+select[i].value;
         }
     }
     t.style.display = 'none';

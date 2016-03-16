@@ -1,6 +1,6 @@
 Release #
 	Added:
-	
+		#95 Reports can have user select boxes on user variable input
 	Changed:
 		Test Permission errors in Root.py now display global and local namespace variables
 	Fixed:

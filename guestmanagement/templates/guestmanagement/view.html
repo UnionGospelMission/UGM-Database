@@ -116,10 +116,17 @@
 				{% for i in variables %}
 					<tr>
 						<td>
-							{{ i }}
+							{{ i.0 }}
 						</td>
 						<td>
-							<input name='variable__{{ i }}' />
+							{% if i.1 %}
+								<select name='variable__{{ i.0 }}' />
+								{% for a in i.1 %}
+									<option value='{{ a }}'>{{ a }}</option>
+								{% endfor %}
+							{% else %}
+								<input name='variable__{{ i.0 }}' />
+							{% endif %}
 						</td>
 					</tr>
 				{% endfor %}
