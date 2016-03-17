@@ -4,7 +4,7 @@ Release #
 	Changed:
 		
 	Fixed:
-		
+		"Program =" in build filter returning anyone with that program instead of anyone with only that program
 	Removed:
 
 Release #1.3.20160316.0

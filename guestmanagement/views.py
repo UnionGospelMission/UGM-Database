@@ -6,7 +6,7 @@ from django.core.context_processors import csrf
 from django.utils.safestring import mark_safe
 from django.utils.functional import SimpleLazyObject
 from django.contrib import messages,auth
-from django.db.models import Q,Max
+from django.db.models import Q,Max,Count
 from django.contrib.auth.models import User
 from django.forms.formsets import formset_factory
 from guestmanagement.models import Guest,GuestmanagementUserSettings,Program,Form,Field,Prerequisite,GuestData,GuestFormsCompleted,Permission,GuestTimeData,Report,Attachment,DynamicFilePermissions,User_Permission_Setting,QuickFilter
@@ -192,6 +192,7 @@ class ReportProcessor():
                             '<=':'lte',
                             '<>':'exact',
                             'contains':'icontains',
+                            'only contains':'icontains',
                             'guest':Guest,
                             'field':{u'':GuestData,u'on':GuestTimeData},
 
@@ -1105,10 +1106,16 @@ class ReportProcessor():
                     # If filtering on guests
                     # initialize operator with first guest attribute
                     operator = '%s__'%i[3].split('guest.')[1]
+                    # Set table to filter
+                    filter_table = Guest.objects
                     # If filtering on guest program
                     if i[3].split('guest.')[1]=='program':
                         # Add name to operator (results in operator == "program__name__")
                         operator += 'name__'
+                        if i[1] == '=':
+                            # Change filter table for equals
+                            filter_table = Guest.objects.annotate(num_prog=Count('program'))
+                            eqkwargs['num_prog']=1
                     # Add django filter comparator
                     operator = operator + self.filter_dict[i[1]]
                     # If filtering on not equal
@@ -1119,7 +1126,7 @@ class ReportProcessor():
                         # Append filter to equal kwargs
                         eqkwargs[operator]=self.evalVariables(env,i[2]).replace('True',"checked='checked'")
                     # Run django filter returning list of guest ids where guest matches criteria
-                    current_guest_list = list(Guest.objects.filter(**eqkwargs).exclude(**nekwargs).distinct().values_list('id',flat=True))
+                    current_guest_list = list(filter_table.filter(**eqkwargs).exclude(**nekwargs).distinct().values_list('id',flat=True))
                 # If criteria is "and"
                 if i[0]=='and':
                     # If no guests in list
