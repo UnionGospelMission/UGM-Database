@@ -154,6 +154,7 @@ class Guest(models.Model):
     program = models.ManyToManyField(Program)
     picture = models.ImageField(upload_to=guestPictureNamer,storage=OverwriteStorage())
     password = models.CharField(max_length=2000, blank=True, null=True)
+    barcode = models.CharField(max_length=2000, blank=True, null=True)
 
     def clean(self):
         if self.ssn=='':

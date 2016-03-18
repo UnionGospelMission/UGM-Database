@@ -1504,7 +1504,7 @@ def redirectWithNext(request,url):
         a.save()
     return url
 
-def createForm(field_list,user,request=None,second_object=None,error_flags={}):
+def createForm(field_list,user,request=None,second_object=None,error_flags={},session={}):
     '''
     Builds the html form to be displayed based on a list of fields passed in from requesting view
     '''
@@ -1531,7 +1531,7 @@ def createForm(field_list,user,request=None,second_object=None,error_flags={}):
                                     i.label,
                                     ' *' if i.required else '',
                                     field_type_options[i.field_type]%(
-                                        {True:'',False:'Disabled'}[testPermission(i,user,second_object=second_object,write=True)],
+                                        {True:'',False:'Disabled'}[testPermission(i,user,session,second_object=second_object,write=True)],
                                         i.name,
                                         i.name,
                                         i.attachment.attachment.url
@@ -1918,9 +1918,18 @@ def guestlogin(request,target_guest=None):
             if request.POST['ssn']!='':
                 args.append(Q(ssn__endswith=request.POST['ssn']))
             if request.POST['id'].isdigit():
-                args.append(Q(id=requestedid))
+                args.append(Q(id=request.POST['id']))
             if request.POST['last_name']!='':
                 args.append(Q(last_name__icontains=request.POST['last_name']))
+            if request.POST['barcode']!='':
+                args.append(Q(barcode=request.POST['barcode']))
+                possible_guests = Guest.objects.filter(barcode=request.POST['barcode'])
+                if len(possible_guests)==1:
+                    target_guest=possible_guests[0].id
+                    request.session['password']=True
+                    request.session['guest']=target_guest
+                    request.session.set_expiry(600)
+                    return redirect('/guestmanagement/view/guest/%s/'%target_guest)
             test_objects=None
             if args!=[]:
                 test_objects = Guest.objects.filter(*args)
@@ -2187,6 +2196,9 @@ def manage(request,target_type=None,target_object=None):
             request.POST['password']=target_instance.password
             # Set flag to not hash password
             hashpassword=False
+        # If changing a guest but no barcode provided
+        if target_type=='guest' and not request.POST.get('barcode',''):
+            request.POST['barcode']=target_instance.barcode
         # get the new/modify form from the reference dictionary and bind the submitted data to it
         form = target_type_dict[target_type][0](request.POST,request.FILES,instance=target_instance)
         # Set sanity check flag
@@ -2207,6 +2219,13 @@ def manage(request,target_type=None,target_object=None):
             if not test:
                 messages.add_message(request, messages.INFO, 'You lack write permission on any of the selected programs')
                 sanity_check = False
+            # Test for unique barcode
+            if request.POST.get('barcode',''):
+                test = Guest.objects.filter(barcode=request.POST['barcode'])
+                if len(test)!=0 and (len(test)>1 or test[0]!=target_instance):
+                    messages.add_message(request, messages.INFO, 'Guest barcodes must be unique')
+                    sanity_check = False
+                    
         # If the form has all the required data
         if form.is_valid() and sanity_check:
             # Special Handling for fields before saving if a field is being modified and moved from one form to another
@@ -2453,7 +2472,7 @@ def view(request,target_type,target_object,second_object=None):
         if not testPrerequisites(target_object,second_object):
             return beGone(str(second_object))
         if target_type=='form':
-            if not testPermission(['and','view_guest',Guest.objects.get(pk=second_object)],request.user):
+            if not testPermission(['and','view_guest',Guest.objects.get(pk=second_object)],request.user,request.session):
                 return beGone('view_guest')
     context=baseContext(request)
     # If the user is not authenticated, it must be a logged in guest to have made it past the above permissions test
@@ -2463,7 +2482,7 @@ def view(request,target_type,target_object,second_object=None):
     context.update({'target_type':target_type,'target_object':target_object})
     if target_type == 'guest':
         # Check for permission to view guest
-        if not testPermission(target_object,request.user):
+        if not testPermission(target_object,request.user,request.session):
             return beGone('view guest %s'%target_object.id)
         context.update({'view_image':target_object.image_tag})
         # create list of forms based on prerequisites and permissions along with status of each and links to view/complete
@@ -2516,7 +2535,7 @@ def view(request,target_type,target_object,second_object=None):
                     time_stamp=datetime.datetime.now()
                     for i in field_list.order_by('order'):
                         # Test write permission on field
-                        if not testPermission(i,request.user,second_object=second_object,write=True):
+                        if not testPermission(i,request.user,request.session,second_object=second_object,write=True):
                             messages.add_message(request, messages.INFO, 'No write permission on %s for %s...skipped'%(i.name,second_object.id))
                             continue
                         if testPrerequisites(i,second_object):
@@ -2598,7 +2617,7 @@ def view(request,target_type,target_object,second_object=None):
             while not form:
                 try:
                     # Try building form
-                    form=createForm(field_list,request.user,second_object=second_object)
+                    form=createForm(field_list,request.user,second_object=second_object,session=request.session)
                 except MultipleObjectsReturned, e:
                     # If guest has more than one datapoint for a field
                     # deduplicate
