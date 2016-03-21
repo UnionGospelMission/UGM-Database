@@ -5,6 +5,7 @@ Release #
 			
 	Fixed:
 			Moving fields on forms no longer resets view
+			**major**Permission Error form creators view access without permission**major**
 	Removed:
 
 Release #1.4.20160321.0

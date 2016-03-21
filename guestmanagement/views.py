@@ -2493,6 +2493,9 @@ def view(request,target_type,target_object,second_object=None):
             form_list = [(i,{True:'Completed',False:'Incomplete'}[GuestFormsCompleted.objects.get_or_create(guest=target_object,form=i)[0].complete],i.lock_when_complete,GuestFormsCompleted.objects.get_or_create(guest=target_object,form=i)[0].score,i.auto_grade) for i in Form.objects.filter(program__in=target_object.program.all()).distinct() if testPrerequisites(i,target_object) and testPermission(i,request.user,request.session,second_object)]
         context.update({'form_list':form_list})
     if target_type == 'form':
+        # Test for permission to view particular form
+        if not testPermission(target_object,request.user,request.session):
+            return beGone('view form %s'%target_object.id)
         form=''
         field_list = Field.objects.filter(form=target_object)
         # if there is no second_object, no guest is being associated with this form, therefore any posted data relates to moving fields
