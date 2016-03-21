@@ -1594,7 +1594,7 @@ def testPermission(target_object,user,session={},second_object=None,testurl=Fals
         return True
     if testurl:
         # If testing a static file, pull the static file permissions record from the database
-        target_object,created = DynamicFilePermissions.objects.get_or_create(path=target_object)
+        target_object,created = DynamicFilePermissions.objects.get_or_create(path=target_object.replace('%20',' '))
         if created:
             if 'guestpictures' in target_object.path:
                 base_guest = Guest.objects.get(picture=target_object.path)
