@@ -75,7 +75,7 @@
 									{% csrf_token %}
 									<input id='move_type' type='text' name='move_type' value='up' hidden>
 									<input id='move_field' type='text' name='move_field' value='{{ i.id }}' hidden>
-									<input id='search' type='submit' value='Up'>
+									<input id='search' type='submit' value='Up' onclick='scrollReturn(this)'>
 								</form>
 							</td>
 							<td>
@@ -83,7 +83,7 @@
 									{% csrf_token %}
 									<input id='move_type' type='text' name='move_type' value='down' hidden>
 									<input id='move_field' type='text' name='move_field' value='{{ i.id }}' hidden>
-									<input id='search' type='submit' value='Down'>
+									<input id='search' type='submit' value='Down' onclick='scrollReturn(this)'>
 								</form>
 							</td>
 							<td>
@@ -91,7 +91,7 @@
 									{% csrf_token %}
 									<input id='move_type' type='text' name='move_type' value='top' hidden>
 									<input id='move_field' type='text' name='move_field' value='{{ i.id }}' hidden>
-									<input id='search' type='submit' value='Top'>
+									<input id='search' type='submit' value='Top' onclick='scrollReturn(this)'>
 								</form>
 							</td>
 							<td>
@@ -99,7 +99,7 @@
 									{% csrf_token %}
 									<input id='move_type' type='text' name='move_type' value='bottom' hidden>
 									<input id='move_field' type='text' name='move_field' value='{{ i.id }}' hidden>
-									<input id='search' type='submit' value='Bottom'>
+									<input id='search' type='submit' value='Bottom' onclick='scrollReturn(this)'>
 								</form>
 							</td>
 						{% endif %}

@@ -2,9 +2,9 @@ Release #
 	Added:
 
 	Changed:
-		
+			
 	Fixed:
-
+			Moving fields on forms no longer resets view
 	Removed:
 
 Release #1.4.20160321.0
