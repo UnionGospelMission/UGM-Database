@@ -1795,7 +1795,6 @@ def quickfilter(request):
                     'query_list':QuickFilter.objects.filter(user=request.user),
                     })
     if request.POST:
-        Print(request.POST)
         if request.POST.get('load',False) and request.POST['load_query']:
             quick_filter = QuickFilter.objects.get(name=request.POST['load_query'],user=request.user)
             if not testPermission(quick_filter.field,request.user):
@@ -1834,15 +1833,20 @@ def quickfilter(request):
                     current_guest_list = list(GuestData.objects.filter(**eqkwargs).exclude(**nekwargs).values_list('guest',flat=True))
                 else:
                     operator = '%s__'%i[1]
+                    filter_table = Guest.objects
                     if i[1]=='Program':
                         operator += 'name__'
+                        if i[2] == '=':
+                            # Change filter table for equals
+                            filter_table = Guest.objects.annotate(num_prog=Count('program'))
+                            eqkwargs['num_prog']=1
                     operator = operator.lower().replace(' ','_')
                     operator = operator + report_processor.filter_dict[i[2]]
                     if i[2] == '<>':
                         nekwargs[operator]=i[3].replace('True',"checked='checked'")
                     else:
                         eqkwargs[operator]=i[3].replace('True',"checked='checked'")
-                    current_guest_list = list(Guest.objects.filter(**eqkwargs).exclude(**nekwargs).distinct().values_list('id',flat=True))
+                    current_guest_list = list(filter_table.filter(**eqkwargs).exclude(**nekwargs).distinct().values_list('id',flat=True))
                 if guest_list==[]:
                     guest_list = set(current_guest_list)
                 else:
@@ -1863,7 +1867,7 @@ def quickfilter(request):
                             }
             if field_types.get(target_field.field_type,False):
                 html_return = []
-                for i in sorted(guest_list,key=lambda x: x.last_name):
+                for i in sorted(guest_list,key=lambda x: x.last_name.lower()):
                     answer = GuestData.objects.get_or_create(guest=i,field=target_field)[0].value
                     guest_line = ''
                     if target_field.field_type=='boolean':
@@ -1876,7 +1880,9 @@ def quickfilter(request):
             else:
                 messages.add_message(request, messages.INFO, 'Invalid Field Type "%s": Pick a Different Field'%target_field.field_type)
             if request.POST.get('save',False) == 'on' and request.POST.get('save_name',False):
-                quick_filter = QuickFilter.objects.get_or_create(user=request.user,form=target_form,field=target_field,name=request.POST['save_name'])[0]
+                quick_filter = QuickFilter.objects.get_or_create(user=request.user,name=request.POST['save_name'])[0]
+                quick_filter.form=target_form
+                quick_filter.field=target_field
                 quick_filter.criteria = json.dumps(criteria)
                 quick_filter.save()
         else:
