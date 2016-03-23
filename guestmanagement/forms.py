@@ -14,7 +14,7 @@ class NewGuestForm(forms.ModelForm):
 		model=Guest
 		exclude=[]
 		widgets = {'password': forms.PasswordInput(),'barcode': forms.PasswordInput()}
-		list_filter = [['first_name','icontains'],['last_name','icontains'],['ssn','endswith'],['program','many','name','icontains']]
+		list_filter = [['first_name','icontains'],['last_name','icontains'],['ssn','endswith'],['program','many','name','icontains'],['barcode','exact']]
 		list_display = ['id','first_name','last_name','last_4_ssn','program_list','image_tag']
 
 class NewProgramForm(forms.ModelForm):

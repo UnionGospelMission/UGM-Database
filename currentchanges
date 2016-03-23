@@ -2,7 +2,7 @@ Release #
 	Added:
 
 	Changed:
-			
+			Added barcode to searching for guests
 	Fixed:
 			Quick Query wouldn't allow reusing names by other users
 	Removed:
