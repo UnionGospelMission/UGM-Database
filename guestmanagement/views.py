@@ -1504,7 +1504,7 @@ def redirectWithNext(request,url):
         a.save()
     return url
 
-def createForm(field_list,user,request=None,second_object=None,error_flags={},session={}):
+def createForm(field_list,user,request=None,second_object=None,error_flags={},session={},edit_past=False):
     '''
     Builds the html form to be displayed based on a list of fields passed in from requesting view
     '''
@@ -1535,7 +1535,7 @@ def createForm(field_list,user,request=None,second_object=None,error_flags={},se
                                         i.name,
                                         i.name,
                                         ''
-                                            if i.blank_each_time else i.attachment.attachment.url
+                                            if (i.blank_each_time and not edit_past) else i.attachment.attachment.url
                                             if i.field_type=='attachment' else i.external_url
                                             if i.field_type=='url' else GuestData.objects.get_or_create(guest=second_object,field=i)[0].value
                                             if not request else request.POST.get(i.name,'')
@@ -2895,7 +2895,7 @@ def editpastform(request,target_guest,target_form,target_guesttimedata=None):
             for i in guesttimedata_list:
                 request.POST.update({i.field.name:i.value.replace("checked='checked'",'on')})
             # Create form
-            form = createForm(target_field_list,request.user,second_object=target_guest,request=request)
+            form = createForm(target_field_list,request.user,second_object=target_guest,request=request,edit_past=True)
             context.update({'form':form})
     # Serve it up
     context.update({'target_guest':target_guest, 'target_form':target_form})
