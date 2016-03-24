@@ -1534,7 +1534,8 @@ def createForm(field_list,user,request=None,second_object=None,error_flags={},se
                                         {True:'',False:'Disabled'}[testPermission(i,user,session,second_object=second_object,write=True)],
                                         i.name,
                                         i.name,
-                                        i.attachment.attachment.url
+                                        ''
+                                            if i.blank_each_time else i.attachment.attachment.url
                                             if i.field_type=='attachment' else i.external_url
                                             if i.field_type=='url' else GuestData.objects.get_or_create(guest=second_object,field=i)[0].value
                                             if not request else request.POST.get(i.name,'')
@@ -2230,6 +2231,9 @@ def manage(request,target_type=None,target_object=None):
                 sanity_check = False
             if request.POST.get('field_prerequisite','') and request.POST.get('required',''):
                 messages.add_message(request, messages.INFO, 'Fields with prerequisites cannot be required')
+                sanity_check = False
+            if request.POST.get('blank_each_time','') and not request.POST.get('time_series',''):
+                messages.add_message(request, messages.INFO, 'Fields blanking every time must be time series')
                 sanity_check = False
         if target_type == 'guest':
             test = [True for i in Program.objects.filter(id__in=request.POST.getlist('program')) if testPermission(i,request.user,write=True) and testPermission(i,request.user)]

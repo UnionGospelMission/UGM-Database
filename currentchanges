@@ -4,6 +4,7 @@ Release #
 	Changed:
 			Added barcode to searching for guests
 			Made quick filter specify date and time when mass changing time series field
+			Fields can now always come up blank on forms with time series option
 	Fixed:
 			Quick filters wouldn't allow reusing names by other users
 	Removed:

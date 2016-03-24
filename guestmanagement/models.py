@@ -127,6 +127,7 @@ class Field(models.Model):
     field_prerequisite = models.ManyToManyField('Prerequisite', null=True, blank=True)
     required = models.BooleanField(default=False)
     add_only = models.BooleanField(default=False)
+    blank_each_time = models.BooleanField(default=False)
     permissions_must_have = models.ManyToManyField('Permission', null=True, blank=True, related_name='field_must')
     permissions_may_have = models.ManyToManyField('Permission', null=True, blank=True, related_name='field_may')
     permissions_write = models.ManyToManyField('Permission', null=True, blank=True, related_name='field_write')
