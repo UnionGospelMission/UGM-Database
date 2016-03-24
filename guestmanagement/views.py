@@ -1867,6 +1867,10 @@ def quickfilter(request):
                             }
             if field_types.get(target_field.field_type,False):
                 html_return = []
+                if target_field.time_series and testPermission(target_field,request.user,write=True):
+                    html_return.append("date: <input class='datePicker' name='form_date' readonly='true' type='text' /><br />")
+                    html_return.append("time: <input class='timePicker' name='form_time' readonly='true' type='text' /><br />")
+                    html_return.append('update current record <input type="checkbox" name="current_update" /><br />')
                 for i in sorted(guest_list,key=lambda x: x.last_name.lower()):
                     answer = GuestData.objects.get_or_create(guest=i,field=target_field)[0].value
                     guest_line = ''
@@ -1890,6 +1894,12 @@ def quickfilter(request):
             target_field = Field.objects.get(name=request.POST['field_select'])
             if not testPermission(target_field,request.user,write=True):
                 return beGone('No write permission on %s'%target_field)
+            if request.POST.get('form_date',''):
+                new_date = parse(request.POST['form_date'])
+                time_stamp = time_stamp.replace(year=new_date.year,month=new_date.month,day=new_date.day)
+            if request.POST.get('form_time',''):
+                new_time = parse(request.POST['form_time'])
+                time_stamp = time_stamp.replace(hour=new_time.hour,minute=new_time.minute,second=new_time.second)
             for i in request.POST.keys():
                 if i.isdigit():
                     guest = Guest.objects.get(pk=i)
@@ -1897,12 +1907,13 @@ def quickfilter(request):
                         value = request.POST[i]
                         if value == 'on' and target_field.field_type=='boolean':
                             value = "checked='checked'"
-                        data = GuestData.objects.get_or_create(guest=guest,field=target_field)[0]
-                        data.value = value
-                        data.save()
+                        if (not request.POST.get('form_date','') and not request.POST.get('form_time','')) or request.POST.get('current_update',''):
+                            data = GuestData.objects.get_or_create(guest=guest,field=target_field)[0]
+                            data.value = value
+                            data.save()
                         if target_field.time_series:
                             b = GuestTimeData.objects.get_or_create(guest=guest,field=target_field,date=time_stamp)[0]
-                            b.value = data.value
+                            b.value = value
                             b.save()
                     else:
                         messages.add_message(request, messages.INFO, 'Commit denied for %s'%guest.id)
