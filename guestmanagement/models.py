@@ -279,7 +279,7 @@ class Report(models.Model):
 
 class QuickFilter(models.Model):
     name = models.CharField(max_length=2000, blank=True, null=True)
-    field = models.ForeignKey(Field, blank=True, null=True)
+    field = models.ManyToManyField(Field, blank=True, null=True)
     form = models.ForeignKey(Form, blank=True, null=True)
     criteria = models.CharField(max_length=200000, blank=True, null=True)
     user = models.ForeignKey(User)

@@ -9,27 +9,43 @@ document.ready=function (){
     } else {
         window.form_list = {};
     }
-    var form_select_div = document.getElementById('form_select_div');
+    window.field_select_div = document.getElementById('field_select_div');
+    window.form_select_div = document.getElementById('form_select_div');
+    window.filter_div = document.getElementById('filter_div');
+    window.viewer_div = document.getElementById('viewer_div');
+    window.submit_button = document.getElementById('search');
+    
 	var header = form_select_div.appendChild(document.createElement('h5'));
 	header.appendChild(document.createTextNode('Pick Form:'));
-    var form_select = createFormSelect(form_select_div);
+    window.form_select = createFormSelect(form_select_div);
 	form_select.name = "form_select";
 	form_select.onchange = changeForm;
     window.criterion_number = 0;
+    window.field_number = 0;
     if (document.getElementById('submitted_form').value!=''){
+		if(document.getElementById('submitted_field').value!=''){
+			var submitted_field = JSON.parse(document.getElementById('submitted_field').value);
+		} else {
+			var submitted_field = [];
+		}
 		form_select.value = document.getElementById('submitted_form').value;
-		var field_select = changeForm(form_select);
-		field_select.value = document.getElementById('submitted_field').value;
-		var new_criterion = setFilter();
-		var criterion_list = JSON.parse(document.getElementById('submitted_criteria').value);
-		for (var i=0;i<criterion_list.length;i++){
-			new_criterion.children[0].value = criterion_list[i][0];
-			var holding = setFields(new_criterion.children[0]);
-			holding = undefined;
-			new_criterion.children[1].value = criterion_list[i][1];
-			new_criterion.children[2].value = criterion_list[i][2];
-			new_criterion.children[3].value = criterion_list[i][3];
-			new_criterion = newCriterion(new_criterion.children[0]);
+		changeForm();
+		for (var i=0;i<submitted_field.length;i++){
+			field_select_div.lastChild.children[0].value = submitted_field[i];
+			addFieldSelect(field_select_div.lastChild.children[0]);
+		}
+		if (document.getElementById('submitted_criteria').value){
+			var criteria = JSON.parse(document.getElementById('submitted_criteria').value);
+		} else {
+			var criteria = [];
+		}
+		for (var i=0;i<criteria.length;i++){
+			filter_div.lastChild.children[0].value = criteria[i][0];
+			createFieldSelect(filter_div.lastChild.children[1],criteria[i][0]);
+			filter_div.lastChild.children[1].value = criteria[i][1];
+			filter_div.lastChild.children[2].value = criteria[i][2];
+			filter_div.lastChild.children[3].value = criteria[i][3];
+			createCriteria();
 		}
 	}
     
@@ -48,97 +64,106 @@ function createFormSelect(t){
 }
 
 function changeForm(t){
-    if (t instanceof Event) {
-        t=this;
-    }
-	var field_select_div = document.getElementById('field_select_div');
+	field_number = 0;
 	while (field_select_div.firstChild) {
 		field_select_div.removeChild(field_select_div.firstChild);
 	}
 	var header = field_select_div.appendChild(document.createElement('h5'));
-	header.appendChild(document.createTextNode('Pick Field:'));
-	var field_select = field_select_div.appendChild(document.createElement('select'));
-	field_select.appendChild(new Option('',''));
-	for (var i=0;i<field_list[t.value].length;i++){
-		field_select.appendChild(new Option(field_list[t.value][i],field_list[t.value][i]));
+	header.appendChild(document.createTextNode('Pick Field(s):'));
+	var field_select = createFieldSelect();
+	field_select.onchange = addFieldSelect;
+	field_select.name = 'field_select_'+String(field_number);
+	field_number += 1;
+	var new_div = field_select_div.appendChild(document.createElement('div'));
+	new_div.appendChild(field_select);
+}
+
+function createFieldSelect(t,v){
+	if (! t) {
+		var field_select = document.createElement('select');
+		var fields = field_list[form_select.value];
+	} else {
+		var field_select = t;
+		var fields = field_list[v];
 	}
-	field_select.onchange = setFilter;
-	field_select.name = "field_select";
+	if (fields == undefined && ((!t && form_select.value ) || (t && v) )){
+		fields = ['ID','First Name','Middle Name','Last Name','SSN','Program'];
+	}
+	field_select.appendChild(new Option('',''));
+	for (var i=0;i<fields.length;i++){
+		field_select.appendChild(new Option(fields[i],fields[i]));
+	}
+		
 	return field_select;
 }
 
-function setFilter(){
-	criterion_number = 0;
-	var filter_div = document.getElementById('filter_div');
-	if (! filter_div.children[0]){
-		var header = filter_div.appendChild(document.createElement('h5'));
-		header.appendChild(document.createTextNode('Set Criterion:'));
-		return newCriterion(filter_div);
-	}
-}
-
-function newCriterion(t) {
+function addFieldSelect(t){
     if (t instanceof Event) {
         t=this;
     }
-    if (t.parentNode.nextSibling == null || t.parentNode.tagName=='FORM'){
-		if (t.tagName=='DIV'){
-			var parent_div = t;
-		} else {
-			var parent_div = t.parentNode.parentNode;
-		}
-		var new_criterion = parent_div.appendChild(document.createElement('div'));
-		var new_form_select = createFormSelect(new_criterion);
-		new_form_select.appendChild(new Option('Guest','Guest'));
-		new_form_select.name = 'form_select_' + String(criterion_number);
-		new_form_select.onchange=setFields;
-		var new_field_select = new_criterion.appendChild(document.createElement('select'));
-		new_field_select.name = 'field_select_' + String(criterion_number);
-		new_field_select.onchange = newCriterion;
-		var new_operator = new_criterion.appendChild(document.createElement('select'));
-		new_operator.name = 'operator_' + String(criterion_number);
-		new_operator.appendChild(new Option('',''));
-		new_operator.appendChild(new Option('=','='));
-		new_operator.appendChild(new Option('<>','<>'));
-		new_operator.appendChild(new Option('>','>'));
-		new_operator.appendChild(new Option('>=','>='));
-		new_operator.appendChild(new Option('<','<'));
-		new_operator.appendChild(new Option('<=','<='));
-		new_operator.appendChild(new Option('contains','contains'));
-		var new_value = new_criterion.appendChild(document.createElement('input'));
-		new_value.name = 'value_' + String(criterion_number);
+    t = t.parentNode;
+    if (! t.nextSibling){
+		var field_select = createFieldSelect();
+			field_select.onchange = addFieldSelect;
+			field_select.name = 'field_select_'+String(field_number);
+		field_number += 1;
+		var new_div = field_select_div.appendChild(document.createElement('div'));
+		new_div.appendChild(field_select);
+	}
+	if (filter_div.children.length==0){
+		var header = filter_div.appendChild(document.createElement('h5'));
+		header.appendChild(document.createTextNode('Set Criteria:'));
+		createCriteria();
+	}
+}
+
+function createCriteria(t){
+    if (t instanceof Event) {
+        t=this;
+    }
+    if (! t || ! t.parentNode.nextSibling){
+		var new_div = filter_div.appendChild(document.createElement('div'));
+		var form = createFormSelect(new_div);
+			form.name = 'form_criteria_'+String(criterion_number);
+			form.onchange=changeCriteriaForm;
+			form.appendChild(new Option('Guest','Guest'));
+		var field = new_div.appendChild(document.createElement('select'));
+			field.name = 'field_criteria_'+String(criterion_number);
+			field.onchange=createCriteria;
+		var operator = new_div.appendChild(document.createElement('select'));
+			operator.name = 'operator_' + String(criterion_number);
+			operator.appendChild(new Option('',''));
+			operator.appendChild(new Option('=','='));
+			operator.appendChild(new Option('<>','<>'));
+			operator.appendChild(new Option('>','>'));
+			operator.appendChild(new Option('>=','>='));
+			operator.appendChild(new Option('<','<'));
+			operator.appendChild(new Option('<=','<='));
+			operator.appendChild(new Option('contains','contains'));
+		var value = new_div.appendChild(document.createElement('input'));
+			value.name = 'value_' + String(criterion_number);
 		criterion_number++;
 	}
-	var submit_button = document.getElementById('search');
-	if (submit_button.offsetParent===null && t.parentNode.nextSibling != null && t.parentNode.tagName!='FORM'){
+	if (filter_div.children.length > 2 && submit_button.offsetParent===null){
 		submit_button.style.display = 'inline';
 		document.getElementById('save').style.display = 'inline';
 		document.getElementById('save_label').style.display = 'inline';
 	}
-	if (new_criterion){
-		return new_criterion;
-	}
 }
 
-function setFields(t){
+function changeCriteriaForm(t){
     if (t instanceof Event) {
         t=this;
     }
-	var my_field_list = field_list[t.value];
-	if (my_field_list == undefined && t.value != ''){
-		my_field_list = ['ID','First Name','Middle Name','Last Name','SSN','Program'];
+    var field = t.nextSibling;
+    while (field.firstChild){
+		field.removeChild(field.firstChild);
 	}
-	tn=t.nextSibling;
-	while (tn.firstChild) {
-		tn.removeChild(tn.firstChild);
-	}
-	tn.appendChild(new Option('',''));
-	for (var i=0;i<my_field_list.length;i++){
-		tn.appendChild(new Option(my_field_list[i],my_field_list[i]));
-	}
-	return tn;
+	createFieldSelect(field,t.value);
 	
 }
+
+
 
 function toggleName() {
 	var save = document.getElementById('save');
@@ -151,18 +176,24 @@ function toggleName() {
 	}
 }
 
+
 function verifySubmit(t) {
 	var form = document.getElementsByName('form_select')[0];
-	var field = document.getElementsByName('field_select')[0];
-	var submission = document.getElementsByTagName('form')[0]
 	if (! form.value){
 		alert('Pick Form!');
 		return;
 	}
-	if (! field.value){
+	var field_test = [];
+	for (var i=1;i<field_select_div.children.length;i++){
+		field_test.push(field_select_div.children[i].children[0].value=='');
+	}
+	if (field_test.indexOf(false)<0){
 		alert('Pick Field!');
 		return;
 	}
+
+
+	var submission = document.getElementsByTagName('form')[0]
 	if (t.name == 'search'){
 		var submit_type = document.createElement('input');
 		submit_type.style.display='none';
@@ -171,5 +202,6 @@ function verifySubmit(t) {
 		submission.appendChild(submit_type);
 		
 	}
-	submission.submit()
+	submission.submit();
 }
+
