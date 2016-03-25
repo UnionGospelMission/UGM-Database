@@ -17,7 +17,7 @@
             {% csrf_token %}
             {% if "guestmanagement.delete_guesttimedata" in perms %}
                 <input id='delete' type='text' name='delete' value='delete' hidden>
-                <input id='search' type='submit' value='Delete {{ target_type.capitalize }}' onsubmit="formSubmitConfirm('DeleteForm','Confirm Delete {{ target_type.capitalize }}')">
+                <input type='button' value='Delete {{ target_type.capitalize }}' onclick="formSubmitConfirm('DeleteForm','Confirm Delete {{ target_type.capitalize }}')">
             {% endif %}
         </form>
         <form action='.' method='post' autocomplete="off" enctype="multipart/form-data">
