@@ -1547,7 +1547,8 @@ def createForm(field_list,user,request=None,second_object=None,error_flags={},se
                                             [
                                                 "<option value='%s' %s>%s</option>\n"%(
                                                     a.strip(),
-                                                    {True:"selected='selected'",False:''}[a.strip() in GuestData.objects.get_or_create(guest=second_object,field=i)[0].value]
+                                                    ''
+														if (i.blank_each_time and not edit_past) else {True:"selected='selected'",False:''}[a.strip() in GuestData.objects.get_or_create(guest=second_object,field=i)[0].value]
                                                         if not request else {True:"selected='selected'",False:''}[a.strip() in request.POST.get(i.name,'')],
                                                     a.strip(),
                                                 )

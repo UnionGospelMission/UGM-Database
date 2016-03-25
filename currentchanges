@@ -8,6 +8,7 @@ Release #
 	Fixed:
 			Quick filters wouldn't allow reusing names by other users *migration required
 			Blank each time fields don't appear on edit past forms
+			Black each time select and list boxes still showed previous selections
 	Removed:
 
 
