@@ -1,5 +1,5 @@
 from random import randint
-import hashlib,datetime,json,os,re, itertools,inspect,openpyxl,shutil
+import hashlib,datetime,calendar,json,os,re, itertools,inspect,openpyxl,shutil
 from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from django.core.context_processors import csrf
@@ -74,6 +74,7 @@ class HTMLToExcel(HTMLParser):
         self.current_tag = [None]
         self.highest_column = 1
         self.multicell = None
+        self.multicol = None
     def handle_starttag(self, tag, attrs):
         self.current_tag.append(tag)
         if tag=='td' or tag=='th':
@@ -81,6 +82,11 @@ class HTMLToExcel(HTMLParser):
                 self.multicell = [[self.column],self.row,self.row]
             else:
                 self.multicell[0].append(self.column)
+            for i in attrs:
+                if 'colspan' in i:
+                    start_col = self.column
+                    self.column += int(i[1])-1
+                    self.multicell[0][-1] = [start_col,self.column]
     def handle_endtag(self, tag):
         if tag in self.current_tag:
             while len(self.current_tag) != 1 and tag != self.current_tag.pop(-1):
@@ -116,14 +122,22 @@ class HTMLToExcel(HTMLParser):
         if not desc:
             return
         for a in desc[0]:
-            my_column = chr(a + 64)
-            if desc[1] == desc[2]:
-                self.ws['%s%s'%(my_column,desc[1])].border = openpyxl.styles.borders.Border(left=openpyxl.styles.borders.Side(style='thin'), right=openpyxl.styles.borders.Side(style='thin'), top=openpyxl.styles.borders.Side(style='thin'), bottom=openpyxl.styles.borders.Side(style='thin'))
-            else:
-                self.ws['%s%s'%(my_column,desc[1])].border = openpyxl.styles.borders.Border(left=openpyxl.styles.borders.Side(style='thin'), right=openpyxl.styles.borders.Side(style='thin'), top=openpyxl.styles.borders.Side(style='thin'))
-                for i in range(desc[1]+1,desc[2]):
-                    self.ws['%s%s'%(my_column,i)].border = openpyxl.styles.borders.Border(left=openpyxl.styles.borders.Side(style='thin'), right=openpyxl.styles.borders.Side(style='thin'))
-                self.ws['%s%s'%(my_column,desc[2])].border = openpyxl.styles.borders.Border(left=openpyxl.styles.borders.Side(style='thin'), right=openpyxl.styles.borders.Side(style='thin'), bottom=openpyxl.styles.borders.Side(style='thin'))
+            cols = a
+            if not isinstance(a,list):
+                cols = [a,a]
+            for each_col in range(cols[0],cols[1]+1):
+                for each_row in range(desc[1],desc[2]+1):
+                    my_column = chr(each_col + 64)
+                    format_dict = {}
+                    if each_col-cols[0]==0:
+                        format_dict.update({'left':openpyxl.styles.borders.Side(style='thin')})
+                    if cols[1]-each_col==0:
+                        format_dict.update({'right':openpyxl.styles.borders.Side(style='thin')})
+                    if each_row-desc[1]==0:
+                        format_dict.update({'top':openpyxl.styles.borders.Side(style='thin')})
+                    if desc[2]-each_row==0:
+                        format_dict.update({'bottom':openpyxl.styles.borders.Side(style='thin')})
+                    self.ws['%s%s'%(my_column,each_row)].border = openpyxl.styles.borders.Border(**format_dict)
 
 # End HTML parser
 
@@ -164,6 +178,7 @@ class ReportProcessor():
                             'add_subtract_dates':self.addSubtractDates,
                             'anniversary_check':self.checkAnniversaries,
                             'merge_lists':self.mergeLists,
+                            'append_to_list':self.appendList,
                             'concatenate':self.concatenateStrings,
         }
         ### Internal functions (found on the report builder in each line's dropdown)
@@ -182,6 +197,7 @@ class ReportProcessor():
                             'end table':self.endTable,
                             'if':self.if_,
                             'link':self.link,
+                            'calendar':self.makeCalendar,
         }
         ### Dictionary to convert report builder operators to django query filters
         self.filter_dict = {
@@ -230,6 +246,12 @@ class ReportProcessor():
             super(ReportProcessor.Env, self).__setitem__(item,value)
 
     ### external functions
+    
+    def appendList(self,env,current_list,new_element):
+        current_list = self.evalVariables(env,current_list)
+        new_element = self.evalVariables(env,new_element)
+        current_list.append(new_element)
+        return current_list
     
     def concatenateStrings(self,env,string1,string2):
         '''
@@ -440,6 +462,75 @@ class ReportProcessor():
             
 
     ### internal functions
+    def makeCalendar(self,env,date_list,comment_list):
+        date_list = self.evalVariables(env,date_list)
+        comment_list = self.evalVariables(env,comment_list)
+        if isinstance(date_list,(str,unicode)):
+            date_list = date_list.split(',')
+        if isinstance(comment_list,(str,unicode)):
+            comment_list = comment_list.split(',')
+        combined_list = []
+        if isinstance(date_list[0],list) or isinstance(comment_list[0],list):
+            assert isinstance(date_list[0],list) and isinstance(comment_list[0],list), 'Type of list mismatch error.  Date list and comment list must be either *both* timeseries lists or *both* comma separated list'
+            for i in date_list:
+                for a in comment_list:
+                    if i[0]==a[0]:
+                        combined_list.append([parse(i[1]),a[1]])
+        else:
+            assert len(date_list) == len(comment_list), "date list and comment list must be of equal length"
+            for i in range(0,len(date_list)):
+                combined_list.append([date_list[i],comment_list[i]])
+        combined_list = sorted(combined_list,key=lambda x: x[0])
+        assert isinstance(combined_list[0][0],(datetime.datetime,datetime.date)),"No dates in date list"
+        start_date = combined_list[0][0].replace(day=1)
+        end_date = combined_list[-1][0].replace(day=calendar.monthrange(combined_list[-1][0].year,combined_list[-1][0].month)[1])
+        notes_dict = {parse(i[0].strftime('%m/%d/%Y')):i[1] for i in combined_list}
+        month_dict = {1:'January',
+                      2:'February',
+                      3:'March',
+                      4:'April',
+                      5:'May',
+                      6:'June',
+                      7:'July',
+                      8:'August',
+                      9:'September',
+                      10:'October',
+                      11:'November',
+                      12:'December'}
+        env['print'](month_dict[start_date.month]+'<br/>')
+        env['print']('<table rules="rows" table-layout="fixed" width="1000px"><tr><th>Sunday</th><th>Monday</th><th>Tuesday</th><th>Wednesday</th><th>Thursday</th><th>Friday</th><th>Saturday</th></tr>')
+        start_dict = {0:'<tr><td bgcolor="#E6E6E6"></td>',
+                      1:'<tr><td bgcolor="#E6E6E6" colspan=2></td>',
+                      2:'<tr><td bgcolor="#E6E6E6" colspan=3></td>',
+                      3:'<tr><td bgcolor="#E6E6E6" colspan=4></td>',
+                      4:'<tr><td bgcolor="#E6E6E6" colspan=5></td>',
+                      5:'<tr><td bgcolor="#E6E6E6" colspan=6></td>',
+                      6:''}
+        env['print'](start_dict[start_date.weekday()])
+        tracking_date = start_date
+        add_day = datetime.timedelta(days=1)
+        while tracking_date <= end_date:
+            if tracking_date.weekday()==6:
+                env['print']('<tr>')
+            env['print']('<td width="1000px" word-wrap="break-word">')
+            env['print']('<h5>'+str(tracking_date.day)+'</h5><br/>')
+            env['print'](notes_dict.get(parse(tracking_date.strftime('%m/%d/%Y')),''))
+            env['print']('</td>')
+            next_day = tracking_date + add_day
+            if next_day.weekday()==6:
+                env['print']('</tr>')
+            if next_day.month != tracking_date.month:
+                if next_day.weekday()!=6:
+                    env['print']('<td bgcolor="#E6E6E6" colspan=%s></td></tr>'%(6-next_day.weekday(),))
+                env['print']('</table><br/>')
+                if next_day<end_date:
+                    env['print'](month_dict[next_day.month]+'<br/>')
+                    env['print']('<table rules="rows" table-layout="fixed" width="1000px"><tr><th>Sunday</th><th>Monday</th><th>Tuesday</th><th>Wednesday</th><th>Thursday</th><th>Friday</th><th>Saturday</th></tr>')
+                    env['print'](start_dict[next_day.weekday()])
+            tracking_date = next_day
+
+                
+
     def beginTable(self,env,comma_separated_headers):
         '''
             Instruction to begin building a table.
@@ -563,10 +654,14 @@ class ReportProcessor():
             and registers the variable name as being equal to the value provided.  For example: if you provide name as "my_first_variable"
             and value as "Hello World", then when you reference "$my_first_variable" the server will translate that to "Hello World".
         '''
+        # Recognize new lists
+        value = self.evalVariables(env,value)
+        if value == '[]':
+            value = []
         # If list element not being updated
         if '::' not in key:
             # Set parent environment variable
-            env.parent.parent[key] = self.evalVariables(env,value)
+            env.parent.parent[key] = value
         else:
             # Split update variable into list of steps
             slice_list = key.split('::')
@@ -589,7 +684,7 @@ class ReportProcessor():
                 # Increase list length
                 a.append('')
             # Set last element to evaluated variable (mutable lists auto update original list)
-            a[end] = self.evalVariables(env,value)
+            a[end] = value
             # Set base variable to new list value in parent environment
             env.parent.parent[key] = cur_value
                 
@@ -687,16 +782,16 @@ class ReportProcessor():
                 except:
                     pass
             if operator == '>':
-                if a>b:
+                if b>a:
                     true = True
             elif operator == '<':
-                if a<b:
+                if b<a:
                     true = True
             elif operator == '>=':
-                if a>=b:
+                if b>=a:
                     true = True
             elif operator == '<=':
-                if a<=b:
+                if b<=a:
                     true = True
             elif operator == '<>':
                 if a!=b:

@@ -123,6 +123,7 @@ function newRow(type,values,insert){
             new_type.appendChild(new Option('begin table','begin table'));
             new_type.appendChild(new Option('end table','end table'));
             new_type.appendChild(new Option('link','link'));
+            new_type.appendChild(new Option('calendar','calendar'));
             new_type.setAttribute('title','Select Row Type');
             if (type){
                 new_type.value = type;
@@ -333,6 +334,7 @@ function typeChange(t,single){
                 break;
 
             case 'set':
+            case 'calendar':
             case 'user input':
                 var name = row.appendChild(document.createElement('input'));
                     name.name = 'code'+row.line_number+'-1';
@@ -347,6 +349,12 @@ function typeChange(t,single){
                 if (t.value=='set'){
                         dropdown.setAttribute('title','Set Value');
                         dropdown.onblur=setTarget;
+                }
+                if (t.value=='calendar'){
+                        dropdown.setAttribute('title','Comment List');
+                        dropdown.onblur=setTarget;
+                        name.setAttribute('title','Date List');
+                        name.onblur=setTarget;
                 }
                 break;
 

@@ -1,6 +1,9 @@
 Release #
 	Added:
-
+			Group 1
+				Creating lists in report builder
+				Appending to lists in report builder
+				Calendar creating function in report builder
 	Changed:
 			Added barcode to searching for guests
 			Made quick filter specify date and time when mass changing time series field
@@ -11,6 +14,9 @@ Release #
 			Blank each time fields don't appear on edit past forms
 			Black each time select and list boxes still showed previous selections
 			Delete past forms doesn't ask to confirm
+			Group 1
+				Greater than/Less than operators calculating backward
+				html parser can't format multicolumn cells
 	Removed:
 
 
