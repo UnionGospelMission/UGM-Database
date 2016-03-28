@@ -749,53 +749,69 @@ class ReportProcessor():
             instructions to run.  If the comparison condition evaluates to true, then the conditional instructions are executed
             otherwise, the conditional instructions are ignored.
         '''
-        # Evaluate variables to be compared
-        a = self.evalVariables(env,value1)
-        b = self.evalVariables(env,value2)
+        if code:
+            code=list(code)
         # Initialize true flag
         true = False
-        # Determine type of conditional
-        if operator == '=':
-            # If equals
-            if a==b:
-                # Set true flag
-                true = True
-            elif str(a).isdigit() and str(b).isdigit():
-                # Double check not integer comparison
-                if int(str(a))==int(str(b)):
+        complete = False
+        while len(code)>1 and len(code[1])>0 and (code[1][0]=='and' or code[1][0]=='or'):
+            sub_operator = code.pop(1)
+            if not complete:
+                test = self.if_(env,sub_operator[1],sub_operator[2],sub_operator[3])
+                if sub_operator[0]=='or' and test:
+                    true = True
+                    complete = True
+                if sub_operator[0]=='and' and not test:
+                    true=False
+                    complete = True
+        if not complete:
+            # Evaluate variables to be compared
+            a = self.evalVariables(env,value1)
+            b = self.evalVariables(env,value2)
+            # Determine type of conditional
+            if operator == '=':
+                # If equals
+                if a==b:
                     # Set true flag
                     true = True
-        elif operator == 'contains':
-            if a in b:
-                true = True
-        else:
-            if str(a).isdigit() and str(b).isdigit():
-                a = int(str(a))
-                b = int(str(b))
+                elif str(a).isdigit() and str(b).isdigit():
+                    # Double check not integer comparison
+                    if int(str(a))==int(str(b)):
+                        # Set true flag
+                        true = True
+            elif operator == 'contains':
+                if a in b:
+                    true = True
             else:
-                try:
-                    a = parse(a)
-                except:
-                    pass
-                try:
-                    b = parse(b)
-                except:
-                    pass
-            if operator == '>':
-                if b>a:
-                    true = True
-            elif operator == '<':
-                if b<a:
-                    true = True
-            elif operator == '>=':
-                if b>=a:
-                    true = True
-            elif operator == '<=':
-                if b<=a:
-                    true = True
-            elif operator == '<>':
-                if a!=b:
-                    true = True
+                if str(a).isdigit() and str(b).isdigit():
+                    a = int(str(a))
+                    b = int(str(b))
+                else:
+                    try:
+                        a = parse(a)
+                    except:
+                        pass
+                    try:
+                        b = parse(b)
+                    except:
+                        pass
+                if operator == '>':
+                    if b>a:
+                        true = True
+                elif operator == '<':
+                    if b<a:
+                        true = True
+                elif operator == '>=':
+                    if b>=a:
+                        true = True
+                elif operator == '<=':
+                    if b<=a:
+                        true = True
+                elif operator == '<>':
+                    if a!=b:
+                        true = True
+        print code
+        print true
         if code:
             if true:
                 # Prepare code for execution
