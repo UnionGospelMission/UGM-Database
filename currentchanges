@@ -18,6 +18,7 @@ Release #
 			Group 1
 				Greater than/Less than operators calculating backward
 				html parser can't format multicolumn cells
+			Fixed backwards greater than checking in build filter
 	Removed:
 
 

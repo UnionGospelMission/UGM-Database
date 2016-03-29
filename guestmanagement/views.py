@@ -1114,7 +1114,7 @@ class ReportProcessor():
                         comparator = a[int(self.evalVariables(env,i[3].split('::')[1]))]
                         # run comparison
                         # compare values
-                        found = self.if_(env,i[1],comparator,value)
+                        found = self.if_(env,i[1],value,comparator)
                         if found:
                             # If this record is not already in the holding dict list for this field
                             if a not in holdingdict[i[3].replace('$','').replace(' ','').split('::')[0]]:
