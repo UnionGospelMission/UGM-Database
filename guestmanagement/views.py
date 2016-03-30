@@ -2014,7 +2014,7 @@ def quickfilter(request):
                         )
                         html_dict[i].append(input_line)
                 else:
-                    messages.add_message(request, messages.INFO, 'Invalid Field Type "%s": Pick a Different Field'%target_field.field_type)
+                    messages.add_message(request, messages.INFO, 'Invalid Field Type "%s": Pick a Different Field'%eachfield.field_type)
             html_return.append('<table><tr><th>Guest</th>'+''.join(['<th>%s</th>'%i.name for i in field_list])+'</tr>')
             for eachguest in sorted(html_dict.keys(),key=lambda x: x.last_name.lower()):
                 html_return.append('<tr><td>'+eachguest.last_name+', '+eachguest.first_name+'</td>'+''.join(['<td>%s</td>'%i for i in html_dict[eachguest]])+'</tr>')
