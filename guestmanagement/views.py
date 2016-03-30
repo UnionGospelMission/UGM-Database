@@ -484,7 +484,10 @@ class ReportProcessor():
         assert isinstance(combined_list[0][0],(datetime.datetime,datetime.date)),"No dates in date list"
         start_date = combined_list[0][0].replace(day=1)
         end_date = combined_list[-1][0].replace(day=calendar.monthrange(combined_list[-1][0].year,combined_list[-1][0].month)[1])
-        notes_dict = {parse(i[0].strftime('%m/%d/%Y')):i[1] for i in combined_list}
+        notes_dict = {}
+        for i in combined_list:
+            notes_dict[parse(i[0].strftime('%m/%d/%Y'))]=notes_dict.get(parse(i[0].strftime('%m/%d/%Y')),[])
+            notes_dict[parse(i[0].strftime('%m/%d/%Y'))].append(i[1])
         month_dict = {1:'January',
                       2:'February',
                       3:'March',
@@ -514,7 +517,9 @@ class ReportProcessor():
                 env['print']('<tr>')
             env['print']('<td width="1000px" word-wrap="break-word">')
             env['print']('<h5>'+str(tracking_date.day)+'</h5><br/>')
-            env['print'](notes_dict.get(parse(tracking_date.strftime('%m/%d/%Y')),''))
+            for i in notes_dict.get(parse(tracking_date.strftime('%m/%d/%Y')),[]):
+                env['print'](i)
+                env['print']('<br/>')
             env['print']('</td>')
             next_day = tracking_date + add_day
             if next_day.weekday()==6:
