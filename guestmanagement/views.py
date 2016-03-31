@@ -1903,7 +1903,7 @@ def quickfilter(request):
         View for executing one filter against the database and updating multiple records
     '''
     context=baseContext(request)
-    fields = [i for i in Field.objects.all() if testPermission(i,request.user,write=True)]
+    fields = [i for i in Field.objects.all() if testPermission(i,request.user)]
     field_dict = {}
     for i in fields:
         if testPermission(i.form,request.user):
