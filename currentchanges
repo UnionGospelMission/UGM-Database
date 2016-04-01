@@ -23,6 +23,7 @@ Release #
 			Quick filter messages crash when field invalid type
 			Calendar function in report builder only shows one entry per day
 			Quick filter only shows fields with write permissions
+			Build filter filters against variables unreliably
 	Removed:
 
 

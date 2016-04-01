@@ -1011,171 +1011,148 @@ class ReportProcessor():
         '''
             Function to retrieve data from database
         '''
-        # Initialize date_filters list
+        
+        #----
+        # Initialization section
+        # creates required variables and converts incomming instructions
+        # into organized lists
+        #----
+        
         # date_filters = [date1, ...]
         date_filters = []
-        # If filtering on variable and variable has sub elements
+
+        # Evaluate any variables in return_field
         if '::' in return_field:
-            # Split return field into list
             a = return_field.split('::')
-            # Iterate list and eval variables
             for i in range(1,len(a)):
                 if '$' in a[i]:
                     a[i]=str(self.evalVariables(env,a[i]))
-            # Return updated list to string
             return_field = '::'.join(a)
-        # Place initial return_field variable into list with timeseries flag
+        
+        
         # return_field_list = [[field,timeseries],...]
         return_field_list = [[return_field,timeseries]]
-        # Initialize filter
+
         # filter = [["and/or",operator,value1,value2,timeseries],...]
         filter = []
-        # if filter has criterion
+
         if code:
-            # convert code list to generator
+            # Convert any parameters in code into criteria or return fields
             tracker = iter(code)
-            # set walker to first element
             current = tracker.next()
-            # Iterate over filter criterion
             while current[0]=='and' or current[0]=='or' or current[0]=='extrafield':
-                # If filter should return another field
+
                 if current[0]=='extrafield':
-                    # If filtering on variable and variable has sub elements
+                    # Add requested field to return_field_list after
+                    # evaluating any report variables
                     if '::' in current[1]:
-                        # Split current return field into list
                         a = current[1].split('::')
-                        # Iterate list
                         for i in range(1,len(a)):
-                            # If variable
                             if '$' in a[i]:
-                                # Evaluate variable and store in list
                                 a[i]=str(self.evalVariables(env,a[i]))
-                        # Return updated list to string
                         current[1] = '::'.join(a)
-                    # Put evaluated extra field into return list with timeseries flag
                     return_field_list.append([current[1],current[2]])
+                
                 elif 'date.' in current[3]:
-                    # If filtering for date
                     # Put date in date filters
                     date_filters.append(current)
+                    
                 else:
                     # Put filter in filter list
                     filter.append(current)
+                
+                # Prepare next iteration or exit
                 try:
-                    # Get next criterion
                     current = tracker.next()
                 except StopIteration:
-                    # If no more elements to iterate
                     break
-        # If filtering against variable
+        
+        
+        #----
+        # Filtering against variable section
+        # When filtering against a variable, this section processes the
+        # filter as though the variable were a database where each element
+        # is a record and each element of the elements is a column.
+        #
+        # Each record is identified with its index in the original 
+        # variable, and then tested against any criteria.  Those which 
+        # meet the criteria are then parsed for what is being requested
+        # and compiled into return values
+        #----
+        
         if '$' in return_field:
-            # Initialize dictionary of fields
-            # field_dict = {'field':[[value1,value2...],...]...}
-            field_dict = {}
-            # If no criterion
+            
+            # All return fields must come from the same parent variable
+            test = [i[0].split('::')[0].replace('$','').replace(' ','') for i in return_field_list]
+            assert test[1:]==test[:-1], 'All return fields must come from the same variable'
+            
+            # All criteria must also come from the same parent variable
+            test = [i[3].split('::')[0].replace('$','').replace(' ','') for i in filter]
+            assert test[1:]==test[:-1] and (return_field.split('::')[0].replace('$','').replace(' ','') in test or test==[]), 'All criteria must come from the filtered variable'
+
+            # record_list = the original value of the variable
+            record_list = self.evalVariables(env,return_field_list[0][0].split('::')[0])
+            
+            # valid_ids = [id,...]
+            valid_ids = []
+
             if filter==[]:
-                # Iterate list of fields to return
-                for i in return_field_list:
-                    # Split each return field into list
-                    a = i[0].split('::')
-                    # If return field has sub elements
-                    if len(a)>1:
-                        # field key is base variable through pentultimate element
-                        k = '||'.join(a[:-1]).replace('$','').replace(' ','')
-                    else:
-                        # Key is field name
-                        k = a[0].replace('$','').replace(' ','')
-                    # If each field not already in field dict
-                    if k not in field_dict.keys():
-                        # evaluate variable
-                        v = self.evalVariables(env,'$'+k.replace('||','::'))
-                        # If value has a length
-                        if len(v)>0:
-                            # If value first element not a list (value is not a list of lists)
-                            if not isinstance(v[0],list):
-                                # Make value a list
-                                v = [v]
-                        # Set value of field in dictionary
-                        field_dict[k]=v
+                # If no criteria, return all field ids as valid
+                valid_ids = range(0,len(record_list))
             else:
-                # Set flag for first filter
+                # Process each record against each criteria
+
+                # Set flag to catch first criteria
                 first_filter = True
-                # Iterate criteria
+                
                 for i in filter:
-                    # Retrieve variable being filtered against
-                    data = self.evalVariables(env,i[3].split('::')[0])
-                    # Evaluate value being sought
+                    holding_valid_ids = []
+
+                    # Evaluate filter into criteria
                     value = self.evalVariables(env,i[2])
-                    # Initialize holding dictionary for items matching criteria
-                    # holdingdict = {field_name: [[data,data,data,...],...}
-                    holdingdict = {}
-                    # Initialize holding dict list for field
-                    holdingdict[i[3].replace('$','').replace(' ','').split('::')[0]] = holdingdict.get(i[3].replace('$','').replace(' ','').split('::')[0],[])
-                    # Walk through each record in variable being filtered
-                    for a in data:
-                        # Set found flag
-                        found = False
-                        # Retreive comparison value from the sub element of the current record
-                        comparator = a[int(self.evalVariables(env,i[3].split('::')[1]))]
-                        # run comparison
-                        # compare values
-                        found = self.if_(env,i[1],value,comparator)
-                        if found:
-                            # If this record is not already in the holding dict list for this field
-                            if a not in holdingdict[i[3].replace('$','').replace(' ','').split('::')[0]]:
-                                # Append this record to the holding dict list for this field
-                                holdingdict[i[3].replace('$','').replace(' ','').split('::')[0]].append(a)
-                    # Iterate through the key, value pairs of the holding dict
-                    for k,v in holdingdict.iteritems():
-                        # Initialize the field_dict list for the field
-                        field_dict[k] = field_dict.get(k,[])
-                        # If filter is an "or"
-                        if i[0]=='or':
-                            # Add all records to existing field list
-                            field_dict[k] = field_dict[k] + v
+                    comparator_address = [int(self.evalVariables(env,a)) for a in i[3].split('::')[1:]]
+                    
+                    for record_id in range(0,len(record_list)):
+                        comparator = record_list[record_id]
+                        for a in comparator_address:
+                            comparator = comparator[a]
+                        if self.if_(env,i[1],value,comparator):
+                            holding_valid_ids.append(record_id)
+                    
+                    # Process and/or criteria against holding_valid_ids
+                    if i[0] == 'or':
+                        valid_ids = valid_ids + holding_valid_ids
+                    else:
+                        # First filters will always start blank, so an
+                        # and against a blank filter will always remain
+                        # blank
+                        if valid_ids == [] and first_filter:
+                            valid_ids = list(holding_valid_ids)
                         else:
-                            # If an 'and' filter
-                            # If no list for the current field and this is the first filter
-                            if field_dict[k] == [] and first_filter:
-                                # Set field list equal to the current record list
-                                field_dict[k] = v
-                            else:
-                                # Set field list equal to the intersection of previous records and current records
-                                field_dict[k] = self.listToSet(set(self.listToSet(v)) & set(self.listToSet(field_dict[k])),True)
+                            valid_ids = list(set(valid_ids) & set(holding_valid_ids))
                     # Set first_filter flag
                     first_filter = False
-            # Initialize return list
-            # retval = [[[record1],[record2],...],[[record1],[record2],...]]
-            retval = []
-            # Iterate through the key, value pairs of field_dict
-            for k,v in field_dict.iteritems():
-                # Iterate through the records of each field
-                for i in v:
-                    # Initialize the list for records
-                    # return_list = [[record1],[record2],...]
-                    return_list = []
-                    # Iterate through the list of fields to return
-                    for a in return_field_list:
-                        # Split the field into a list
-                        ak = a[0].split('::')
-                        # If field has sub elements
-                        if len(ak)>1:
-                            # Retrieve Last index
-                            ai = ak[-1]
-                            # Put base variable through pentultimate element back into field key
-                            ak = '||'.join(ak[:-1]).replace('$','').replace(' ','')
-                            # If current field is matches the just created key
-                            if k == ak:
-                                # Append records into return list
-                                return_list.append(i[int(ai)])
-                        else:
-                            # If field has no sub elements
-                            # Append records into return list
-                            return_list = i
-                    # Append return list into retval
-                    retval.append(return_list)
+
+
+            # Prepare return value from list of valid ids created above
+            
+            # return_dict = {record_id: [return record],...}
+            return_dict = {}
+            
+            for each_id in valid_ids:
+                return_dict[each_id] = return_dict.get(each_id,[])
+                for each_field in return_field_list:
+                    address = each_field[0].split("::")[1:]
+                    value = record_list[each_id]
+                    for i in address:
+                        value = value[int(i)]
+                    if not address or each_field[1]:
+                        return_dict[each_id].extend(value)
+                    else:
+                        return_dict[each_id].append(value)
+            
             # Return filter results
-            return self.mySort(env,retval,sort_by)
+            return self.mySort(env,return_dict.values(),sort_by)
 
 
         # If filtering against the database
