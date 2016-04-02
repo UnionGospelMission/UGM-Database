@@ -815,8 +815,6 @@ class ReportProcessor():
                 elif operator == '<>':
                     if a!=b:
                         true = True
-        print code
-        print true
         if code:
             if true:
                 # Prepare code for execution
@@ -1035,7 +1033,6 @@ class ReportProcessor():
 
         # filter = [["and/or",operator,value1,value2,timeseries],...]
         filter = []
-
         if code:
             # Convert any parameters in code into criteria or return fields
             tracker = iter(code)
@@ -1093,6 +1090,9 @@ class ReportProcessor():
             # record_list = the original value of the variable
             record_list = self.evalVariables(env,return_field_list[0][0].split('::')[0])
             
+            if not isinstance(record_list,list) or False in [isinstance(i,list) for i in record_list]:
+                record_list = [record_list]
+            
             # valid_ids = [id,...]
             valid_ids = []
 
@@ -1114,14 +1114,38 @@ class ReportProcessor():
                     
                     for record_id in range(0,len(record_list)):
                         comparator = record_list[record_id]
-                        for a in comparator_address:
-                            comparator = comparator[a]
-                        if self.if_(env,i[1],value,comparator):
-                            holding_valid_ids.append(record_id)
-                    
+                        if i[4] == 'on':
+                            # If filtering on time series, if the address 
+                            # has more than one element assume the user
+                            # is specifying a specific element in each
+                            # timeseries value and check that element
+                            # in each timeseries value
+                            #
+                            # otherwise, assume the user is specifying
+                            # the entire list of timeseries values and
+                            # check against the entire list as a whole
+                            if len(comparator_address)>1:
+                                for a in comparator_address[:-1]:
+                                    comparator = comparator[a]
+                                if True in [self.if_(env,i[1],value,a[comparator_address[-1]]) for a in comparator]:
+                                    if record_id not in holding_valid_ids:
+                                        holding_valid_ids.append(record_id)
+                            else:
+                                for a in comparator_address:
+                                    comparator = comparator[a]
+                                if True in [self.if_(env,i[1],value,a) for a in comparator]:
+                                    if record_id not in holding_valid_ids:
+                                        holding_valid_ids.append(record_id)
+                        else:
+                            for a in comparator_address:
+                                comparator = comparator[a]
+                            if self.if_(env,i[1],value,comparator):
+                                if record_id not in holding_valid_ids:
+                                    holding_valid_ids.append(record_id)
+                
                     # Process and/or criteria against holding_valid_ids
                     if i[0] == 'or':
-                        valid_ids = valid_ids + holding_valid_ids
+                        valid_ids = valid_ids + [new_id for new_id in holding_valid_ids if new_id not in valid_ids]
                     else:
                         # First filters will always start blank, so an
                         # and against a blank filter will always remain
@@ -1132,7 +1156,10 @@ class ReportProcessor():
                             valid_ids = list(set(valid_ids) & set(holding_valid_ids))
                     # Set first_filter flag
                     first_filter = False
-
+            
+            # Catch filters just returning entire list
+            if not filter and '::' not in return_field:
+                return self.mySort(env,record_list,sort_by)
 
             # Prepare return value from list of valid ids created above
             
@@ -1144,12 +1171,44 @@ class ReportProcessor():
                 for each_field in return_field_list:
                     address = each_field[0].split("::")[1:]
                     value = record_list[each_id]
+                    # If a varying length list is too short for what the
+                    # user specified, return ''
                     for i in address:
-                        value = value[int(i)]
+                        try:
+                            value = value[int(i)]
+                        except IndexError:
+                            value = ''
+                    
                     if not address or each_field[1]:
+                        # If asking for original record or a timeseries field
+                        # Find timeseries criteria
+                        filter = [i for i in filter if i[4]]
+                        if filter and each_field[1]:
+                            #interactiveConsole(locals(),globals())
+                            # if a timeseries field being filtered run a second
+                            # filter against just the time series field
+                            new_env = {'__query__':value}
+                            
+                            # Build the filter based on the time series criteria
+                            # matching the field being requested which is
+                            # the return field + the address variables from above
+                            new_filter = []
+                            for a in filter:
+                                # If the return field + the address is the
+                                # first part of the criteria, include that
+                                # criteria in the new filter
+                                valid = False not in [int(address[i])==int(a[3].split('::')[1:][i]) for i in range(0,len(address))]
+                                if valid:
+                                    new_filter.append([a[0],a[1],a[2],'__query__'+''.join(['::'+str(i) for i in range(len(address),len(a[3].split('::')[1:]))]),''])
+                            # replace current value with new filter and handle normally
+                            value = self.buildFilter(new_env,'$__query__','','',tuple(new_filter))
+
                         return_dict[each_id].extend(value)
                     else:
                         return_dict[each_id].append(value)
+            
+            if len(record_list)==1 and timeseries and len(return_dict.values())>0:
+                return self.mySort(env,return_dict.values()[0],sort_by)
             
             # Return filter results
             return self.mySort(env,return_dict.values(),sort_by)
@@ -1169,32 +1228,32 @@ class ReportProcessor():
             # Iterate over filters
             for i in filter:
                 # Initialize equals kwargs
-                # eqkwargs={field:value,...}
-                eqkwargs = {}
+                # eqargs=[Q(field:value),...]
+                eqargs = []
                 # Initialize not equals kwargs
-                # nekwargs={field:value,...}
-                nekwargs = {}
+                # neargs=[Q(field:value),...]
+                neargs = []
                 # If filtering against a field
                 if 'field.' in i[3]:
                     # place field name in filter criteria
-                    eqkwargs['field__name']=i[3].split('field.')[1]
+                    eqargs.append(Q(**{'field__name':i[3].split('field.')[1]}))
                     # Translate filter comparator into django filter format
                     operator = 'value__%s'%self.filter_dict[i[1]]
                     # If filtering for not equal
                     if i[1] == '<>':
-                        # Append operator into nekwargs
-                        nekwargs[operator]=self.evalVariables(env,i[2]).replace('True',"checked='checked'")
+                        # Append operator into neargs
+                        neargs.append(Q(**{operator:self.evalVariables(env,i[2])}))
                     else:
-                        # Append operator into eqkwargs
-                        eqkwargs[operator]=self.evalVariables(env,i[2]).replace('True',"checked='checked'")
+                        # Append operator into eqargs
+                        eqargs.append(Q(**{operator:self.evalVariables(env,i[2])}))
                     # If filtering on timeseries and dates specified
                     if i[4]==u'on' and date_filters!=[]:
                         # Iterate through date filters
                         for a in date_filters:
                             # Add to eqkwargs date filter requirements
-                            eqkwargs.update({'date__{0}'.format(self.filter_dict[a[1]]):self.evalVariables(env,a[2])})
+                            eqargs.append(Q(**{'date__{0}'.format(self.filter_dict[a[1]]):self.evalVariables(env,a[2])}))
                     # run filter based on timeseries (GuestTimeData vs GuestData) and kwargs; return list of guestids who fit critera
-                    current_guest_list = self.filter_dict['field'][i[4]].objects.filter(**eqkwargs).exclude(**nekwargs).values_list('guest',flat=True)
+                    current_guest_list = self.filter_dict['field'][i[4]].objects.filter(*eqargs).exclude(*neargs).values_list('guest',flat=True)
                 else:
                     # If filtering on guests
                     # initialize operator with first guest attribute
@@ -1208,18 +1267,18 @@ class ReportProcessor():
                         if i[1] == '=':
                             # Change filter table for equals
                             filter_table = Guest.objects.annotate(num_prog=Count('program'))
-                            eqkwargs['num_prog']=1
+                            eqargs.append(Q(**{'num_prog':1}))
                     # Add django filter comparator
                     operator = operator + self.filter_dict[i[1]]
                     # If filtering on not equal
                     if i[1] == '<>':
                         # Append filter to not equal kwargs
-                        nekwargs[operator]=self.evalVariables(env,i[2]).replace('True',"checked='checked'")
+                        neargs.append(Q(**{operator:self.evalVariables(env,i[2])}))
                     else:
                         # Append filter to equal kwargs
-                        eqkwargs[operator]=self.evalVariables(env,i[2]).replace('True',"checked='checked'")
+                        eqargs.append(Q(**{operator:self.evalVariables(env,i[2])}))
                     # Run django filter returning list of guest ids where guest matches criteria
-                    current_guest_list = list(filter_table.filter(**eqkwargs).exclude(**nekwargs).distinct().values_list('id',flat=True))
+                    current_guest_list = list(filter_table.filter(*eqargs).exclude(*neargs).distinct().values_list('id',flat=True))
                 # If criteria is "and"
                 if i[0]=='and':
                     # If no guests in list
@@ -1338,7 +1397,7 @@ class ReportProcessor():
             try:
                 # Try sorting each pattern
                 return i(retval)
-            except (AttributeError,AssertionError):
+            except (AttributeError,AssertionError,IndexError):
                 continue
         return sorted(retval)
     
@@ -1382,6 +1441,7 @@ class ReportProcessor():
         '''
             Function to convert variable names into values
         '''
+        retval = variable
         # If variable is string or unicode
         if isinstance(variable,(str,unicode)):
             # If actual variable
@@ -1403,11 +1463,12 @@ class ReportProcessor():
                         else:
                             # Set current list blank
                             var = ''
-                    return var
+                    retval = var
                 else:
-                    return var
-        # If not variable
-        return variable
+                    retval = var
+        if retval == 'True':
+            retval = "checked='checked'"
+        return retval
 
     @staticmethod
     def preProcessReport(code,first_indent=None):

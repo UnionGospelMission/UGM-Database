@@ -5,6 +5,7 @@ Release #
 				Appending to lists in report builder
 				Calendar creating function in report builder
 			Unit testing for buildfilter
+			Buildfilter tests now cover criteria
 	Changed:
 			Added barcode to searching for guests
 			Made quick filter specify date and time when mass changing time series field
@@ -23,7 +24,8 @@ Release #
 			Quick filter messages crash when field invalid type
 			Calendar function in report builder only shows one entry per day
 			Quick filter only shows fields with write permissions
-			Build filter filters against variables unreliably
+			Build filter filters against variables unreliably**may break reports**
+			Build filters returns new list instead of list linked to variable name
 	Removed:
 
 
