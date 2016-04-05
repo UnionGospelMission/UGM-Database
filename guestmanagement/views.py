@@ -222,7 +222,13 @@ class ReportProcessor():
         def __init__(self,parent):
             super(ReportProcessor.Env, self).__init__()
             # Make current instance a child of its parent
-            self.parent=parent
+            if not isinstance(parent,ReportProcessor.Env):
+                for k,v in parent.iteritems():
+                    self[k]=v
+            else:
+                self.parent=parent
+                self.parent.children.append(self)
+            self.children = []
             
         def __getitem__(self,item):
             # If variable is local, return it
@@ -233,17 +239,52 @@ class ReportProcessor():
             
         def __setitem__(self,item,value):
             # check for variable in parents if not in current environment
-            if item not in self:
-                p = self.parent
+            if hasattr(self,'parent') and item not in self:
+                p = self
                 while True:
                     if item in p:
                         p[item]=value
                         return
-                    if isinstance(p,ReportProcessor.Env):
+                    if hasattr(p,'parent'):
                         p=p.parent
                     else:
                         break
             super(ReportProcessor.Env, self).__setitem__(item,value)
+            
+        def __get_global__(self,item,alternative=None):
+            p=self
+            while True:
+                if hasattr(p,'parent') and p.parent:
+                    p=p.parent
+                else:
+                    break
+            try:
+                return p[item]
+            except KeyError as e:
+                if alternative is not None:
+                    return alternative
+                raise e
+            
+        def __set_global__(self,item,value):
+            p=self
+            while True:
+                if hasattr(p,'parent') and p.parent:
+                    p=p.parent
+                else:
+                    break
+            p[item]=value
+            
+        def __get_variable_state__(self):
+            retval = {}
+            a = self
+            while hasattr(a,'parent'):
+                a = a.parent
+            retval.update(a)
+            while hasattr(a,'children') and len(a.children)>0:
+                a = a.children[-1]
+                retval.update(a)
+            return retval
+                
 
     ### external functions
     
@@ -311,7 +352,7 @@ class ReportProcessor():
         # If the entered date is not already a datetime
         if not isinstance(date,(datetime.datetime,datetime.date)):
             # Convert the submitted variable to a datetime
-            date = datetime.datetime.strptime(date,'%m/%d/%Y')
+            date = parse(date)
         # Evaluate the adjustment variable and convert to integer
         adjustment = int(self.evalVariables(env,adjustment))
         # Create a dictionary of the type of adjustment and quantity of adjustment
@@ -817,10 +858,16 @@ class ReportProcessor():
                         true = True
         if code:
             if true:
+                current_index = env.__get_global__('__trace_index__')
+                tracking_index = current_index+1
+                env.__set_global__('__trace_index__',tracking_index)
                 # Prepare code for execution
                 code=['do']+list(code)
                 # Run code
                 self.listProcess(self.Env(env), deepcopy(code))
+                env.__set_global__('__trace_index__',current_index)
+                for i in range(current_index+1,max(env.__get_global__('__traceback__').keys())+1):
+                    env.__get_global__('__traceback__').pop(i)
         else:
             return true
 
@@ -882,8 +929,11 @@ class ReportProcessor():
         rowcount = 1
         # Initialize Page counter
         pagecount = 2
+        current_index = env.__get_global__('__trace_index__')
+        tracking_index = current_index+1
         # Iterate over range
         for i in a:
+            env.__set_global__('__trace_index__',tracking_index)
             # If walker should be global
             if '!' in list_variable:
                 # Store walker in environment parent
@@ -918,6 +968,10 @@ class ReportProcessor():
                 pagecount += 1
             # Increase Item per row counter
             rowcount += 1
+            tracking_index+=1
+        env.__set_global__('__trace_index__',current_index)
+        for i in range(current_index+1,max(env.__get_global__('__traceback__').keys())+1):
+            env.__get_global__('__traceback__').pop(i)
 
     def count(self,env,return_field,timeseries,*code):
         '''
@@ -1535,7 +1589,9 @@ class ReportProcessor():
         # If no environment supplied
         if env is None:
             # Create environment
-            env={}
+            env=self.Env({'__traceback__':{0:[]},'__trace_index__':0})
+        if not isinstance(env,self.Env):
+            env = self.Env(env)
         # If code not executable
         if not isinstance(code,list) or not code:
             # Return the value
@@ -1543,6 +1599,8 @@ class ReportProcessor():
         # Pull first instruction
         first = code.pop(0)
         # If first code is code
+        env.__get_global__('__traceback__')[env.__get_global__('__trace_index__')]=env.__get_global__('__traceback__').get(env.__get_global__('__trace_index__'),[])
+        env.__get_global__('__traceback__')[env.__get_global__('__trace_index__')].append(first)
         if isinstance(first,list):
             # Set function the outcome of processing code
             function = self.listProcess(self.Env(env), first)
@@ -2896,7 +2954,7 @@ def runreport(request,report_id):
     # Create a file like buffer
     output = StringIO()
     # Initialize environment
-    env = {'print':output.write,'user':request.user}
+    env = report_processor.Env({'print':output.write,'user':request.user,'__traceback__':{0:[]},'__trace_index__':0})
     # Add user defined variables to environment
     for k,v in request.GET.iteritems():
         if k.startswith('variable__'):
@@ -2908,12 +2966,61 @@ def runreport(request,report_id):
     try:
         # Run Report
         success = report_processor.listProcess(env, ['do']+report_code)
-    except:
+    except Exception as e:
         # Display errors
+        ff_dict = {'list':True,'query':True,'if':True,'display':True,'sum':True,'count':True}
+        human_code = json.loads(Report.objects.get(pk=report_id).code)[1]
+        current_human_code = 0
+        trace_back = env['__traceback__']
+        max_trace = max(trace_back.keys())
+        trace_ind_list = iter(xrange(0,max_trace+1))
+        current_trace = trace_ind_list.next()
+        while current_trace or current_trace==0:
+            this_trace = iter(trace_back[current_trace])
+            each_element = this_trace.next()
+            
+            while each_element:
+                skip=True
+                if each_element != 'do':
+                    skip=False
+                    while human_code[current_human_code][0]!=each_element:
+                        current_human_code += 1
+                
+                try:
+                    each_element = this_trace.next()
+                    if ff_dict.get(human_code[current_human_code][0],False) and not skip:
+                        count=1
+                        while count>0:
+                            current_human_code+=1
+                            if ff_dict.get(human_code[current_human_code][0],False):
+                                count += 1
+                            elif human_code[current_human_code][0]=='end':
+                                count -= 1
+                
+                except StopIteration:
+                    break
+
+            try:
+                current_trace = trace_ind_list.next()
+            
+            except StopIteration:
+                break
         env['print']('<pre>')
-        env['print'](traceback.format_exc()+'\n-----------------------\n')
-        env['print'](str(report_code))
+        env['print'](str(e))
+        env['print']('\n-----------\n')
+        env['print']('Error in line %s:\n'%current_human_code)
+        env['print']('%s: %s\n'%(current_human_code,str(human_code[current_human_code])))
+        if ff_dict.get(each_element,False):
+            include_dict = {'and':True,'or':True,'extrafield':True}
+            next_line = current_human_code+1
+            while include_dict.get(human_code[next_line][0],False):
+                env['print']('%s: %s\n'%(next_line,str(human_code[next_line])))
+                next_line += 1
+        env['print']('-----------\nVariable Dictionary\n-----------\n')
+        var_list = ['%s = %s'%(str(k),str(v).replace('<',"").replace('>','')) for k,v in env.__get_variable_state__().iteritems() if '__' not in k and not callable(v)]
+        env['print']('\n'.join(var_list))
         env['print']('</pre>')
+    env = None
     # Display results
     download_path = request.get_full_path()
     if "?" not in download_path:

@@ -1,8 +1,8 @@
 Release
 	Added:
-
+		
 	Changed:
-
+		Traceback on report errors now provides useful information
 	Fixed:
 
 	Removed:
