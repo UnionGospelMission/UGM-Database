@@ -931,9 +931,9 @@ class ReportProcessor():
         pagecount = 2
         current_index = env.__get_global__('__trace_index__')
         tracking_index = current_index+1
+        env.__set_global__('__trace_index__',tracking_index)
         # Iterate over range
         for i in a:
-            env.__set_global__('__trace_index__',tracking_index)
             # If walker should be global
             if '!' in list_variable:
                 # Store walker in environment parent
@@ -968,8 +968,7 @@ class ReportProcessor():
                 pagecount += 1
             # Increase Item per row counter
             rowcount += 1
-            tracking_index+=1
-        env.__set_global__('__trace_index__',current_index)
+            env.__get_global__('__traceback__').pop(tracking_index)
         for i in range(current_index+1,max(env.__get_global__('__traceback__').keys())+1):
             env.__get_global__('__traceback__').pop(i)
 
@@ -1149,7 +1148,6 @@ class ReportProcessor():
             
             # valid_ids = [id,...]
             valid_ids = []
-
             if filter==[]:
                 # If no criteria, return all field ids as valid
                 valid_ids = range(0,len(record_list))
@@ -1263,7 +1261,6 @@ class ReportProcessor():
             
             if len(record_list)==1 and timeseries and len(return_dict.values())>0:
                 return self.mySort(env,return_dict.values()[0],sort_by)
-            
             # Return filter results
             return self.mySort(env,return_dict.values(),sort_by)
 
@@ -1453,7 +1450,10 @@ class ReportProcessor():
                 return i(retval)
             except (AttributeError,AssertionError,IndexError):
                 continue
-        return sorted(retval)
+        try:
+            return sorted(retval)
+        except:
+            return retval
     
     def listToSet(self,_list,rev=False):
         '''
@@ -1598,9 +1598,9 @@ class ReportProcessor():
             return code
         # Pull first instruction
         first = code.pop(0)
-        # If first code is code
         env.__get_global__('__traceback__')[env.__get_global__('__trace_index__')]=env.__get_global__('__traceback__').get(env.__get_global__('__trace_index__'),[])
         env.__get_global__('__traceback__')[env.__get_global__('__trace_index__')].append(first)
+        # If first code is code
         if isinstance(first,list):
             # Set function the outcome of processing code
             function = self.listProcess(self.Env(env), first)

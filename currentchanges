@@ -4,7 +4,7 @@ Release
 	Changed:
 		Traceback on report errors now provides useful information
 	Fixed:
-
+		Traceback could cause runaway while loop
 	Removed:
 
 Release #1.5.20160404.0
