@@ -180,6 +180,7 @@ class ReportProcessor():
                             'merge_lists':self.mergeLists,
                             'append_to_list':self.appendList,
                             'concatenate':self.concatenateStrings,
+                            'to string':self.toString,
         }
         ### Internal functions (found on the report builder in each line's dropdown)
         self._functions = { 
@@ -287,6 +288,12 @@ class ReportProcessor():
                 
 
     ### external functions
+    
+    def toString(self,env,variable):
+        ''' 
+            Function to convert a variable to a string
+        '''
+        return str(self.evalVariables(env,variable))
     
     def appendList(self,env,current_list,new_element):
         current_list = self.evalVariables(env,current_list)

@@ -1,6 +1,6 @@
 Release
 	Added:
-		
+		Datetime to string function
 	Changed:
 		Traceback on report errors now provides useful information
 	Fixed:
