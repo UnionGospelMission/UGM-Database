@@ -1801,8 +1801,8 @@ def updateStaticPermissions(target_object,delete=False):
             i.delete()
         else:
             i.form = i.field.form
-            i.permissions_may_have = i.form.permissions_may_have + i.field.permissions_may_have
-            i.permissions_must_have = i.form.permissions_must_have + i.field.permissions_must_have
+            i.permissions_may_have = list(i.form.permissions_may_have.all()) + list(i.field.permissions_may_have.all())
+            i.permissions_must_have = list(i.form.permissions_must_have.all()) + list(i.field.permissions_must_have.all())
             i.save()
 
 

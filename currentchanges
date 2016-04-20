@@ -5,7 +5,8 @@ Release
 		Traceback on report errors now provides useful information
 	Fixed:
 		Traceback could cause runaway while loop
-		Traceback in list_ doesent reset tracker
+		Traceback in list_ doesn't reset tracker
+		Static permission update error
 	Removed:
 
 Release #1.5.20160404.0
