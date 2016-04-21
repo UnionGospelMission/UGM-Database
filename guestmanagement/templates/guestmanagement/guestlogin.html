@@ -4,7 +4,7 @@
 	{% if not guest_list and not guest_login %}
 		<form action='.' method='post'>
 			{% csrf_token %}
-			Last 4 ssn: <input type="text" name="ssn"> or Last Name <input type="text" name="last_name"> or ID Number <input type="text" name="id"> or barcode <input type="text" name="barcode"><br>
+			Last 4 ssn: <input type="text" name="ssn"> or Last Name <input type="text" name="last_name"> or ID Number <input type="text" name="id"> or barcode <input type="password" name="barcode"><br>
 			<input type='submit' value='Submit' name='submit'/>
 		</form>
 	{% elif guest_list %}

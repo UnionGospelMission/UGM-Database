@@ -7,6 +7,7 @@ Release
 		Traceback could cause runaway while loop
 		Traceback in list_ doesn't reset tracker
 		Static permission update error
+		Barcode recall and search are not password fields
 	Removed:
 
 Release #1.5.20160404.0

@@ -2259,7 +2259,7 @@ def manage(request,target_type=None,target_object=None):
         # Get the list of searchable fields from the target type dictionary
         filter_list = target_type_dict[target_type][0].Meta.list_filter
         # List comprehension to iterate over filter_list and create input boxes for each searchable field
-        search_html = ''.join(["%s <input id='%s' type='text' name='%s'> "%(i[0].replace('_',' ').capitalize(),i[0],i[0]) for i in filter_list])
+        search_html = ''.join(["%s <input id='%s' type='%s' name='%s'> "%(i[0].replace('_',' ').capitalize(),i[0],'password' if i[0]=='barcode' else 'text',i[0]) for i in filter_list])
         # Add search area to context
         context.update({'search_html':mark_safe(search_html)})
         # Handling input from the just generated search boxes and the selection of guests
