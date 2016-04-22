@@ -8,7 +8,8 @@ Release
 		Traceback in list_ doesn't reset tracker
 		Static permission update error
 		Barcode recall and search are not password fields
-		All barcode fields autofocus
+		All barcode fields should autofocus
+		Entering Barcodes makes guest unsearchable
 	Removed:
 
 Release #1.5.20160404.0

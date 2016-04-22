@@ -2294,17 +2294,18 @@ def manage(request,target_type=None,target_object=None):
                   Q(**{'{0}__{1}__{2}'.format(i[0],i[2],i[3]):request.POST[i[0]]})|Q(**{'{0}__isnull'.format(i[0]):True})
                       if request.POST[i[0]]=='' else
                   Q(**{'{0}__{1}__{2}'.format(i[0],i[2],i[3]):request.POST[i[0]]})
-                for i in filter_list]
+                for i in filter_list if request.POST[i[0]]!='']
             # Get user Content permissions
             perm_list = Permission.objects.filter(users=request.user)
             if hasattr(base_table,'program'): #and not request.user.is_superuser:
-                program_list = Program.objects.filter(Q(permissions_must_have__in=perm_list)|Q(permissions_may_have__in=perm_list))
+                program_list = Program.objects.filter(Q(permissions_must_have__in=perm_list)|Q(permissions_may_have__in=perm_list)).distinct()
                 args.append(Q(program__in=program_list))
             # pull in anything owned by the user
             owner_override = []
             if hasattr(base_table,'owner'):
                 owner_override = [Q(owner=request.user)]
             # Run the query just created (meatballing permissions) and return distinct entries
+            #interactiveConsole(locals(),globals())
             raw_object_list = base_table.objects.filter(Q(*args)|Q(*owner_override)).distinct().filter(*args).order_by('id')
             object_list = []
             # for loop to iterate over the objects returned from the filter and list_display
