@@ -1,6 +1,6 @@
 {% extends "shared/base.html" %}{% load i18n %}{% load staticfiles %}
 {% block authenticationoverride %}
-	<script type="text/javascript" src='{% static "guestmanagement/js/guestlogin.js" %}'></script>
+	<script type="text/javascript" src='{% static "guestmanagement/js/focusbarcode.js" %}'></script>
 	{% if not guest_list and not guest_login %}
 		<form action='.' method='post'>
 			{% csrf_token %}

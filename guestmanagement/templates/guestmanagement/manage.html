@@ -24,6 +24,7 @@
 		{% endif %}
         <h5>Search for {{ target_type }}:</h5>
         <form action='.' method='post' autocomplete="off">
+			<script type="text/javascript" src="{% static "guestmanagement/js/focusbarcode.js" %}"></script>
             {% csrf_token %}
             {{ search_html }}
             <input id='search' type='submit' value='Search'>
