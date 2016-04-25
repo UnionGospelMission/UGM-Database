@@ -3,6 +3,7 @@ Release
 		Datetime to string function
 	Changed:
 		Traceback on report errors now provides useful information
+		View guest forms now lists alphabetically
 	Fixed:
 		Traceback could cause runaway while loop
 		Traceback in list_ doesn't reset tracker

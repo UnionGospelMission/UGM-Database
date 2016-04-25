@@ -2757,6 +2757,7 @@ def view(request,target_type,target_object,second_object=None):
         # create list of forms based on prerequisites and permissions along with status of each and links to view/complete
         try:
             form_list = [(i,{True:'Completed',False:'Incomplete'}[GuestFormsCompleted.objects.get_or_create(guest=target_object,form=i)[0].complete],i.lock_when_complete,GuestFormsCompleted.objects.get_or_create(guest=target_object,form=i)[0].score,i.auto_grade) for i in Form.objects.filter(program__in=target_object.program.all()).distinct() if testPrerequisites(i,target_object) and testPermission(i,request.user,request.session,second_object)]
+            form_list = sorted(form_list,key=lambda x: x[0].name)
         except MultipleObjectsReturned, e:
             deduplicateGuestInfo(e,target_object,GuestFormsCompleted)
             form_list = [(i,{True:'Completed',False:'Incomplete'}[GuestFormsCompleted.objects.get_or_create(guest=target_object,form=i)[0].complete],i.lock_when_complete,GuestFormsCompleted.objects.get_or_create(guest=target_object,form=i)[0].score,i.auto_grade) for i in Form.objects.filter(program__in=target_object.program.all()).distinct() if testPrerequisites(i,target_object) and testPermission(i,request.user,request.session,second_object)]
