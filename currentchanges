@@ -10,6 +10,7 @@ Release
 		Barcode recall and search are not password fields
 		All barcode fields should autofocus
 		Entering Barcodes makes guest unsearchable
+		Searching for Reports only returns user owned reports
 	Removed:
 
 Release #1.5.20160404.0
