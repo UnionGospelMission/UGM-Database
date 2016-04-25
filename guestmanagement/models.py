@@ -86,6 +86,7 @@ class Form(models.Model):
     guest_completable = models.BooleanField(default=False)
     lock_when_complete = models.BooleanField(default=False)
     auto_grade = models.BooleanField(default=False)
+    single_per_day = models.BooleanField(default=False)
 
     def program_list(self):
         return ' | '.join([i.name for i in self.program.all()])

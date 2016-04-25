@@ -2806,6 +2806,13 @@ def view(request,target_type,target_object,second_object=None):
                 required_test={i:'<ul class="errorlist"><li>This field is required.</li></ul>' for i in field_list.order_by('order') if i.required and not request.POST.get(i.name,'') and i.field_type!='boolean' and testPrerequisites(i,second_object) and testPermission(i,request.user,request.session,second_object)}
                 if not required_test:
                     time_stamp=datetime.datetime.now()
+                    #interactiveConsole(locals(),globals())
+                    if getattr(target_object,'single_per_day',None):
+                        date_list = [i.name for i in field_list.order_by('order') if i.field_type=='date']
+                        if date_list:
+                            time_stamp = parse(request.POST.get(date_list[0],'') or time_stamp.strftime('%m/%d/%Y'))
+                        else:
+                            time_stamp = parse(time_stamp.strftime('%m/%d/%Y'))
                     for i in field_list.order_by('order'):
                         # Test write permission on field
                         if not testPermission(i,request.user,request.session,second_object=second_object,write=True):
@@ -3127,7 +3134,10 @@ def editpastform(request,target_guest,target_form,target_guesttimedata=None):
                 # Update time
                 new_time = request.POST.get('changeTime')
             # Append time to date
-            new_date = new_date + new_time
+            if not target_form.single_per_day:
+                new_date = new_date + new_time
+            else:
+                new_date = new_date + "00:00 AM"
             # Convert date to datetime
             new_date = datetime.datetime.strptime(new_date,'%m/%d/%Y %H:%M %p')
             # Retrieve potential conflicts

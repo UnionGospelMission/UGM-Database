@@ -1,6 +1,7 @@
 Release
 	Added:
 		Datetime to string function
+		Single Date Forms *migration required
 	Changed:
 		Traceback on report errors now provides useful information
 		View guest forms now lists alphabetically
