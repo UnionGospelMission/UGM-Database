@@ -2821,7 +2821,6 @@ def view(request,target_type,target_object,second_object=None):
                         if testPrerequisites(i,second_object):
                             try:
                                 a = GuestData.objects.get_or_create(guest=second_object,field=i)[0]
-                                previous_value = a.value
                             except MultipleObjectsReturned, e:
                                 deduplicateGuestInfo(e,second_object)
                                 a = GuestData.objects.get_or_create(guest=second_object,field=i)[0]
@@ -2873,12 +2872,13 @@ def view(request,target_type,target_object,second_object=None):
                                     return redirect('/guestmanagement/view/form/%s/%s/'%(target_object.id,second_object.id))
                             else:
                                 a.value = request.POST.get(i.name)
-                            if getattr(target_object,'single_per_day',None):
-                                a.value = a.value or previous_value
                             a.save()
                             if i.time_series:
                                 b = GuestTimeData.objects.get_or_create(guest=second_object,field=i,date=time_stamp)[0]
-                                b.value = a.value
+                                if getattr(target_object,'single_per_day',None) and i.blank_each_time:
+                                    b.value = a.value or b.value
+                                else:
+                                    b.value = a.value
                                 b.save()
                             request.session['active']=True
                     # If save, return to viewing form, if save and continue, return to guest view
@@ -3141,12 +3141,15 @@ def editpastform(request,target_guest,target_form,target_guesttimedata=None):
                 new_date = new_date + new_time
             else:
                 new_date = new_date + "00:00 AM"
+                date_list = [i.name for i in sorted([i.field for i in guesttimedata_list],key=lambda x: x.order) if i.field_type == 'date']
+                if date_list:
+                    new_date = (request.POST.get(date_list[0], '') or new_date.split(' ')[0])  + " 00:00 AM"
             # Convert date to datetime
             new_date = datetime.datetime.strptime(new_date,'%m/%d/%Y %H:%M %p')
             # Retrieve potential conflicts
-            test_list = GuestTimeData.objects.filter(guest=target_guest,date=new_date)
+            test_list = GuestTimeData.objects.filter(guest=target_guest,date=new_date,field__in=[i.field for i in guesttimedata_list])
             # If potential conflicts
-            if len(test_list)>0 and (request.POST.get('changeDate') or request.POST.get('changeTime')):
+            if len(test_list)>0 and new_date != target_guesttimedata.date:
                 # Warn user
                 messages.add_message(request, messages.INFO, 'Form already exists in selected date/time slot')
                 # Return to guest view

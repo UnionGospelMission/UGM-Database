@@ -15,6 +15,7 @@ Release
 		Searching for Reports only returns user owned reports
 		Visible to all programs show no forms
 		Always Blank + Single Date Forms overwrite previous data when left blank
+		Edit Past Forms overwrites when date comes from field
 	Removed:
 
 Release #1.5.20160404.0
