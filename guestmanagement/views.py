@@ -1888,7 +1888,7 @@ def testPermission(target_object,user,session={},second_object=None,testurl=Fals
         if hasattr(target_object,'program'):
             if list(target_object.program.all()) != []:
                 test_list=[True for i in getattr(target_object,'program').all() if testPermission(i,user,write=write)]
-                if test_list==[]:
+                if test_list==[] and [True for i in target_object.program.all() if list(i.permissions_may_have.all()) or list(i.permissions_must_have.all())]:
                     return False
 
         if second_object:
@@ -2298,7 +2298,7 @@ def manage(request,target_type=None,target_object=None):
             # Get user Content permissions
             perm_list = Permission.objects.filter(users=request.user)
             if hasattr(base_table,'program'): #and not request.user.is_superuser:
-                program_list = Program.objects.filter(Q(permissions_must_have__in=perm_list)|Q(permissions_may_have__in=perm_list)).distinct()
+                program_list = Program.objects.filter(Q(permissions_must_have__in=perm_list)|Q(permissions_may_have__in=perm_list)|Q(permissions_must_have__isnull=True,permissions_may_have__isnull=True)).distinct()
                 args.append(Q(program__in=program_list))
             # pull in anything owned by the user
             owner_override = []

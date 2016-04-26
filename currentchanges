@@ -13,6 +13,7 @@ Release
 		All barcode fields should autofocus
 		Entering Barcodes makes guest unsearchable
 		Searching for Reports only returns user owned reports
+		Visible to all programs show no forms
 	Removed:
 
 Release #1.5.20160404.0
