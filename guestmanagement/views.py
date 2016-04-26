@@ -2821,6 +2821,7 @@ def view(request,target_type,target_object,second_object=None):
                         if testPrerequisites(i,second_object):
                             try:
                                 a = GuestData.objects.get_or_create(guest=second_object,field=i)[0]
+                                previous_value = a.value
                             except MultipleObjectsReturned, e:
                                 deduplicateGuestInfo(e,second_object)
                                 a = GuestData.objects.get_or_create(guest=second_object,field=i)[0]
@@ -2872,6 +2873,8 @@ def view(request,target_type,target_object,second_object=None):
                                     return redirect('/guestmanagement/view/form/%s/%s/'%(target_object.id,second_object.id))
                             else:
                                 a.value = request.POST.get(i.name)
+                            if getattr(target_object,'single_per_day',None):
+                                a.value = a.value or previous_value
                             a.save()
                             if i.time_series:
                                 b = GuestTimeData.objects.get_or_create(guest=second_object,field=i,date=time_stamp)[0]
