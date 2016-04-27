@@ -3080,7 +3080,7 @@ def editpastform(request,target_guest,target_form,target_guesttimedata=None):
     # Set base context
     context=baseContext(request)
     # Retrieve field list for form
-    target_field_list = Field.objects.filter(form=target_form,time_series=True).order_by('order')
+    target_field_list = Field.objects.filter(Q(form=target_form)&(Q(time_series=True)|Q(field_type='title'))).order_by('order')
     # Test permissions on fields
     target_field_list = [i for i in target_field_list if testPermission(i,request.user)]
     # Initialize link list as flag
@@ -3207,6 +3207,9 @@ def editpastform(request,target_guest,target_form,target_guesttimedata=None):
             # Build dictionary of current values on particular form
             request.POST = {}
             for i in guesttimedata_list:
+                if i.value == None:
+                    i.value = ''
+                    i.save()
                 request.POST.update({i.field.name:i.value.replace("checked='checked'",'on')})
             # Create form
             form = createForm(target_field_list,request.user,second_object=target_guest,request=request,edit_past=True)
