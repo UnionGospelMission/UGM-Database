@@ -1171,7 +1171,6 @@ class ReportProcessor():
                     # Evaluate filter into criteria
                     value = self.evalVariables(env,i[2])
                     comparator_address = [int(self.evalVariables(env,a)) for a in i[3].split('::')[1:]]
-                    
                     for record_id in range(0,len(record_list)):
                         comparator = record_list[record_id]
                         if i[4] == 'on':
@@ -1225,7 +1224,6 @@ class ReportProcessor():
             
             # return_dict = {record_id: [return record],...}
             return_dict = {}
-            
             for each_id in valid_ids:
                 return_dict[each_id] = return_dict.get(each_id,[])
                 for each_field in return_field_list:
@@ -1244,7 +1242,6 @@ class ReportProcessor():
                         # Find timeseries criteria
                         filter = [i for i in filter if i[4]]
                         if filter and each_field[1]:
-                            #interactiveConsole(locals(),globals())
                             # if a timeseries field being filtered run a second
                             # filter against just the time series field
                             new_env = {'__query__':value}
@@ -1259,7 +1256,7 @@ class ReportProcessor():
                                 # criteria in the new filter
                                 valid = False not in [int(address[i])==int(a[3].split('::')[1:][i]) for i in range(0,len(address))]
                                 if valid:
-                                    new_filter.append([a[0],a[1],a[2],'__query__'+''.join(['::'+str(i) for i in range(len(address),len(a[3].split('::')[1:]))]),''])
+                                    new_filter.append([a[0],a[1],a[2],'__query__'+a[3].replace(a[3].split('::')[0]+'::'+'::'.join(address),''),''])
                             # replace current value with new filter and handle normally
                             value = self.buildFilter(new_env,'$__query__','','',tuple(new_filter))
 

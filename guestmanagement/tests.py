@@ -13,6 +13,7 @@ class BuildFilterTester(TestCase):
                             ],
                     'query1':['last_name','first_name','checkin_staff','01/31/1956'],
                     'query2':['last_name','first_name','checkin_staff',[['01/31/1956','2'],['01/31/1956','3']]],
+                    'query3':['last_name','first_name','checkin_staff',[['01/31/1955','2'],['01/31/1956','3']]],
                     'id1':'0','id2':'1',
                     }
           
@@ -172,6 +173,10 @@ class BuildFilterTester(TestCase):
         self.assertEqual(report_processor.buildFilter(self.env,' $query2::3','','on',(['and','=','2','$query2::3::1','on'],)),[
                                                     ['01/31/1956', '2']
                                                                 ])
+    
+    def test_timeseries_filter_by_date(self):
+        self.assertEqual(report_processor.buildFilter(self.env,' $query3::3','','on',(['and','>=','1956-01-15','$query3::3::0','on'],)),
+                                                        [['01/31/1956','3']])
         
 
 class DisplayTester(TestCase):

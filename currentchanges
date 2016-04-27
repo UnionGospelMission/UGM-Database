@@ -16,6 +16,9 @@ Release
 		Visible to all programs show no forms
 		Always Blank + Single Date Forms overwrite previous data when left blank
 		Edit Past Forms overwrites when date comes from field
+		None type error in edit past forms
+		Section headers don't appear in edit past forms
+		Variable Filters don't filter on dates
 	Removed:
 
 Release #1.5.20160404.0
