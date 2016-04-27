@@ -1277,12 +1277,10 @@ class ReportProcessor():
             guest_list = [i.id for i in Guest.objects.all() if testPermission(i,env['user'])]
             no_criteria = True
         else:
-            no_criteria = False
+            no_criteria = True not in [i[4]=='on' for i in filter]
             # Initialize guest list
             # guest_list = [guest1,guest2,...]
             guest_list = []
-            # Order filter ands then ors
-            filter = sorted(filter)
             # Iterate over filters
             for i in filter:
                 # Initialize equals kwargs
@@ -1641,11 +1639,20 @@ def interactiveConsole(a,b=None):
     d.update(a)
     c=code.InteractiveConsole(locals=d)
     c.interact()
+    
+def datesToStrings(target):
+    for i in range(0,len(target)):
+        if isinstance(target[i],datetime.datetime):
+            target[i] = str(target[i])
+        elif isinstance(target[i],list):
+            target[i] = datesToStrings(target[i])
+    return target
 
 def readableList(value):
     '''
         Function to print lists to console which are multiline and readable
     '''
+    value = datesToStrings(value)
     value = iter(json.dumps(value)+' ')
     retval = ''
     indent = 0
@@ -2809,7 +2816,6 @@ def view(request,target_type,target_object,second_object=None):
                 required_test={i:'<ul class="errorlist"><li>This field is required.</li></ul>' for i in field_list.order_by('order') if i.required and not request.POST.get(i.name,'') and i.field_type!='boolean' and testPrerequisites(i,second_object) and testPermission(i,request.user,request.session,second_object)}
                 if not required_test:
                     time_stamp=datetime.datetime.now()
-                    #interactiveConsole(locals(),globals())
                     if getattr(target_object,'single_per_day',None):
                         date_list = [i.name for i in field_list.order_by('order') if i.field_type=='date']
                         if date_list:

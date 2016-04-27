@@ -30,16 +30,29 @@ class BuildFilterTester(TestCase):
                              form = Form.objects.all()[0],
                              field_type = 'text_box',
                              time_series = True)
+        Field.objects.create(order = 1,
+                             name = 'test1',
+                             label = 'test1',
+                             form = Form.objects.all()[0],
+                             field_type = 'text_box',
+                             time_series = True)
+        
         date_stamp = parse('01/01/2016')
         for i in range(1,12):
             GuestTimeData.objects.create(date = date_stamp.replace(day=i),
                                         guest = Guest.objects.all()[0],
                                         field = Field.objects.all()[0],
                                         value = i)
-        GuestData.objects.create(date = date_stamp.replace(day=i),
-                                 guest = Guest.objects.all()[0],
+        GuestData.objects.create(guest = Guest.objects.all()[0],
                                  field = Field.objects.all()[0],
                                  value = i)
+        GuestData.objects.create(guest = Guest.objects.all()[0],
+                                 field = Field.objects.all()[1],
+                                 value = i)
+        GuestTimeData.objects.create(date = date_stamp.replace(day=i),
+                                        guest = Guest.objects.all()[0],
+                                        field = Field.objects.all()[1],
+                                        value = i)
         
     def cleanUp(self):
         for i in Guest.objects.all():
@@ -221,7 +234,23 @@ class BuildFilterTester(TestCase):
         # Test filtering field timeseries records greater than a date
         self.assertEqual(report_processor.buildFilter(self.env,'field.test','','on',(['and','>=','2016-01-11','date.date','on'],)),
                                                         [[[[parse('2016-01-11'),u'11']]]])
-        
+        # Test filtering field timeseries criteria greater than a date
+        self.assertEqual(report_processor.buildFilter(self.env,'field.test','','on',(['and','>=','2016-01-11','date.date','on'],['and','=','11','field.test1',''])),
+                                                        [[[[parse('2016-01-11'),u'11']]]])
+        # Test filtering field timeseries criteria greater than a date does not filter return values
+        self.assertEqual(report_processor.buildFilter(self.env,'field.test','','on',(['and','>=','2016-01-02','date.date','on'],['and','=','11','field.test1','on'])),
+                                                        [[[[parse('2016-01-01'),u'1'],
+                                                           [parse('2016-01-02'),u'2'],
+                                                           [parse('2016-01-03'),u'3'],
+                                                           [parse('2016-01-04'),u'4'],
+                                                           [parse('2016-01-05'),u'5'],
+                                                           [parse('2016-01-06'),u'6'],
+                                                           [parse('2016-01-07'),u'7'],
+                                                           [parse('2016-01-08'),u'8'],
+                                                           [parse('2016-01-09'),u'9'],
+                                                           [parse('2016-01-10'),u'10'],
+                                                           [parse('2016-01-11'),u'11']
+                                                        ]]])
 
 class DisplayTester(TestCase):
 
