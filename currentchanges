@@ -18,7 +18,7 @@ Release
 		Edit Past Forms overwrites when date comes from field
 		None type error in edit past forms
 		Section headers don't appear in edit past forms
-		Variable Filters don't filter on dates
+		Variable Filters don't filter on dates without other criteria
 	Removed:
 
 Release #1.5.20160404.0

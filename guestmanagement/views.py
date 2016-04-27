@@ -1275,7 +1275,9 @@ class ReportProcessor():
         if filter==[]:
             # Return all guests
             guest_list = [i.id for i in Guest.objects.all() if testPermission(i,env['user'])]
+            no_criteria = True
         else:
+            no_criteria = False
             # Initialize guest list
             # guest_list = [guest1,guest2,...]
             guest_list = []
@@ -1391,6 +1393,10 @@ class ReportProcessor():
                 # If table is field
                 # Retrieve filter from database where field name matches and guest is in guest list
                 filter = self.filter_dict['field'][i[1]].objects.filter(guest__in=guest_list,field__name=field).distinct()
+                # limit date filters to applicable records if no other criteria were given
+                if i[1] and date_filters and no_criteria:
+                    for a in date_filters:
+                        filter = filter.filter(Q(**{'date__{0}'.format(self.filter_dict[a[1]]):self.evalVariables(env,a[2])}))
                 # Test permission to view field
                 if not testPermission(['and',Field.objects.get(name=field),Field.objects.get(name=field).form],env['user']):
                     if not (Field.objects.get(name=field).permissions_may_have.all() or Field.objects.get(name=field).permissions_may_have.all()) or not testPermission(Field.objects.get(name=field),env['user']):

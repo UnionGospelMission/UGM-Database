@@ -2,6 +2,9 @@ from django.test import TestCase
 
 from views import report_processor,interactiveConsole,readableList
 from cStringIO import StringIO
+from models import Guest,Program,Field,GuestData,GuestTimeData,Form
+from django.contrib.auth.models import User
+from dateutil.parser import parse
 
 class BuildFilterTester(TestCase):
     
@@ -16,6 +19,41 @@ class BuildFilterTester(TestCase):
                     'query3':['last_name','first_name','checkin_staff',[['01/31/1955','2'],['01/31/1956','3']]],
                     'id1':'0','id2':'1',
                     }
+        User.objects.create(username='admin',is_superuser=True)
+        self.env.update({'user':User.objects.all()[0]})
+        Program.objects.create(name='Test')
+        Guest.objects.create(first_name='Mickey',last_name='Mouse')
+        Form.objects.create(name = 'test')
+        Field.objects.create(order = 0,
+                             name = 'test',
+                             label = 'test',
+                             form = Form.objects.all()[0],
+                             field_type = 'text_box',
+                             time_series = True)
+        date_stamp = parse('01/01/2016')
+        for i in range(1,12):
+            GuestTimeData.objects.create(date = date_stamp.replace(day=i),
+                                        guest = Guest.objects.all()[0],
+                                        field = Field.objects.all()[0],
+                                        value = i)
+        GuestData.objects.create(date = date_stamp.replace(day=i),
+                                 guest = Guest.objects.all()[0],
+                                 field = Field.objects.all()[0],
+                                 value = i)
+        
+    def cleanUp(self):
+        for i in Guest.objects.all():
+            i.delete()
+        for i in GuestData.objects.all():
+            i.delete()
+        for i in GuestTimeData.objects.all():
+            i.delete()
+        for i in Program.objects.all():
+            i.delete()
+        for i in Field.objects.all():
+            i.delete()
+        for i in User.objects.all():
+            i.delete()
           
 
     def test_entire_variable_query(self):
@@ -175,8 +213,14 @@ class BuildFilterTester(TestCase):
                                                                 ])
     
     def test_timeseries_filter_by_date(self):
+        # Test filtering variable query for timeseries records greater than a date
         self.assertEqual(report_processor.buildFilter(self.env,' $query3::3','','on',(['and','>=','1956-01-15','$query3::3::0','on'],)),
                                                         [['01/31/1956','3']])
+    
+    def test_field_date_filter(self):
+        # Test filtering field timeseries records greater than a date
+        self.assertEqual(report_processor.buildFilter(self.env,'field.test','','on',(['and','>=','2016-01-11','date.date','on'],)),
+                                                        [[[[parse('2016-01-11'),u'11']]]])
         
 
 class DisplayTester(TestCase):
