@@ -2995,11 +2995,10 @@ def runreport(request,report_id):
     env.update(report_processor.functions)
     env.update(report_processor.tableVariables)
     env.update(report_processor._functions)
-    #try:
+    try:
         # Run Report
-    success = report_processor.listProcess(env, ['do']+report_code)
-    #except Exception as e:
-    '''
+        success = report_processor.listProcess(env, ['do']+report_code)
+    except Exception as e:
         # Display errors
         ff_dict = {'list':True,'query':True,'if':True,'display':True,'sum':True,'count':True}
         human_code = json.loads(Report.objects.get(pk=report_id).code)[1]
@@ -3053,7 +3052,6 @@ def runreport(request,report_id):
         var_list = ['%s = %s'%(str(k),str(v).replace('<',"").replace('>','')) for k,v in env.__get_variable_state__().iteritems() if '__' not in k and not callable(v)]
         env['print']('\n'.join(var_list))
         env['print']('</pre>')
-        '''
     env = None
     # Display results
     download_path = request.get_full_path()
