@@ -124,6 +124,7 @@ function newRow(type,values,insert){
             new_type.appendChild(new Option('end table','end table'));
             new_type.appendChild(new Option('link','link'));
             new_type.appendChild(new Option('calendar','calendar'));
+            new_type.appendChild(new Option('section break','section break'));
             new_type.setAttribute('title','Select Row Type');
             if (type){
                 new_type.value = type;
@@ -187,6 +188,10 @@ function typeChange(t,single){
         var row = t.parentNode;
         var name_offset = 0;
         switch (t.value){
+			case 'section break':
+				var text = document.createTextNode('---------------------------------------------------------------------------');
+					row.appendChild(text);
+				break;
             case 'text':
                 var bold = row.appendChild(document.createElement('select'));
                     bold.appendChild(new Option('none','none'));
