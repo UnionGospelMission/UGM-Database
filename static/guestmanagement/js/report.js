@@ -205,7 +205,10 @@ function typeChange(t,single){
                     bold.setAttribute('title','Pick text bold level');
                     bold.onclick=alertName;
 
-                var value = row.appendChild(document.createElement('input'));
+                var value = row.appendChild(document.createElement('textarea'));
+					value.rows = '1';
+					value.wrap='soft';
+					value.style.height = '17px';
                     value.name = 'code'+row.line_number+'-2';
                     value.setAttribute('title','Enter Text to Display');
                     value.onclick=alertName;
