@@ -295,13 +295,13 @@ class ReportProcessor():
     def divideValues(self,env,divide,by,round_digits=0):
         value1 = self.evalVariables(env,divide)
         value2 = self.evalVariables(env,by)
-        round_digits = int(self.evalVariables(env,round_digits))
+        round_digits = int(self.evalVariables(env,round_digits) or 0)
         return round(float(value1)/float(value2),round_digits)
     
     def multiplyValues(self,env,value1,value2,round_digits=0):
         value1 = self.evalVariables(env,value1)
         value2 = self.evalVariables(env,value2)
-        round_digits = int(self.evalVariables(env,round_digits))
+        round_digits = int(self.evalVariables(env,round_digits) or 0)
         return round(float(value1)*float(value2),round_digits)
 
     def toString(self,env,variable):
