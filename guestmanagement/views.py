@@ -712,7 +712,7 @@ class ReportProcessor():
             Function to display text on the report.  Takes bold level and text to display as arguments.
         '''
         # If no bold selected
-        value = ''.join([self.evalVariables(env,i.split('}}')[0])+''.join(i.split('}}')[1:]) for i in value.split('{{')])
+        value = ''.join([str(self.evalVariables(env,i.split('}}')[0]))+''.join(i.split('}}')[1:]) for i in value.split('{{')])
         if bold == 'none':
             # append text to report
             env['print'](value)

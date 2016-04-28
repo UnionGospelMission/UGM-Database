@@ -27,6 +27,7 @@ Release
 		Field Filters don't filter on dates without other criteria
 		Field Filters on dates limit returns universally
 		Int error in divide in report builder
+		Text does not convert variables to strings
 	Removed:
 
 Release #1.5.20160404.0
