@@ -4,6 +4,7 @@ Release
 		Single Date Forms *migration required
 		Section breaks in report builder
 		Multiplication and Division to report building
+		Variable evaluation between {{ }} in text function of report builder
 	Changed:
 		Traceback on report errors now provides useful information
 		View guest forms now lists alphabetically
