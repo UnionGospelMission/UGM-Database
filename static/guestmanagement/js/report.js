@@ -469,12 +469,13 @@ function insertVariable(){
     }
     if (previous_element.parentNode.children[0].value=='text'){
 		previous_element.value += '{{ $' + this.innerHTML + ' }}';
+		previous_element.focus();
 	} else {
 		previous_element.value += ' $' + this.innerHTML;
+		previous_element.focus();
+		previous_element = undefined;
+		previous_element_inserted = true;
 	}
-    previous_element.focus();
-    previous_element = undefined;
-    previous_element_inserted = true;
 }
 
 function changeListType(){
