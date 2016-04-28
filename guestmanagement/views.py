@@ -181,6 +181,8 @@ class ReportProcessor():
                             'append_to_list':self.appendList,
                             'concatenate':self.concatenateStrings,
                             'to string':self.toString,
+                            'divide':self.divideValues,
+                            'multiply':self.multiplyValues,
         }
         ### Internal functions (found on the report builder in each line's dropdown)
         self._functions = { 
@@ -290,6 +292,18 @@ class ReportProcessor():
 
     ### external functions
     
+    def divideValues(self,env,divide,by,round_digits=0):
+        value1 = self.evalVariables(env,divide)
+        value2 = self.evalVariables(env,by)
+        round_digits = int(self.evalVariables(env,round_digits))
+        return round(float(value1)/float(value2),round_digits)
+    
+    def multiplyValues(self,env,value1,value2,round_digits=0):
+        value1 = self.evalVariables(env,value1)
+        value2 = self.evalVariables(env,value2)
+        round_digits = int(self.evalVariables(env,round_digits))
+        return round(float(value1)*float(value2),round_digits)
+
     def toString(self,env,variable):
         ''' 
             Function to convert a variable to a string
