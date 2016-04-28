@@ -212,6 +212,7 @@ function typeChange(t,single){
                     value.name = 'code'+row.line_number+'-2';
                     value.setAttribute('title','Enter Text to Display');
                     value.onclick=alertName;
+                    value.onblur = setTarget;
                 break;
 
             case 'list':
@@ -466,8 +467,11 @@ function insertVariable(){
         alert('Click where you want a variable inserted, then click your variable again');
         return;
     }
-    var prepend = ' $';
-    previous_element.value += prepend + this.innerHTML;
+    if (previous_element.parentNode.children[0].value=='text'){
+		previous_element.value += '{{ $' + this.innerHTML + ' }}';
+	} else {
+		previous_element.value += ' $' + this.innerHTML;
+	}
     previous_element.focus();
     previous_element = undefined;
     previous_element_inserted = true;

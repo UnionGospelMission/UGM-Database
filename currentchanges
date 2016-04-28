@@ -9,6 +9,7 @@ Release
 		Traceback on report errors now provides useful information
 		View guest forms now lists alphabetically
 		Report builder text inputs now resizeable
+		Variable auto input now formats when entering in text boxes
 	Fixed:
 		Traceback could cause runaway while loop
 		Traceback in list_ doesn't reset tracker
