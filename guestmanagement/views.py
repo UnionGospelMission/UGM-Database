@@ -2126,8 +2126,11 @@ def quickfilter(request):
                 return beGone('get lost hacker')
             context.update({'submission': [target_form.name, json.dumps([i.name for i in field_list]), json.dumps([[str(i) for i in a] for a in criteria])]})
             field_types = {'boolean':'<input type="checkbox" name="%s" %s %s />',
-                            'text_box':'<input name="%s" value="%s" %s />',
-                            'date':"<input class='datePicker' name='%s' readonly='true' type='text' value='%s' %s />",
+                            'text_box':'<input name="%s" %s value="%s" />',
+                            'date':"<input class='datePicker' name='%s' readonly='true' type='text' %s value='%s' />",
+                            'comment_box':'<textarea name="%s" %s >%s</textarea>',
+                            'drop_down':'<select name="%s" %s value="%s" >',
+                            'list':'<select name="%s" multiple="multiple" %s value="%s" >',
                             }
             html_return = []
             html_dict = {}
@@ -2147,10 +2150,13 @@ def quickfilter(request):
                             input_line = '<input name="submit_field_%s" hidden>'%(eachfield.name+"_"+str(i.id),)
                         input_line += field_types[eachfield.field_type]%(
                             "submit_field_"+eachfield.name+"_"+str(i.id),
-                            answer,
                             {True:'',False:'disabled'}[testPermission(eachfield,request.user,second_object=i,write=True)],
+                            answer,
                         )
                         html_dict[i].append(input_line)
+                        if eachfield.field_type == 'drop_down' or eachfield.field_type == 'list':
+                            #interactiveConsole(locals(),globals())
+                            html_dict[i][-1] +=''.join(['<option value="%s" selected="selected" >%s</option>'%(a,a) if a==answer else '<option value="%s">%s</option>'%(a,a) for a in eachfield.dropdown_options.split('\r\n')])
                 else:
                     messages.add_message(request, messages.INFO, 'Invalid Field Type "%s": Pick a Different Field'%eachfield.field_type)
             html_return.append('<table><tr><th>Guest</th>'+''.join(['<th>%s</th>'%i.name for i in field_list])+'</tr>')
