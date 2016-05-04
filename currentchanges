@@ -29,6 +29,7 @@ Release
 		Field Filters on dates limit returns universally
 		Int error in divide in report builder
 		Text does not convert variables to strings
+		Multicolumn cells do not format properly in report download
 	Removed:
 
 Release #1.5.20160404.0
