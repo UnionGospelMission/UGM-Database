@@ -1,0 +1,88 @@
+<h1>Monthly Statistical Report for the Board</h1><br/>
+<h5>Union Gospel Mission Ministries: Spokane & Coeur d'Alene</h5><br/>
+
+
+2016-04-30 covering 30.0 days<br/><br/>
+
+<table>
+  <tr>
+    <th colspan=9><center>RESCUE and RECOVERY</center></th>
+  </tr>
+  <tr>
+    <td>
+    </td>
+    <td>
+      Totals
+    </td>
+    <td>
+      <em>Men's<br/> Rescue & Progrm</em><br/>Gabe Shippam<br/>Jerry Reese
+    </td>
+    <td colspan=2>
+      <em>Women & Children's<br/>Crisis Shelter</em><br/>Diane Hutton
+    </td>
+    <td colspan=2>
+      <em>Women & Children's<br/>Recovery - AOH</em><br/>Jina Doggett
+    </td>
+    <td colspan=2>
+      <em>Women & Children's<br/>Recovery - CWC</em><br/>JoAnn Zajicek
+    </td>
+  </tr>
+  <tr>
+    <td>
+      Meals: Total Meals This Month
+    </td>
+    <td>
+      <br/>17593.0
+    </td>
+    <td>
+      <br/>4792.0
+    </td>
+    <td>
+      Women<br/>2431.0
+    </td>
+    <td>
+      Children<br/>1949.0
+    </td>
+    <td>
+      Women<br/>2031.0
+    </td>
+    <td>
+      Children<br/>2029.0
+    </td>
+    <td>
+      Women<br/>2615.0
+    </td>
+    <td>
+      Children<br/>1746.0
+    </td>
+  </tr>
+  <tr>
+    <td>
+      Average Meals Per Day
+    </td>
+    <td>
+      586.0
+    </td>
+    <td>
+      160.0
+    </td>
+    <td>
+      81.0
+    </td>
+    <td>
+      65.0
+    </td>
+    <td>
+      68.0
+    </td>
+    <td>
+      68.0
+    </td>
+    <td>
+      87.0
+    </td>
+    <td>
+      58.0
+    </td>
+  </tr>
+</table>
