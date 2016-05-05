@@ -139,7 +139,10 @@ class ReportProcessor():
             # Otherwise check the parent for the variable
             if item in self:
                 return super(ReportProcessor.Env, self).__getitem__(item)
-            return self.parent[item]
+            try:
+                return self.parent[item]
+            except AttributeError:
+                raise Exception('Undefined Variable: %s'%item)
             
         def __setitem__(self,item,value):
             # check for variable in parents if not in current environment

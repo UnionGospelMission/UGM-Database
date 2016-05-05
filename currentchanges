@@ -14,6 +14,7 @@ Release
 		Text boxes can now have multiple variables entered
 		Report downloading exports in html to excel
 		Begin Table now automatically includes borders
+		Undefined variables in reports now give missing variable name
 	Fixed:
 		Traceback could cause runaway while loop
 		Traceback in list_ doesn't reset tracker
@@ -34,6 +35,7 @@ Release
 		Multicolumn cells do not format properly in report download
 		Quickquery crashes when asking for nonexistent field
 		Django documentation is incorrect, DoesNotExist should be ObjectDoesNotExist
+		Overwriting variables in report builder creates an extra variable in the reference list
 	Removed:
 
 Release #1.5.20160404.0

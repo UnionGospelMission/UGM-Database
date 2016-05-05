@@ -428,15 +428,12 @@ function changeReturnVariable(){
     for (var i=0;i<report_viewer.children.length;i++){
         var return_name = '';
         if (report_viewer.children[i].children.length > 1){
+			var target_box = undefined;
             switch (report_viewer.children[i].children[0].value){
                 case 'query':
                 case 'list':
-                    report_viewer.children[i].children[2].value = report_viewer.children[i].children[2].value.split(' ').join('_');
-                    return_name = report_viewer.children[i].children[2].value;
-                    break;
                 case 'function':
-                    report_viewer.children[i].children[2].value = report_viewer.children[i].children[2].value.split(' ').join('_');
-                    return_name = report_viewer.children[i].children[2].value;
+                    target_box = report_viewer.children[i].children[2];
                     break;
                 case 'user input':
                 case 'set':
@@ -444,9 +441,13 @@ function changeReturnVariable(){
                     return_name = report_viewer.children[i].children[1].value;
                     break;
             }
+			if (target_box){
+				 target_box.value = target_box.value.trim().split(' ').join('_')
+                 return_name = target_box.value;
+			}
         }
         return_name = return_name.split('!').join('');
-        if (return_name !='' && var_list.indexOf(return_name)==-1 && return_name.indexOf('::')==-1){
+        if (return_name !='' && var_list.indexOf(return_name)==-1 && return_name.indexOf('::')==-1 && return_name.indexOf('$')==-1){
             var_list.push(return_name);
         }
     }
