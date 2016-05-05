@@ -510,7 +510,7 @@ class ReportProcessor():
         # Split headers variable into list
         headers = comma_separated_headers.split(',')
         # Start html table
-        env['print']('<table><tr>')
+        env['print']('<table border="1"><tr>')
         # If headers specified
         if comma_separated_headers:
             # Print each header into a header row
