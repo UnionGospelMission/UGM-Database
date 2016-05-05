@@ -40,100 +40,6 @@ target_type_dict = {# Reference dictionary for matching the correct new form to 
                     'user_permission_setting':[NewUser_Permission_Setting,User_Permission_Setting,'user'],
                 }
 
-# HTML parser
-
-class Workbook(openpyxl.Workbook):
-    def save(self):
-        from openpyxl.writer.excel import ExcelWriter
-        from StringIO import StringIO
-        from zipfile import ZipFile, ZIP_DEFLATED
-        io = StringIO()
-        zf = ZipFile(io, 'w', ZIP_DEFLATED, allowZip64=True)
-        w = ExcelWriter(self)
-        w.write_data(zf, False)
-        return io
-        
-class HTMLToExcel(HTMLParser):
-    def __init__(self):
-        HTMLParser.__init__(self)
-        self.row = 1
-        self.column = 1
-        self.wb = Workbook()
-        self.ws = self.wb.active
-        self.font_dict = {  'h1':openpyxl.styles.Font(size=18,bold=True),
-                            'h2':openpyxl.styles.Font(size=16,bold=True),
-                            'h3':openpyxl.styles.Font(size=14,bold=True),
-                            'h4':openpyxl.styles.Font(size=14),
-                            'h5':openpyxl.styles.Font(size=12,bold=True),
-                            None:openpyxl.styles.Font(),
-                            'th':openpyxl.styles.Font(italic=True),
-                            'td':openpyxl.styles.Font(),
-                            'tr':openpyxl.styles.Font(),
-                         }
-        self.current_tag = [None]
-        self.highest_column = 1
-        self.multicell = None
-        self.multicol = None
-    def handle_starttag(self, tag, attrs):
-        self.current_tag.append(tag)
-        if tag=='td' or tag=='th':
-            if not self.multicell:
-                self.multicell = [[],self.row,self.row]
-            this_cell_cols = [self.column,self.column]
-            for i in attrs:
-                if 'colspan' in i:
-                    this_cell_cols = [self.column, self.column + int(i[1])-1]
-            self.multicell[0].append(this_cell_cols)
-    def handle_endtag(self, tag):
-        if tag in self.current_tag:
-            while len(self.current_tag) != 1 and tag != self.current_tag.pop(-1):
-                pass
-            if tag.startswith('h') and tag != 'h1' and not self.multicell:
-                self.row += 1
-            if tag == 'br' or tag == 'tr' or tag == 'table' or tag=='h1':
-                test1 = [True for i in range(self.column,0,-1) if self.ws['%s%s'%(chr(i+64),self.row)].value]
-                test2=[]
-                if self.row>1:
-                    test2 = [True for i in range(self.highest_column,0,-1) if self.ws['%s%s'%(chr(i+64),self.row-1)].value]
-                if test1 or test2:
-                    self.row += 1
-                self.column = 1
-                if self.multicell:
-                    if tag=='br' or tag=='h1':
-                        self.multicell[2] = max(self.multicell[2],self.row)
-                        self.column = self.multicell[0][-1][0]
-                    if tag=='tr' or tag=='table':
-                        self.makeBorder()
-                        if test1 or test2:
-                            self.row = self.multicell[2]+1
-                        self.multicell = []
-            if tag == 'td' or tag == 'th':
-                self.column = self.multicell[0][-1][1]+1
-                self.row = self.multicell[1]
-            self.highest_column = max(self.column,self.highest_column)
-    def handle_data(self, data):
-        self.ws['%s%s'%(chr(self.column+64),self.row)]=self.ws['%s%s'%(chr(self.column+64),self.row)].value or "" + data
-        self.ws['%s%s'%(chr(self.column+64),self.row)].font = self.font_dict.get(self.current_tag[-1],openpyxl.styles.Font())
-    def makeBorder(self,desc = None):
-        desc = desc or self.multicell
-        if not desc:
-            return
-        for each_cols in desc[0]:
-            for each_col in range(each_cols[0],each_cols[1]+1):
-                for each_row in range(desc[1],desc[2]+1):
-                    format_dict = {}
-                    if each_col-each_cols[0]==0:
-                        format_dict.update({'left':openpyxl.styles.borders.Side(style='thin')})
-                    if each_cols[1]-each_col==0:
-                        format_dict.update({'right':openpyxl.styles.borders.Side(style='thin')})
-                    if each_row-desc[1]==0:
-                        format_dict.update({'top':openpyxl.styles.borders.Side(style='thin')})
-                    if desc[2]-each_row==0:
-                        format_dict.update({'bottom':openpyxl.styles.borders.Side(style='thin')})
-                    my_column = chr(each_col + 64)
-                    self.ws['%s%s'%(my_column,each_row)].border = openpyxl.styles.borders.Border(**format_dict)
-
-# End HTML parser
 
 
 
@@ -3071,20 +2977,16 @@ def runreport(request,report_id):
     # Display results
     download_path = request.get_full_path()
     if "?" not in download_path:
-        download_path += '?filename=%s.xlsx'%report_name
+        download_path += '?filename=%s'%report_name
     else:
-        download_path += '&filename=%s.xlsx'%report_name
+        download_path += '&filename=%s'%report_name
     context.update({'report':mark_safe(output.getvalue()),'report_name':report_name,'download_path':download_path})
     if request.GET.get('filename',''):
-        white_space_stripping = re.compile(r"\s*(<[^<>]+>)\s*")
-        parser = HTMLToExcel()
-        parser.feed(white_space_stripping.sub("\g<1>",output.getvalue()))
-        dl=parser.wb.save()
-        parser.close()
+        dl = StringIO()
+        dl.write(output.getvalue())
         dl.seek(0,0)
-        response = HttpResponse(dl, content_type='ms-excel')
+        response = HttpResponse(dl, content_type='application/vnd.ms-excel; charset=utf-8')
         response['Content-Disposition'] = 'attachment; filename="%s"' % request.GET['filename']
-        response['Content-Length'] = dl.len
         return response
     return render(request,'guestmanagement/report.html',context)
 

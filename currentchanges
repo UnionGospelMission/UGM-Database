@@ -12,6 +12,7 @@ Release
 		Report builder text inputs now resizeable
 		Variable auto input now formats when entering in text boxes
 		Text boxes can now have multiple variables entered
+		Report downloading exports in html to excel
 	Fixed:
 		Traceback could cause runaway while loop
 		Traceback in list_ doesn't reset tracker
