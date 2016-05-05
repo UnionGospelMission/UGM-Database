@@ -32,6 +32,7 @@ Release
 		Int error in divide in report builder
 		Text does not convert variables to strings
 		Multicolumn cells do not format properly in report download
+		Quickquery crashes when asking for nonexistent field
 	Removed:
 
 Release #1.5.20160404.0
