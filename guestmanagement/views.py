@@ -11,7 +11,7 @@ from django.contrib.auth.models import User
 from django.forms.formsets import formset_factory
 from guestmanagement.models import Guest,GuestmanagementUserSettings,Program,Form,Field,Prerequisite,GuestData,GuestFormsCompleted,Permission,GuestTimeData,Report,Attachment,DynamicFilePermissions,User_Permission_Setting,QuickFilter
 from forms import NewGuestForm,NewProgramForm,NewFormForm,NewFieldForm,NewPrerequisiteForm,NewPermissionsForm,NewReportForm,NewAttachmentForm,NewUser_Permission_Setting
-from django.core.exceptions import MultipleObjectsReturned,DoesNotExist
+from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist
 from cStringIO import StringIO
 from copy import deepcopy
 from dateutil.relativedelta import relativedelta
@@ -1981,7 +1981,7 @@ def quickfilter(request):
                 if field:
                     try:
                         field_list.append(Field.objects.get(name=field))
-                    except DoesNotExist:
+                    except ObjectDoesNotExist:
                         messages.add_message(request, messages.INFO, "Field %s does not exist"%field)
                 index = str(int(index)+1)
                 if not request.POST.get('field_select_'+index,False) and request.POST.get('field_select_'+index,False)!='':

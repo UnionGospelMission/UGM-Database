@@ -33,6 +33,7 @@ Release
 		Text does not convert variables to strings
 		Multicolumn cells do not format properly in report download
 		Quickquery crashes when asking for nonexistent field
+		Django documentation is incorrect, DoesNotExist should be ObjectDoesNotExist
 	Removed:
 
 Release #1.5.20160404.0
