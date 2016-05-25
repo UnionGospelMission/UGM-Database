@@ -1,6 +1,15 @@
-Release
+Release #
 	Added:
-		Program history tracking for guests
+
+	Changed:
+
+	Fixed:
+
+	Removed:
+	
+Release #1.5.20160525.0
+	Added:
+		Program history tracking for guests *Migration Required
 		Python sandbox in report builder
 		Datetime to string function
 		Single Date Forms *migration required
