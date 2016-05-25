@@ -1,10 +1,14 @@
 Release
 	Added:
+		Program history tracking for guests
+		Python sandbox in report builder
 		Datetime to string function
 		Single Date Forms *migration required
 		Section breaks in report builder
 		Multiplication and Division to report building
 		Variable evaluation between {{ }} in text function of report builder
+		Comments in report builder
+		Field Value on Day function in report building
    #105 Quick filter input types
 	Changed:
 		Traceback on report errors now provides useful information
@@ -36,6 +40,7 @@ Release
 		Quickquery crashes when asking for nonexistent field
 		Django documentation is incorrect, DoesNotExist should be ObjectDoesNotExist
 		Overwriting variables in report builder creates an extra variable in the reference list
+		Empty variables throw error in add function on reports
 	Removed:
 
 Release #1.5.20160404.0

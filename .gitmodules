@@ -1,6 +1,3 @@
-[submodule "externals/scheme"]
-	path = externals/scheme
-	url = https://github.com/lperkin1/schemepy.git/
-[submodule "externals/sqlparse"]
-	path = externals/sqlparse
-	url = https://github.com/andialbrecht/sqlparse.git/
+[submodule "static/shared/js/ace"]
+	path = static/shared/js/ace
+	url = https://github.com/ajaxorg/ace-builds.git

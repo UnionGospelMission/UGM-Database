@@ -6,22 +6,6 @@ from guestmanagement.models import Guest,Program,Field,GuestData,GuestTimeData,F
 from django.contrib.auth.models import User
 from dateutil.parser import parse
 
-class HTMLToExcelTester(TestCase):
-    def setUp(self):
-        pass
-    def test_html_converter(self):
-        return
-        html1='''<h1>Alphabetical Bed Roster</h1><br /><h5>Date Printed: </h5>05/03/2016<br /><h5>Union Gospel Mission - Spokane, WA</h5><br /><h5>Occupied Beds: </h5>117<br /><br/><br/><br/><table><tr><th>Guest Name</th><th>Bed #</th><th>Intake Person</th></tr><tr><td>Mouse, Mickey</td><td>1</td><td>Goofy</td></tr><tr><td>Pig, Porky</td><td>2</td><td>Goofy</td></tr><tr><td>Duck, Daffy</td><td>3</td><td>Goofy</td></tr><tr><td>Bunny, Bugs</td><td>4</td><td>Goofy</td></tr><tr><td>Fudd, Elmer</td><td>5</td><td>Goofy</td></tr><tr></tr></table>'''
-        parser = HTMLToExcel()
-        parser.feed(html1)
-        dl=parser.wb.save()
-        parser.close()
-        dl.seek(0,0)
-        interactiveConsole(locals(),globals())
-        i=open('guestmanagement/tests/html1.output','rb')
-        self.assertEqual(i.read(),dl.read())
-        i.close()
-
 class BuildFilterTester(TestCase):
     
     def setUp(self):

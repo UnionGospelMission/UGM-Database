@@ -287,3 +287,8 @@ class QuickFilter(models.Model):
 
     def __unicode__(self):
         return self.name
+
+class ProgramHistory(models.Model):
+	guest = models.ForeignKey(Guest, null=True)
+	date = models.DateTimeField(null=True, blank=True)
+	program = models.ManyToManyField(Program)

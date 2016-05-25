@@ -2,6 +2,7 @@ document.ready=function (){
     window.debug = false;
     // Miscellaneous
 	window.total_form = document.getElementsByName('TotalForm')[0];
+	window.editors = {};
     // Field Select
     if (document.getElementById('loaded_fields').value!=''){
         window.loaded_fields = JSON.parse(document.getElementById('loaded_fields').value);
@@ -125,6 +126,7 @@ function newRow(type,values,insert){
             new_type.appendChild(new Option('link','link'));
             new_type.appendChild(new Option('calendar','calendar'));
             new_type.appendChild(new Option('section break','section break'));
+            new_type.appendChild(new Option('comment','comment'));
             new_type.setAttribute('title','Select Row Type');
             if (type){
                 new_type.value = type;
@@ -137,10 +139,12 @@ function newRow(type,values,insert){
     if (values){
         for (var i=0;i<values.length;i++){
             try {
-                if (new_type.parentNode.children[i+1].type!='checkbox'){
-                    new_type.parentNode.children[i+1].value = values[i];
+                if (new_type.parentNode.children[i+1].type=='checkbox'){
+					new_type.parentNode.children[i+1].checked = values[i];
+				} else if (new_type.parentNode.children[i+1].tagName=='DIV'){
+					editors[String(new_type.parentNode.children[i+1].id)].setValue(values[i]);
                 } else {
-                    new_type.parentNode.children[i+1].checked = values[i];
+                    new_type.parentNode.children[i+1].value = values[i];
                 }
                 if (i+1==1 && new_type.value=='function'){
                     setFunctionName(new_type.parentNode.children[i+1]);
@@ -193,23 +197,32 @@ function typeChange(t,single){
 					row.appendChild(text);
 				break;
             case 'text':
-                var bold = row.appendChild(document.createElement('select'));
-                    bold.appendChild(new Option('none','none'));
-                    bold.appendChild(new Option('h1','h1'));
-                    bold.appendChild(new Option('h2','h2'));
-                    bold.appendChild(new Option('h3','h3'));
-                    bold.appendChild(new Option('h4','h4'));
-                    bold.appendChild(new Option('h5','h5'));
-                    bold.value = 'none';
-                    bold.name = 'code'+row.line_number+'-1';
-                    bold.setAttribute('title','Pick text bold level');
-                    bold.onclick=alertName;
+            case 'comment':
+				if (t.value == 'text'){
+					var bold = row.appendChild(document.createElement('select'));
+						bold.appendChild(new Option('none','none'));
+						bold.appendChild(new Option('h1','h1'));
+						bold.appendChild(new Option('h2','h2'));
+						bold.appendChild(new Option('h3','h3'));
+						bold.appendChild(new Option('h4','h4'));
+						bold.appendChild(new Option('h5','h5'));
+						bold.value = 'none';
+						bold.name = 'code'+row.line_number+'-1';
+						bold.setAttribute('title','Pick text bold level');
+						bold.onclick=alertName;
+				}
 
                 var value = row.appendChild(document.createElement('textarea'));
 					value.rows = '1';
 					value.wrap='soft';
 					value.style.height = '17px';
-                    value.name = 'code'+row.line_number+'-2';
+					if (t.value=='comment'){
+						value.style.width = '500px';
+						value.style.color = 'green';
+						value.name = 'code'+row.line_number+'-1';
+					} else {
+						value.name = 'code'+row.line_number+'-2';
+					}
                     value.setAttribute('title','Enter Text to Display');
                     value.onclick=alertName;
                     value.onblur = setTarget;
@@ -412,11 +425,27 @@ function setFunctionName(t){
     for (var i=0;i<report_functions.length;i++){
         if (report_functions[i][0]==t.value){
             for (var a=2;a<report_functions[i][1].length;a++){
-                var argument = t.parentNode.appendChild(document.createElement('input'));
-                    argument.name = 'code'+t.parentNode.line_number+'-'+String(a+1);
-                    argument.setAttribute('title',report_functions[i][1][a]);
-                    argument.onclick=alertName;
-                    argument.onblur=setTarget;
+				if (t.value=='python' && a==2){
+					var argument = t.parentNode.appendChild(document.createElement('div'));
+					argument.style.width = '1000px';
+					argument.style.height = '250px';
+				} else {
+					var argument = t.parentNode.appendChild(document.createElement('input'));
+				}
+                argument.name = 'code'+t.parentNode.line_number+'-'+String(a+1);
+                editors[String(argument.name)] = false;
+                argument.setAttribute('title',report_functions[i][1][a]);
+                argument.onclick=alertName;
+                argument.onblur=setTarget;
+                if (t.value=='python' && a==2){
+					argument.id=String(argument.name);
+					var editor = ace.edit(argument.id);
+					editor.setTheme("ace/theme/monokai");
+					editor.getSession().setMode("ace/mode/python");
+					editor.onBlur=setTarget;
+					editors[String(argument.name)] = editor;
+					argument.name = undefined;
+				}
             }
             break;
         }
@@ -468,14 +497,17 @@ function insertVariable(){
         alert('Click where you want a variable inserted, then click your variable again');
         return;
     }
-    if (previous_element.parentNode.children[0].value=='text'){
-		previous_element.value += '{{ $' + this.innerHTML + ' }}';
-		previous_element.focus();
+	previous_element.focus();
+	if (previous_element.name!=undefined){
+		if (previous_element.parentNode.children[0].value=='text'){
+			previous_element.value += '{{ $' + this.innerHTML + ' }}';
+		} else {
+			previous_element.value += ' $' + this.innerHTML;
+			previous_element = undefined;
+			previous_element_inserted = true;
+		}
 	} else {
-		previous_element.value += ' $' + this.innerHTML;
-		previous_element.focus();
-		previous_element = undefined;
-		previous_element_inserted = true;
+		previous_element.insert(this.innerHTML);
 	}
 }
 
@@ -572,17 +604,31 @@ function insertField(){
         alert('Click where you want a field inserted, then click your field again');
         return;
     }
-    var prepend = 'field.';
-    if (form_name=='guest'){
-        prepend = 'guest.';
-    }
-    if (form_name=='date'){
-        prepend = 'date.';
-    }
-    previous_element.value = prepend + this.innerHTML;
-    previous_element.focus();
-    previous_element = undefined;
-    previous_element_inserted = true;
+	previous_element.focus();
+	if (previous_element.name!=undefined){
+		var prepend = 'field.';
+		if (form_name=='guest'){
+			prepend = 'guest.';
+		}
+		if (form_name=='date'){
+			prepend = 'date.';
+		}
+		previous_element.value = prepend + this.innerHTML;
+		previous_element = undefined;
+		previous_element_inserted = true;
+	} else {
+		switch (form_name){
+			case 'guest':
+				previous_element.insert('guest__'+this.innerHTML+'=');
+				break;
+			case 'date':
+				previous_element.insert('date__?=');
+				break;
+			default:
+				previous_element.insert('field__name="'+this.innerHTML+'"');
+				break;
+		}
+	}
 }
 
 // Function Select
@@ -646,6 +692,14 @@ function processReport(t) {
             }
         }
     }
+    for (var key in editors){
+		if (editors[key] && document.getElementById(key)){
+			var code = total_form.appendChild(document.createElement('textarea'));
+			code.style.display = 'none';
+			code.name = key;
+			code.value = editors[key].getSession().getValue();
+		}
+	}
     if (t.value=='Submit and Continue Editing'){
         var new_input = total_form.appendChild(document.createElement('input'));
         new_input.style.display = 'none';

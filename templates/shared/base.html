@@ -35,7 +35,7 @@
 {% if base_site == 'truckmanagement' %}
 	<script type="text/javascript" src="{% static "truckmanagement/js/collapsiblesegments.js" %}"></script>
 {% else %}
-	<script type="text/javascript" src="{% static "guestmanagement/ace/src-noconflict/ace.js" %}" charset="utf-8"></script>
+	<script type="text/javascript" src="{% static "shared/js/ace/src-noconflict/ace.js" %}" charset="utf-8"></script>
 {% endif %}
 
 <body class="{% if is_popup %}popup {% endif %}{% block bodyclass %}{% endblock %}">

@@ -7,9 +7,10 @@ from django.utils.safestring import mark_safe
 from django.utils.functional import SimpleLazyObject
 from django.contrib import messages,auth
 from django.db.models import Q,Max,Count
+from django.db.models.query import QuerySet
 from django.contrib.auth.models import User
 from django.forms.formsets import formset_factory
-from guestmanagement.models import Guest,GuestmanagementUserSettings,Program,Form,Field,Prerequisite,GuestData,GuestFormsCompleted,Permission,GuestTimeData,Report,Attachment,DynamicFilePermissions,User_Permission_Setting,QuickFilter
+from guestmanagement.models import Guest,GuestmanagementUserSettings,Program,Form,Field,Prerequisite,GuestData,GuestFormsCompleted,Permission,GuestTimeData,Report,Attachment,DynamicFilePermissions,User_Permission_Setting,QuickFilter,ProgramHistory
 from forms import NewGuestForm,NewProgramForm,NewFormForm,NewFieldForm,NewPrerequisiteForm,NewPermissionsForm,NewReportForm,NewAttachmentForm,NewUser_Permission_Setting
 from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist
 from cStringIO import StringIO
@@ -23,6 +24,9 @@ from collections import namedtuple
 from HTMLParser import HTMLParser
 from django.core.files.temp import NamedTemporaryFile
 from UGM_Database import settings
+
+from Sandbox.Sandbox import Sandbox
+from Sandbox.Function import Function
 
 # Common reference dictionaries
 
@@ -83,6 +87,8 @@ class ReportProcessor():
                             'to string':self.toString,
                             'divide':self.divideValues,
                             'multiply':self.multiplyValues,
+                            'python':self.python,
+                            'get_value_on_day':self.valueOnDay,
         }
         ### Internal functions (found on the report builder in each line's dropdown)
         self._functions = { 
@@ -102,6 +108,7 @@ class ReportProcessor():
                             'link':self.link,
                             'calendar':self.makeCalendar,
                             'section break':self.Pass,
+                            'comment':self.Pass,
         }
         ### Dictionary to convert report builder operators to django query filters
         self.filter_dict = {
@@ -194,6 +201,67 @@ class ReportProcessor():
                 
 
     ### external functions
+    
+    def valueOnDay(self,env,guest_id,date,field):
+        date=parse(self.evalVariables(env,date))
+        guest = Guest.objects.get(pk=self.evalVariables(env,guest_id))
+        field = self.evalVariables(env,field)
+        if field.startswith('guest.'):
+            if field == 'guest.program':
+                p=ProgramHistory.objects.filter(guest=guest,date__lte=date).order_by('-date')
+                if len(p)==0:
+                    return Guest.program.all()
+                return p[0].program.all()
+            return getattr(Guest,field.replace('guest.','',1),None)
+        else:
+            Field = Field.objects.get(name=field.replace('field.','',1))
+            l=GuestTimeData.objects.filter(field=Field,date__lte=date,guest=guest).order_by('-date')
+            if len(l)==0:
+                l = GuestData.objects.filter(field=Field,guest=guest)
+                if len(l) == 0:
+                    return None
+                return l[0].value
+            return l[0].value
+    
+    def python(self,env,code):
+        c=compile(code,'report','exec')
+        a=env
+        gl = {'True':True,'False':False}
+        gl.update(a)
+        while hasattr(a,'parent'):
+            a=a.parent
+            gl.update(a)
+        def filterPrograms(table,**kwargs):
+            return table.program.filter(**kwargs)
+        allowed_functions = {
+                                'GuestData':GuestData.objects.filter,
+                                'GuestTimeData':GuestTimeData.objects.filter,
+                                'Guest':Guest.objects.filter,
+                                'ProgramHistory':ProgramHistory.objects.filter,
+                                'GuestFormsCompleted':GuestFormsCompleted.objects.filter,
+                                'len':len,
+                                'type':type,
+                                'parse':parse,
+                                'filterPrograms':filterPrograms,
+                                'str':str,
+                                'int':int,
+                                'tuple':tuple,
+                                'float':float,
+                                'dict':dict,
+        }
+        class_functions = [ list.append,
+                            QuerySet.filter.im_func,
+                            QuerySet.exclude.im_func,
+                            QuerySet.order_by.im_func,
+                            str.join,
+                            str.split]
+        f=Function('demo',c,allowed_functions.keys())
+        s=Sandbox(None,f,allowed_functions.values(),globals=gl,functions=tuple(allowed_functions.values()+class_functions),attributes_accessible=(list,str,QuerySet,ProgramHistory,Guest,GuestTimeData,GuestData,GuestFormsCompleted,Field),debug=False)
+        g=s.execute(1000000,10)
+        next(g)
+        for i in allowed_functions.keys():
+            s.local_variables.pop(i)
+        env.parent.parent.update(s.local_variables)
     
     def divideValues(self,env,divide,by,round_digits=0):
         value1 = self.evalVariables(env,divide)
@@ -362,7 +430,9 @@ class ReportProcessor():
             Arguments: First value, Second value.<br />
             Returns: Sum of the two values.
         '''
-        return str(float(self.evalVariables(env,value1)) + float(self.evalVariables(env,value2)))
+        value1 = self.evalVariables(env,value1) or 0
+        value2 = self.evalVariables(env,value2) or 0
+        return str(float(value1) + float(value2))
 
     def subtract(self,env,value1,value2):
         '''
@@ -2473,6 +2543,10 @@ def manage(request,target_type=None,target_object=None):
                 # Set the guest as target guest for the user
                 a = GuestmanagementUserSettings.objects.get_or_create(user=request.user)[0]
                 a.guest = myobject
+                a.save()
+                # Record program history
+                a = ProgramHistory.objects.get_or_create(date=datetime.datetime.now(),guest=myobject)[0]
+                a.program=myobject.program.all()
                 a.save()
             # Update static permissions
             if target_type=='form' or target_type=='field':
