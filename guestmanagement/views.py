@@ -248,6 +248,7 @@ class ReportProcessor():
                                 'tuple':tuple,
                                 'float':float,
                                 'dict':dict,
+                                'sorted':sorted,
         }
         class_functions = [ list.append,
                             QuerySet.filter.im_func,
