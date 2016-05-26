@@ -67,6 +67,18 @@ class Sandbox(object):
         self.arguments = arguments
         self.index = 0
         self.last_index = 0
+    def storeGlobal(self, name, value):
+        p = self
+        while p.parent:
+            p=p.parent
+        p.storeName(name, value)
+    def loadGlobal(self, name):
+        try:
+            return self.loadName(name)
+        except NameError as e:
+            if self.parent:
+                return self.parent.loadGlobal(name)
+            raise e
     def loadName(self, name):
         if name in self.local_variables:
             return self.local_variables[name]
@@ -103,7 +115,7 @@ class Sandbox(object):
         if type(function) == Function:
             if kw:
                 raise TypeError('Keyword arguments unsupported')
-            exc = Executor(self, function, arguments)
+            exc = Sandbox(self, function, arguments)
             gen = exc.execute(self.iterlimit - self.counter, self.timelimit + self.startTime - time.time())
             ret = next(gen)
             if ret == self.SUSPEND:

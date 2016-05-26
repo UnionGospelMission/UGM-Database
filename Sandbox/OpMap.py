@@ -133,6 +133,7 @@ class OpMap(object):
         sandbox.stack.put(sandbox.loadName(name))
         return OpMap.NORETURN
 
+    @staticmethod
     def LOAD_FAST(sandbox, args):
         name_idx = args[0] + args[1] * 256
         name = sandbox.function.varnames[name_idx]
@@ -173,8 +174,12 @@ class OpMap(object):
         argc = args[0]+args[1]*256
         if argc!=0:
             raise TypeError("Annotations and default arguments are not supported")
-        name = sandbox.stack.get()
-        code = sandbox.stack.get()
+        if sys.version_info.major==3:
+            name = sandbox.stack.get()
+            code = sandbox.stack.get()
+        else:
+            code = sandbox.stack.get()
+            name = code.co_name
         args = code.co_varnames[:code.co_argcount]
         function = Function(name, code, args, sandbox)
         sandbox.stack.put(function)
@@ -317,4 +322,18 @@ class OpMap(object):
     def PRINT_NEWLINE(sandbox, args):
         sys.stdout.write('\n')
         sys.stdout.flush()
+        return OpMap.NORETURN
+
+    @staticmethod
+    def LOAD_GLOBAL(sandbox, args):
+        name_idx = args[0] + args[1] * 256
+        name = sandbox.function.names[name_idx]
+        sandbox.stack.put(sandbox.loadGlobal(name))
+        return OpMap.NORETURN
+
+    @staticmethod
+    def STORE_GLOBAL(sandbox, args):
+        name_idx = args[0] + args[1] * 256
+        name = sandbox.function.names[name_idx]
+        sandbox.storeGlobal(name, sandbox.stack.get())
         return OpMap.NORETURN

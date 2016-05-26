@@ -240,7 +240,7 @@ class ReportProcessor():
                                 'ProgramHistory':ProgramHistory.objects.filter,
                                 'GuestFormsCompleted':GuestFormsCompleted.objects.filter,
                                 'len':len,
-                                'type':type,
+                                'type':lambda x: type(x),
                                 'parse':parse,
                                 'filterPrograms':filterPrograms,
                                 'str':str,
@@ -249,6 +249,7 @@ class ReportProcessor():
                                 'float':float,
                                 'dict':dict,
                                 'sorted':sorted,
+                                'list':list,
         }
         class_functions = [ list.append,
                             QuerySet.filter.im_func,
@@ -259,7 +260,18 @@ class ReportProcessor():
         f=Function('demo',c,allowed_functions.keys())
         s=Sandbox(None,f,allowed_functions.values(),globals=gl,functions=tuple(allowed_functions.values()+class_functions),attributes_accessible=(list,str,QuerySet,ProgramHistory,Guest,GuestTimeData,GuestData,GuestFormsCompleted,Field),debug=False)
         g=s.execute(1000000,10)
-        next(g)
+        try:
+            next(g)
+        except Exception as e:
+            from dis import findlinestarts
+            from bisect import bisect
+            linestarts = list(findlinestarts(c))
+            line_no_table = list(findlinestarts(c))
+            bytecode_table = [i[0] for i in line_no_table]
+            line_table = [i[1] for i in line_no_table]
+            line_idx = bisect(bytecode_table, s.last_index)-1
+            line = line_table[line_idx]            
+            raise Exception('%s\nIn python code line:%s'%(e,line))
         for i in allowed_functions.keys():
             s.local_variables.pop(i)
         env.parent.parent.update(s.local_variables)

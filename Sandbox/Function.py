@@ -14,3 +14,6 @@ class Function(object):
         self.varnames = code.co_varnames
     def __getitem__(self, item):
         return self.code.co_code[item]
+    def __call__(self, *args, **kw):
+        return self.closure.callFunction(self, args, kw)
+
