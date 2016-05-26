@@ -1,6 +1,7 @@
 Release #
 	Added:
 		sorted function in python sandbox
+		opcode JUMP_IF_FALSE_OR_POP
 	Changed:
 		
 	Fixed:

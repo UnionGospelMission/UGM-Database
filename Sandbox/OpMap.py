@@ -313,6 +313,15 @@ class OpMap(object):
         return OpMap.NORETURN
 
     @staticmethod
+    def JUMP_IF_FALSE_OR_POP(sandbox, args):
+        idx = args[0] + args[1] * 256
+        if not sandbox.stack[-1]:
+            sandbox.index += idx
+        else:
+            TOS = sandbox.stack.get()
+        return OpMap.NORETURN
+
+    @staticmethod
     def PRINT_ITEM(sandbox, args):
         TOS = sandbox.stack.get()
         print TOS,
@@ -337,3 +346,4 @@ class OpMap(object):
         name = sandbox.function.names[name_idx]
         sandbox.storeGlobal(name, sandbox.stack.get())
         return OpMap.NORETURN
+        
