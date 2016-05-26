@@ -307,7 +307,7 @@ class OpMap(object):
     def JUMP_IF_TRUE_OR_POP(sandbox, args):
         idx = args[0] + args[1] * 256
         if sandbox.stack[-1]:
-            sandbox.index += idx
+            sandbox.index = idx
         else:
             TOS = sandbox.stack.get()
         return OpMap.NORETURN
@@ -316,7 +316,7 @@ class OpMap(object):
     def JUMP_IF_FALSE_OR_POP(sandbox, args):
         idx = args[0] + args[1] * 256
         if not sandbox.stack[-1]:
-            sandbox.index += idx
+            sandbox.index = idx
         else:
             TOS = sandbox.stack.get()
         return OpMap.NORETURN
