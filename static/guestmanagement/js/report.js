@@ -61,7 +61,13 @@ function insertRow(row_num){
             new_row.childNodes[0].nodeValue = leadingZeros(row_num);
             new_row.line_number = row_num;
             for (var i=0;i<new_row.children.length;i++){
-                new_row.children[i].name = 'code'+String(row_num)+'-'+String(i);
+				if (new_row.children[i].name){
+					new_row.children[i].name = 'code'+String(row_num)+'-'+String(i);
+				} else if (new_row.children[i].id) {
+					var editor = editors[new_row.children[i].id];
+					editors['code'+String(row_num)+'-'+String(i)] = editor;
+					new_row.children[i].id = 'code'+String(row_num)+'-'+String(i);
+				}
             }
             new_row = new_row.nextSibling;
             row_num += 1;
@@ -313,6 +319,7 @@ function typeChange(t,single){
                     operator.appendChild(new Option('<','<'));
                     operator.appendChild(new Option('<=','<='));
                     operator.appendChild(new Option('contains','contains'));
+                    operator.appendChild(new Option('in','in'));
                     operator.value = '';
                     operator.name = 'code'+row.line_number+'-1';
                     operator.setAttribute('title','Pick Operator');
@@ -565,6 +572,9 @@ function changeOperator(){
             break;
         case '<=':
             this.nextSibling.setAttribute('title','Less Than or Equal to What?');
+            break;
+        case 'in':
+            this.nextSibling.setAttribute('title','is in what?');
             break;
         case 'contains':
             this.nextSibling.setAttribute('title','Contains What?');

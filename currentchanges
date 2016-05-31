@@ -2,11 +2,19 @@ Release #
 	Added:
 		sorted function in python sandbox
 		opcode JUMP_IF_FALSE_OR_POP
+		GROUP 1:
+			valuemismatchfinder.py
+			ProgramHistory filtering in report builder
+			in filter for report builder
 	Changed:
 		
 	Fixed:
 		Function creation in python sandbox
 		opcode JUMP_IF_FALSE_OR_POP/JUMP_IF_TRUE_OR_POP incorrect jump
+		GROUP 1:
+			python code is lost when rows added in report builder
+			quickfilter could cause guestdata and guesttimedata mismatches
+			set in report builder cannot accept variable indices
 	Removed:
 		
 Release #1.5.20160525.0

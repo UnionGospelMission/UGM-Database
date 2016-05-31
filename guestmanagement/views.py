@@ -7,7 +7,7 @@ from django.utils.safestring import mark_safe
 from django.utils.functional import SimpleLazyObject
 from django.contrib import messages,auth
 from django.db.models import Q,Max,Count
-from django.db.models.query import QuerySet
+from django.db.models.query import QuerySet,ValuesListQuerySet
 from django.contrib.auth.models import User
 from django.forms.formsets import formset_factory
 from guestmanagement.models import Guest,GuestmanagementUserSettings,Program,Form,Field,Prerequisite,GuestData,GuestFormsCompleted,Permission,GuestTimeData,Report,Attachment,DynamicFilePermissions,User_Permission_Setting,QuickFilter,ProgramHistory
@@ -89,6 +89,7 @@ class ReportProcessor():
                             'multiply':self.multiplyValues,
                             'python':self.python,
                             'get_value_on_day':self.valueOnDay,
+                            'filter_values_on_day':self.filterValuesOnDay,
         }
         ### Internal functions (found on the report builder in each line's dropdown)
         self._functions = { 
@@ -118,6 +119,7 @@ class ReportProcessor():
                             '>=':'gte',
                             '<=':'lte',
                             '<>':'exact',
+                            'in':'in',
                             'contains':'icontains',
                             'only contains':'icontains',
                             'guest':Guest,
@@ -201,16 +203,92 @@ class ReportProcessor():
                 
 
     ### external functions
+    def filterValuesOnDay(self,env,date,field,value,return_guest_ids=None):
+        if env != None:
+            date = self.evalVariables(env,date)
+            field = self.evalVariables(env,field)
+            value = self.evalVariables(env,value)
+        if not isinstance(date,datetime.datetime):
+            date = parse(date)
+        field = field.split('.',1)
+        if field[0]=='field':
+            field = field[1]
+        if field[0]=='guest':
+            if field[1]!='program':
+                z=Guest.objects.filter(**{field[1]:value})
+                if return_guest_ids:
+                    return z.values_list(field[1],flat=True)
+                return z
+            else:
+                q='''SELECT a.* FROM (
+                                    (  
+                                      (SELECT id as phid,* FROM guestmanagement_programhistory WHERE date <= %s) AS a
+                                      INNER JOIN
+                                      (SELECT guest_id AS tid, MAX(date) AS mdate FROM
+                                           (SELECT * FROM guestmanagement_programhistory WHERE date<=%s) AS c
+                                       GROUP BY tid  
+                                      ) AS d  
+                                      ON a.guest_id=d.tid AND a.date=d.mdate
+                                    ) AS a    
+                                    INNER JOIN
+                                    (SELECT * FROM guestmanagement_programhistory_program WHERE program_id = %s) AS b
+                                    ON a.phid=b.programhistory_id
+                                  );'''
+                program_id = Program.objects.get(name=value).id
+                z = ProgramHistory.objects.raw(q,[date,date,program_id])
+                if return_guest_ids:
+                    return [i.guest_id for i in z]
+                return Guest.objects.filter(id__in=[i.guest_id for i in z])
+                
+        elif field[0]=='date':
+            raise Exception('Filter values on days only implemented for fields and guests')
+        else:
+            field=field[0]
+        field_id = Field.objects.filter(name=field)[0].id
+        q='''SELECT a.* FROM (
+                                (SELECT * from guestmanagement_guesttimedata WHERE guestmanagement_guesttimedata.field_id=%s AND guestmanagement_guesttimedata.date<=%s) AS a 
+                                 INNER JOIN
+                                     (SELECT guest_id,MAX(date) AS mdate 
+                                         FROM 
+                                             (SELECT * from guestmanagement_guesttimedata WHERE guestmanagement_guesttimedata.field_id=%s AND guestmanagement_guesttimedata.date<=%s) AS c 
+                                         GROUP BY guest_id
+                                     ) AS b
+                                 ON a.guest_id=b.guest_id AND b.mdate=a.date
+                             ) 
+             WHERE a.value=%s;'''
+        z=GuestTimeData.objects.raw(q,[field_id,date,field_id,date,value])
+        if return_guest_ids:
+            return [i.guest_id for i in z]
+        return Guest.objects.filter(id__in=[i.guest_id for i in z])
     
-    def valueOnDay(self,env,guest_id,date,field):
-        date=parse(self.evalVariables(env,date))
-        guest = Guest.objects.get(pk=self.evalVariables(env,guest_id))
-        field = self.evalVariables(env,field)
+    def valueOnDay(self,env,date,field=None,guest_id=None,date_value_list=None):
+        if env != None:
+            date=self.evalVariables(env,date)
+            field = self.evalVariables(env,field)
+            date_value_list = self.evalVariables(env,date_value_list)
+            guest_id = self.evalVariables(env,guest_id)
+        if not isinstance(date,datetime.datetime):
+            date=parse(date).date()
+        if hasattr(date,'date'):
+            date = date.date()
+        if date_value_list != None:
+            date_value_list = sorted(date_value_list,key=lambda x: x[0])
+            if not date_value_list or date<date_value_list[0][0].date():
+                return None
+            value = date_value_list[0][1]
+            for i in date_value_list[1:]:
+                if date>=i[0].date():
+                    value = i[1]
+                else:
+                    break
+            return value
+
+        guest = Guest.objects.get(pk=guest_id)
         if field.startswith('guest.'):
             if field == 'guest.program':
                 p=ProgramHistory.objects.filter(guest=guest,date__lte=date).order_by('-date')
                 if len(p)==0:
-                    return Guest.program.all()
+                    return guest.program.all()
                 return p[0].program.all()
             return getattr(Guest,field.replace('guest.','',1),None)
         else:
@@ -226,14 +304,18 @@ class ReportProcessor():
     def python(self,env,code):
         c=compile(code,'report','exec')
         a=env
-        gl = {'True':True,'False':False}
+        gl = {'True':True,'False':False,}
         gl.update(a)
         while hasattr(a,'parent'):
             a=a.parent
             gl.update(a)
         def filterPrograms(table,**kwargs):
             return table.program.filter(**kwargs)
+        def getDate(date):
+            return date.date()
         allowed_functions = {
+                                'filterValuesOnDay':self.filterValuesOnDay,
+                                'valueOnDay':self.valueOnDay,
                                 'GuestData':GuestData.objects.filter,
                                 'GuestTimeData':GuestTimeData.objects.filter,
                                 'Guest':Guest.objects.filter,
@@ -250,18 +332,41 @@ class ReportProcessor():
                                 'dict':dict,
                                 'sorted':sorted,
                                 'list':list,
+                                'iter':iter,
+                                'dir':dir,
+                                'relativedelta':relativedelta,
+                                'getDate':getDate,
         }
         class_functions = [ list.append,
                             QuerySet.filter.im_func,
+                            QuerySet.first.im_func,
+                            QuerySet.last.im_func,
                             QuerySet.exclude.im_func,
                             QuerySet.order_by.im_func,
+                            QuerySet.prefetch_related.im_func,
+                            QuerySet.values_list.im_func,
+                            ValuesListQuerySet.distinct.im_func,
                             str.join,
                             str.split]
+        attribute_access = [list,
+                            str,
+                            QuerySet,
+                            ValuesListQuerySet,
+                            ProgramHistory,
+                            Guest,
+                            GuestTimeData,
+                            GuestData,
+                            GuestFormsCompleted,
+                            Field,
+                            datetime,
+                            Program
+                           ]
         f=Function('demo',c,allowed_functions.keys())
-        s=Sandbox(None,f,allowed_functions.values(),globals=gl,functions=tuple(allowed_functions.values()+class_functions),attributes_accessible=(list,str,QuerySet,ProgramHistory,Guest,GuestTimeData,GuestData,GuestFormsCompleted,Field),debug=False)
-        g=s.execute(1000000,10)
+        s=Sandbox(None,f,allowed_functions.values(),globals=gl,functions=tuple(allowed_functions.values()+class_functions),attributes_accessible=tuple(attribute_access),debug=False)
+        timeout = 100
+        g=s.execute(1000000,timeout)
         try:
-            next(g)
+            t = next(g)
         except Exception as e:
             from dis import findlinestarts
             from bisect import bisect
@@ -274,7 +379,17 @@ class ReportProcessor():
             raise Exception('%s\nIn python code line:%s'%(e,line))
         for i in allowed_functions.keys():
             s.local_variables.pop(i)
-        env.parent.parent.update(s.local_variables)
+        if t:
+            raise Exception('Report Timed Out after %s seconds'%timeout)
+        return_global = s.local_variables.get('__return_global__',False)
+        s.local_variables['__return_global__']=False
+        a=env.parent.parent
+        a.update(s.local_variables)
+        if return_global:
+            update_dict = {i:s.local_variables.get(i,None) for i in return_global if i in s.local_variables.keys()}
+            while hasattr(a,'parent'):
+                a=a.parent
+                a.update(update_dict)
     
     def divideValues(self,env,divide,by,round_digits=0):
         value1 = self.evalVariables(env,divide)
@@ -726,7 +841,7 @@ class ReportProcessor():
             # Retrieve base variable
             key = slice_list.pop(0)
             # Retrieve last element reference
-            end = int(slice_list.pop())
+            end = int(self.evalVariables(env,slice_list.pop()))
             # Convert intermediary steps into index integers
             slice_list = [int(i) for i in slice_list]
             # Obtain base variable value
@@ -1318,16 +1433,18 @@ class ReportProcessor():
                 else:
                     # If filtering on guests
                     # initialize operator with first guest attribute
-                    operator = '%s__'%i[3].split('guest.')[1]
+                    operator = '%s__'%i[3].split('guest.',1)[1]
                     # Set table to filter
                     filter_table = Guest.objects
                     # If filtering on guest program
-                    if i[3].split('guest.')[1]=='program':
+                    if i[3].split('guest.',1)[1]=='program':
                         # Add name to operator (results in operator == "program__name__")
                         operator += 'name__'
+                        if i[4]==u'on':
+                            filter_table = ProgramHistory.objects
                         if i[1] == '=':
                             # Change filter table for equals
-                            filter_table = Guest.objects.annotate(num_prog=Count('program'))
+                            filter_table = filter_table.annotate(num_prog=Count('program'))
                             eqargs.append(Q(**{'num_prog':1}))
                     # Add django filter comparator
                     operator = operator + self.filter_dict[i[1]]
@@ -1339,7 +1456,7 @@ class ReportProcessor():
                         # Append filter to equal kwargs
                         eqargs.append(Q(**{operator:self.evalVariables(env,i[2])}))
                     # Run django filter returning list of guest ids where guest matches criteria
-                    current_guest_list = list(filter_table.filter(*eqargs).exclude(*neargs).distinct().values_list('id',flat=True))
+                    current_guest_list = list(filter_table.filter(*eqargs).exclude(*neargs).distinct().values_list({'':'id',u'on':'guest_id'}[i[4]],flat=True))
                 # If criteria is "and"
                 if i[0]=='and':
                     # If no guests in list
@@ -1376,9 +1493,17 @@ class ReportProcessor():
         # Iterate over return field list
         for i in return_field_list:
             # Split table and field
-            table,field = i[0].split('.')
+            table,field = i[0].split('.',1)
             # If table is guest
             if 'guest' == table:
+                if i[1]==u'on':
+                    prog_hist_query = ProgramHistory.objects.filter(guest__in=guest_list)
+                    for a in date_filters:
+                        prog_hist_query = prog_hist_query.filter(Q(**{'date__{0}'.format(self.filter_dict[a[1]]):self.evalVariables(env,a[2])}))
+                    prog_hist_dict = {}
+                    for a in prog_hist_query:
+                        prog_hist_dict[a.guest.id] = prog_hist_dict.get(a.guest.id,[])
+                        prog_hist_dict[a.guest.id].append([a.date,'|'.join([z.name for z in self.safegetattr(a,field).all()])])
                 # Iterate over the list of guest objects
                 for a in guest_list:
                     # Initialize holding for this guest
@@ -1389,7 +1514,11 @@ class ReportProcessor():
                     elif field=='picture':
                         holding[a].append(self.safegetattr(a,field).url)
                     elif field=='program':
-                        holding[a].append('|'.join([i.name for i in self.safegetattr(a,field).all()]))
+                        if i[1] == u'on':
+                            holding[a].append(prog_hist_dict.get(a.id,[]))
+                        else:
+                            holding[a].append('|'.join([z.name for z in self.safegetattr(a,field).all()]))
+                            
                     else:
                         holding[a].append(str(self.safegetattr(a,field)))
             else:
@@ -2144,7 +2273,6 @@ def quickfilter(request):
                         )
                         html_dict[i].append(input_line)
                         if eachfield.field_type == 'drop_down' or eachfield.field_type == 'list':
-                            #interactiveConsole(locals(),globals())
                             html_dict[i][-1] +=''.join(['<option value="%s" selected="selected" >%s</option>'%(a,a) if a==answer else '<option value="%s">%s</option>'%(a,a) for a in eachfield.dropdown_options.split('\r\n')])
                 else:
                     messages.add_message(request, messages.INFO, 'Invalid Field Type "%s": Pick a Different Field'%eachfield.field_type)
@@ -2180,7 +2308,8 @@ def quickfilter(request):
                         value = request.POST[i]
                         if value == 'on' and field.field_type=='boolean':
                             value = "checked='checked'"
-                        if (not request.POST.get('form_date','') and not request.POST.get('form_time','')) or request.POST.get('current_update','') or not field.time_series:
+                        c = GuestTimeData.objects.filter(guest=guest,field=field,date__gt=time_stamp)
+                        if (not request.POST.get('form_date','') and not request.POST.get('form_time','')) or request.POST.get('current_update','') or not field.time_series or len(c)==0:
                             data = GuestData.objects.get_or_create(guest=guest,field=field)[0]
                             data.value = value
                             data.save()
@@ -2188,6 +2317,10 @@ def quickfilter(request):
                             b = GuestTimeData.objects.get_or_create(guest=guest,field=field,date=time_stamp)[0]
                             b.value = value
                             b.save()
+                            if request.POST.get('current_update',''):
+                                for d in c:
+                                    d.value = value
+                                    d.save()
                     else:
                         messages.add_message(request, messages.INFO, 'Commit denied for field %s on guest %s'%(field.id,guest.id))
             messages.add_message(request, messages.INFO, 'Commit Completed')

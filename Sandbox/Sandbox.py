@@ -94,6 +94,8 @@ class Sandbox(object):
     def getAttr(self, obj, attr):
         if obj in self.attributes_accessible:
             return getattr(obj, attr)
+        if isinstance(obj, tuple(i for i in self.attributes_accessible if type(i) is type)):
+            return getattr(obj, attr)
         if type(obj) in self.attributes_accessible:
             return getattr(obj, attr)
         raise AttributeError("%r attribute access denied" % type(obj))
