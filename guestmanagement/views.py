@@ -213,7 +213,7 @@ class ReportProcessor():
         field = field.split('.',1)
         if field[0]=='field':
             field = field[1]
-        if field[0]=='guest':
+        elif field[0]=='guest':
             if field[1]!='program':
                 z=Guest.objects.filter(**{field[1]:value})
                 if return_guest_ids:
@@ -282,7 +282,7 @@ class ReportProcessor():
                 else:
                     break
             return value
-
+        
         guest = Guest.objects.get(pk=guest_id)
         if field.startswith('guest.'):
             if field == 'guest.program':

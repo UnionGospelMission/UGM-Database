@@ -15,6 +15,7 @@ Release #
 			python code is lost when rows added in report builder
 			quickfilter could cause guestdata and guesttimedata mismatches
 			set in report builder cannot accept variable indices
+		Field handling in filter by value on day in report builder
 	Removed:
 		
 Release #1.5.20160525.0
