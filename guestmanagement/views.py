@@ -3357,6 +3357,10 @@ def editpastform(request,target_guest,target_form,target_guesttimedata=None):
                 else:
                     i.value = request.POST.get(i.field.name)
                 i.save()
+                if len(GuestTimeData.objects.filter(date__gt=new_date,field=i.field,guest=i.guest))==0:
+                    c = GuestData.objects.get_or_create(date=new_date,field=i.field,guest=i.guest)[0]
+                    c.value = i.value
+                    c.save()
             messages.add_message(request, messages.INFO, 'Form Changed')
             return redirect('/guestmanagement/view/guest/%s/'%target_guest.id)
         else:

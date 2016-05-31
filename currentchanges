@@ -16,6 +16,7 @@ Release #
 			quickfilter could cause guestdata and guesttimedata mismatches
 			set in report builder cannot accept variable indices
 		Field handling in filter by value on day in report builder
+		**MAJOR**Changing most recent past forms does not update current record**MAJOR**
 	Removed:
 		
 Release #1.5.20160525.0
