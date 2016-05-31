@@ -1,5 +1,14 @@
 Release #
 	Added:
+
+	Changed:
+		
+	Fixed:
+
+	Removed:
+		
+Release #1.6.20160531.0
+	Added:
 		sorted function in python sandbox
 		opcode JUMP_IF_FALSE_OR_POP
 		GROUP 1:
