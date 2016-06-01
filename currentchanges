@@ -4,6 +4,8 @@ Release #
 	Changed:
 		
 	Fixed:
+		**MAJOR**Moving most recent past forms does not update current record**MAJOR**
+		moving forms miscalculates times
 
 	Removed:
 		

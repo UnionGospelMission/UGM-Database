@@ -2308,19 +2308,26 @@ def quickfilter(request):
                         value = request.POST[i]
                         if value == 'on' and field.field_type=='boolean':
                             value = "checked='checked'"
-                        c = GuestTimeData.objects.filter(guest=guest,field=field,date__gt=time_stamp)
-                        if (not request.POST.get('form_date','') and not request.POST.get('form_time','')) or request.POST.get('current_update','') or not field.time_series or len(c)==0:
-                            data = GuestData.objects.get_or_create(guest=guest,field=field)[0]
-                            data.value = value
-                            data.save()
-                        if field.time_series:
-                            b = GuestTimeData.objects.get_or_create(guest=guest,field=field,date=time_stamp)[0]
-                            b.value = value
-                            b.save()
+                        current_record = GuestData.objects.get_or_create(guest=guest,field=field)[0]
+                        if not field.time_series:
+                            current_record.value = value
+                            current_record.save()
+                        else:
+                            new_record = GuestTimeData.objects.get_or_create(guest=guest,field=field,date=time_stamp)[0]
+                            new_record.value = value
+                            new_record.save()
+                            previous_records = GuestTimeData.objects.filter(guest=guest,field=field,date__gte=time_stamp).order_by('date')
                             if request.POST.get('current_update',''):
-                                for d in c:
-                                    d.value = value
-                                    d.save()
+                                for a in previous_records[1:]:
+                                    a.value = value
+                                    a.save()
+                                current_record.value = value
+                                current_record.save()
+                            else:
+                                previous_record = previous_records.last()
+                                if current_record.value != previous_record.value:
+                                    current_record.value = previous_record.value
+                                    current_record.save()
                     else:
                         messages.add_message(request, messages.INFO, 'Commit denied for field %s on guest %s'%(field.id,guest.id))
             messages.add_message(request, messages.INFO, 'Commit Completed')
@@ -3302,7 +3309,7 @@ def editpastform(request,target_guest,target_form,target_guesttimedata=None):
                 if date_list:
                     new_date = (request.POST.get(date_list[0], '') or new_date.split(' ')[0])  + " 00:00 AM"
             # Convert date to datetime
-            new_date = datetime.datetime.strptime(new_date,'%m/%d/%Y %H:%M %p')
+            new_date = parse(new_date)
             # Retrieve potential conflicts
             test_list = GuestTimeData.objects.filter(guest=target_guest,date=new_date,field__in=[i.field for i in guesttimedata_list])
             # If potential conflicts
@@ -3357,10 +3364,16 @@ def editpastform(request,target_guest,target_form,target_guesttimedata=None):
                 else:
                     i.value = request.POST.get(i.field.name)
                 i.save()
-                if len(GuestTimeData.objects.filter(date__gt=new_date,field=i.field,guest=i.guest))==0:
-                    c = GuestData.objects.get_or_create(date=new_date,field=i.field,guest=i.guest)[0]
-                    c.value = i.value
-                    c.save()
+                current_record = GuestData.objects.get_or_create(field=i.field,guest=i.guest)[0]
+                previous_records = GuestTimeData.objects.filter(date__gt=new_date,field=i.field,guest=i.guest).order_by('date')
+                if len(previous_records)==0:
+                    current_record.value = i.value
+                    current_record.save()
+                else:
+                    previous_record=previous_records.last()
+                    if previous_record.value!=current_record.value:
+                        current_record.value=previous_record.value
+                        current_record.save()
             messages.add_message(request, messages.INFO, 'Form Changed')
             return redirect('/guestmanagement/view/guest/%s/'%target_guest.id)
         else:
