@@ -347,7 +347,9 @@ class ReportProcessor():
                             QuerySet.values_list.im_func,
                             ValuesListQuerySet.distinct.im_func,
                             str.join,
-                            str.split]
+                            str.split,
+                            datetime.datetime.strftime,
+                            datetime.datetime.strptime]
         attribute_access = [list,
                             str,
                             QuerySet,
@@ -358,7 +360,8 @@ class ReportProcessor():
                             GuestData,
                             GuestFormsCompleted,
                             Field,
-                            datetime,
+                            datetime.datetime,
+                            datetime.date,
                             Program
                            ]
         f=Function('demo',c,allowed_functions.keys())
