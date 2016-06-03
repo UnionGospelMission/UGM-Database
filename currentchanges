@@ -1,6 +1,7 @@
 Release #
 	Added:
 		datetime formatting in report builder
+		hashmaps in report builder
 	Changed:
 		
 	Fixed:

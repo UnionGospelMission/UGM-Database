@@ -27,6 +27,7 @@ from UGM_Database import settings
 
 from Sandbox.Sandbox import Sandbox
 from Sandbox.Function import Function
+from Sandbox.SecureDict import SecureDict
 
 # Common reference dictionaries
 
@@ -329,7 +330,7 @@ class ReportProcessor():
                                 'int':int,
                                 'tuple':tuple,
                                 'float':float,
-                                'dict':dict,
+                                'hashmap':SecureDict,
                                 'sorted':sorted,
                                 'list':list,
                                 'iter':iter,

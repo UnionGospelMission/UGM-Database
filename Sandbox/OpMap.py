@@ -1,5 +1,6 @@
 from .Function import Function
 from .Sandbox import Sandbox
+from .SecureDict import SecureDict
 import dis,sys
 
 def interactiveConsole(a,b=None):
@@ -123,7 +124,10 @@ class OpMap(object):
     def BINARY_SUBSCR(sandbox, args):
         a = sandbox.stack.get()
         b = sandbox.stack.get()
-        sandbox.stack.put(b[a])
+        if isinstance(b, SecureDict):
+            sandbox.stack.put(b.getItem(a))
+        else:
+            sandbox.stack.put(b[a])
         return OpMap.NORETURN
 
     @staticmethod
@@ -144,6 +148,13 @@ class OpMap(object):
     def STORE_NAME(sandbox, args):
         name_idx = args[0] + args[1] * 256
         name = sandbox.function.names[name_idx]
+        sandbox.storeName(name, sandbox.stack.get())
+        return OpMap.NORETURN
+
+    @staticmethod
+    def STORE_FAST(sandbox, args):
+        name_idx = args[0] + args[1] * 256
+        name = sandbox.function.varnames[name_idx]
         sandbox.storeName(name, sandbox.stack.get())
         return OpMap.NORETURN
 
@@ -210,10 +221,7 @@ class OpMap(object):
     @staticmethod
     def BUILD_MAP(sandbox, args):
         count = args[0] + args[1] * 256
-        o = {}
-        for idx in range(count):
-            val = sandbox.stack.get()
-            o[sandbox.stack.get()] = val
+        o = SecureDict()
         sandbox.stack.put(o)
         return OpMap.NORETURN
 
@@ -346,4 +354,42 @@ class OpMap(object):
         name = sandbox.function.names[name_idx]
         sandbox.storeGlobal(name, sandbox.stack.get())
         return OpMap.NORETURN
+        
+    @staticmethod
+    def STORE_MAP(sandbox, args):
+        key = sandbox.stack.get()
+        value = sandbox.stack.get()
+        dictionary = sandbox.stack.get()
+        if not isinstance(dictionary,SecureDict):
+            dictionary = SecureDict(**dictionary)
+        dictionary.setItem(key,value)
+        sandbox.stack.put(dictionary)
+        return OpMap.NORETURN
+    
+    @staticmethod
+    def STORE_SUBSCR(sandbox, args):
+        key = sandbox.stack.get()
+        dictionary = sandbox.stack.get()
+        value = sandbox.stack.get()
+        if not isinstance(dictionary,SecureDict):
+            raise TypeError('setting subscripts only allowed on hashmaps')
+        dictionary.setItem(key,value)
+        return OpMap.NORETURN
+        
+    @staticmethod
+    def MAP_ADD(sandbox, args):
+        idx = args[0] + args[1] * 256
+        key = sandbox.stack.get()
+        value = sandbox.stack.get()
+        dictionary = sandbox.stack[-idx]
+        if not isinstance(dictionary,SecureDict):
+            dictionary = SecureDict(dictionary)
+            sandbox.stack[-idx] = dictionary
+        dictionary.setItem(key,value)
+        return OpMap.NORETURN
+        
+        
+        
+        
+        
         

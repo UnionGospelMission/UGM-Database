@@ -31,7 +31,7 @@ def updateGuestTimeDataToMatch(field_name,guest_list):
 		if y:
 			y.value = GuestData.objects.get(guest=i,field__id=field_id).value
 			y.save()
-		sys.stdout.write('%s                \r'%(float(list(z).index(i))/float(len(list(z))),))
+		sys.stdout.write('%s                \r'%(float(list(guest_list).index(i))/float(len(list(guest_list))),))
 		sys.stdout.flush()
 
 def updateGuestDataToMatch(field_name,guest_list):
@@ -42,5 +42,5 @@ def updateGuestDataToMatch(field_name,guest_list):
 			x= GuestData.objects.get(guest=i,field__id=field_id)
 			x.value = y.value
 			x.save()
-		sys.stdout.write('%s                \r'%(float(list(z).index(i))/float(len(list(z))),))
+		sys.stdout.write('%s                \r'%(float(list(guest_list).index(i))/float(len(list(guest_list))),))
 		sys.stdout.flush()
