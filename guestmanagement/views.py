@@ -284,23 +284,41 @@ class ReportProcessor():
                     break
             return value
         
-        guest = Guest.objects.get(pk=guest_id)
+        if guest_id and not isinstance(guest_id,list):
+            guest_id = [guest_id]
         if field.startswith('guest.'):
             if field == 'guest.program':
-                p=ProgramHistory.objects.filter(guest=guest,date__lte=date).order_by('-date')
-                if len(p)==0:
-                    return guest.program.all()
-                return p[0].program.all()
-            return getattr(Guest,field.replace('guest.','',1),None)
+                q = '''
+                    SELECT * FROM (
+                            (SELECT * FROM guestmanagement_programhistory WHERE date <= %s and guest_id IN %s) AS a
+                            INNER JOIN
+                            (SELECT guest_id AS tid, MAX(date) AS mdate FROM
+                                (SELECT * FROM guestmanagement_programhistory WHERE date <= %s and guest_id IN %s) AS c
+                            GROUP BY guest_id) AS b
+                            ON a.guest_id=b.tid AND b.mdate=a.date
+                        )
+                
+                '''
+                return [[i.guest_id,'|'.join([a.name for a in i.program.all()])] for i in ProgramHistory.objects.raw(q,[date,tuple(guest_id),date,tuple(guest_id)])]
+            guests = Guest.objects.filter(id__in=guest_id)
+            return [[i.id,getattr(i,field.replace('guest.','',1),None)] for i in guests]
         else:
             Field = Field.objects.get(name=field.replace('field.','',1))
-            l=GuestTimeData.objects.filter(field=Field,date__lte=date,guest=guest).order_by('-date')
-            if len(l)==0:
-                l = GuestData.objects.filter(field=Field,guest=guest)
-                if len(l) == 0:
-                    return None
-                return l[0].value
-            return l[0].value
+            if not Field.time_series:
+                return [[i.guest.id,i.value] for i in GuestData.objects.filter(guest__id__in=guest_id,field=field)]
+            q='''SELECT a.* FROM (
+                                (SELECT * from guestmanagement_guesttimedata WHERE guestmanagement_guesttimedata.field_id=%s AND guestmanagement_guesttimedata.date<=%s) AS a 
+                                 INNER JOIN
+                                     (SELECT guest_id,MAX(date) AS mdate 
+                                         FROM 
+                                             (SELECT * from guestmanagement_guesttimedata WHERE guestmanagement_guesttimedata.field_id=%s AND guestmanagement_guesttimedata.date<=%s) AS c 
+                                         GROUP BY guest_id
+                                     ) AS b
+                                 ON a.guest_id=b.guest_id AND b.mdate=a.date
+                             ) 
+             WHERE a.guest_id IN %s;
+            '''
+            return [[i.guest_id,i.value] for i in GuestTimeData.objects.raw(q,[field.id,date,field.id,date,tuple(guest_id)])]
     
     def python(self,env,code):
         c=compile(code,'report','exec')
