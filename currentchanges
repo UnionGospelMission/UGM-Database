@@ -2,6 +2,7 @@ Release #
 	Added:
 		datetime formatting in report builder
 		hashmaps in report builder
+		added BINARY_OR and BINARY_DIVIDE op codes in report builder
 	Changed:
 		get value on days now takes a list of guest ids
 	Fixed:

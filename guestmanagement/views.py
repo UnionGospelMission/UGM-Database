@@ -286,6 +286,8 @@ class ReportProcessor():
         
         if guest_id and not isinstance(guest_id,list):
             guest_id = [guest_id]
+        if True in [isinstance(i,list) for i in guest_id]:
+            raise Exception('guest_ids must be integers or strings, not lists')
         if field.startswith('guest.'):
             if field == 'guest.program':
                 q = '''
@@ -303,8 +305,8 @@ class ReportProcessor():
             guests = Guest.objects.filter(id__in=guest_id)
             return [[i.id,getattr(i,field.replace('guest.','',1),None)] for i in guests]
         else:
-            Field = Field.objects.get(name=field.replace('field.','',1))
-            if not Field.time_series:
+            field = Field.objects.get(name=field.replace('field.','',1))
+            if not field.time_series:
                 return [[i.guest.id,i.value] for i in GuestData.objects.filter(guest__id__in=guest_id,field=field)]
             q='''SELECT a.* FROM (
                                 (SELECT * from guestmanagement_guesttimedata WHERE guestmanagement_guesttimedata.field_id=%s AND guestmanagement_guesttimedata.date<=%s) AS a 
@@ -323,7 +325,7 @@ class ReportProcessor():
     def python(self,env,code):
         c=compile(code,'report','exec')
         a=env
-        gl = {'True':True,'False':False,}
+        gl = {'True':True,'False':False,'None':None}
         gl.update(a)
         while hasattr(a,'parent'):
             a=a.parent
@@ -355,6 +357,9 @@ class ReportProcessor():
                                 'dir':dir,
                                 'relativedelta':relativedelta,
                                 'getDate':getDate,
+                                'range':lambda x,y: range(x,y),
+                                'sum':sum,
+                                'Q':Q,
         }
         class_functions = [ list.append,
                             QuerySet.filter.im_func,
@@ -368,7 +373,12 @@ class ReportProcessor():
                             str.join,
                             str.split,
                             datetime.datetime.strftime,
-                            datetime.datetime.strptime]
+                            datetime.datetime.strptime,
+                            SecureDict.getItem.im_func,
+                            SecureDict.setItem.im_func,
+                            SecureDict.keys.im_func,
+                            SecureDict.values.im_func
+                            ]
         attribute_access = [list,
                             str,
                             QuerySet,
@@ -381,7 +391,9 @@ class ReportProcessor():
                             Field,
                             datetime.datetime,
                             datetime.date,
-                            Program
+                            datetime.timedelta,
+                            Program,
+                            SecureDict
                            ]
         f=Function('demo',c,allowed_functions.keys())
         s=Sandbox(None,f,allowed_functions.values(),globals=gl,functions=tuple(allowed_functions.values()+class_functions),attributes_accessible=tuple(attribute_access),debug=False)
@@ -1161,6 +1173,7 @@ class ReportProcessor():
             See the list of functions for more information.
         '''
         self.set_(env,return_variable.replace('$',''),self.functions[function](env,*args))
+
 
     # system functions
     

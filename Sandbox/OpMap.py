@@ -388,7 +388,19 @@ class OpMap(object):
         dictionary.setItem(key,value)
         return OpMap.NORETURN
         
+    @staticmethod
+    def BINARY_DIVIDE(sandbox, args):
+        TOS = sandbox.stack.get()
+        TOS1 = sandbox.stack.get()
+        sandbox.stack.put(TOS1/TOS)
+        return OpMap.NORETURN
         
+    @staticmethod
+    def BINARY_OR(sandbox, args):
+        TOS = sandbox.stack.get()
+        TOS1 = sandbox.stack.get()
+        sandbox.stack.put(TOS1 | TOS)
+        return OpMap.NORETURN
         
         
         
