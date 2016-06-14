@@ -2,7 +2,7 @@ from django.contrib.sessions.models import Session
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.shortcuts import redirect
-
+from django.core.exceptions import ObjectDoesNotExist
 
 def interactiveConsole(a,b=None):
     import code
@@ -20,7 +20,10 @@ class setBaseSite():
         print {k:v for k,v in request.POST.iteritems() if k!='password' and k!='csrfmiddlewaretoken'}
         print request.get_host()
         if request.session.session_key:
-            uid = Session.objects.get(pk=request.session.session_key).get_decoded().get('_auth_user_id')
+            try:
+                uid = Session.objects.get(pk=request.session.session_key).get_decoded().get('_auth_user_id')
+            except ObjectDoesNotExist:
+                uid = False
             if uid:
                 user = User.objects.get(pk=uid)
                 print user
