@@ -10,6 +10,7 @@ Release #
 		get value on days now takes a list of guest ids
 	Fixed:
 		Missing session throws error in setbasesite custommiddleware
+   #106 Form Edit Permissions Allow anyone to add/move fields
 	Removed:
 		
 Release #1.6.20160601.0

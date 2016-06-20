@@ -2015,7 +2015,7 @@ def testPermission(target_object,user,session={},second_object=None,testurl=Fals
                 return False
         else:
             for i in target_object:
-                if not testPermission(i,user,session,second_object,testurl):
+                if not testPermission(i,user,session,second_object,testurl,owner,write,owner_override):
                     return False
     elif session.get('password',''):
         # If a guest is logged in
@@ -2645,6 +2645,8 @@ def manage(request,target_type=None,target_object=None):
             # Special processing for new fields
             if target_type=='field':
                 if request.POST['form']:
+                    if not testPermission(Form.objects.get(id=request.POST['form']),request.user,owner=True):
+                        return beGone(': You do not own the selected form')
                     # set field objects order to the end of their parent form object (will = 0 if there is one field in the form)
                     starting_order = Field.objects.filter(form=Form.objects.get(id=request.POST['form'])).aggregate(Max('order'))['order__max']
                     # if there are no fields in the form
@@ -2974,7 +2976,7 @@ def view(request,target_type,target_object,second_object=None):
         field_list = Field.objects.filter(form=target_object)
         # if there is no second_object, no guest is being associated with this form, therefore any posted data relates to moving fields
         if not second_object:
-            write_perm = testPermission(['and','change_form',target_object],request.user,owner=True)
+            write_perm = testPermission(['and','change_form',target_object,target_object],request.user,owner=True)
             context.update({'write_perm':write_perm})
             if request.POST:
                 # Test Framework and Content permissions
