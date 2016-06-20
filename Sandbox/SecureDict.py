@@ -38,3 +38,5 @@ class SecureDict(object):
     def values(self):
         return self.__items__.values()
         
+    def pop(self,key):
+        return self.__items__.pop(key)

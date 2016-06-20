@@ -377,7 +377,8 @@ class ReportProcessor():
                             SecureDict.getItem.im_func,
                             SecureDict.setItem.im_func,
                             SecureDict.keys.im_func,
-                            SecureDict.values.im_func
+                            SecureDict.values.im_func,
+                            SecureDict.pop.im_func
                             ]
         attribute_access = [list,
                             str,

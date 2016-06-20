@@ -402,6 +402,15 @@ class OpMap(object):
         sandbox.stack.put(TOS1 | TOS)
         return OpMap.NORETURN
         
+    @staticmethod
+    def BUILD_TUPLE(sandbox, args):
+        count = args[0] + args[1]*256
+        if count==0:
+            sandbox.stack.put(())
+            return OpMap.NORETURN
+        o = sandbox.stack[-count:]
+        sandbox.stack[-count:] = [tuple(o)]
+        return OpMap.NORETURN
         
         
         
