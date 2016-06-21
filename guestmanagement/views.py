@@ -3059,8 +3059,6 @@ def view(request,target_type,target_object,second_object=None):
                                     filepermissionlist.form = target_object
                                     filepermissionlist.program = filepermissionlist.guest.program.all()
                                     filepermissionlist.save()
-                                else:
-                                    a.value = ""
                             elif i.field_type == 'drop_down' and not request.POST.get(i.name):
                                 a.value = ""
                             elif i.field_type == 'list':

@@ -12,6 +12,7 @@ Release #
 		Missing session throws error in setbasesite custommiddleware
    #106 Form Edit Permissions Allow anyone to add/move fields
    #107 GuestFormsCompleted returns multiple objects
+		Dynamic Forms get written blank if no upload selected
 	Removed:
 		
 Release #1.6.20160601.0
