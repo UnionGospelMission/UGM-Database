@@ -27,6 +27,7 @@ def baseContext(request):
     '''
     # used in redirecting, possibly defunct but not yet removed.
     context = {'base_site':request.session.get('base_site','')}
+    messages.add_message(request, messages.INFO, 'PO system development suspended... contact lperkin1 if you want it developed')
     context.update(csrf(request))
     return context
 
@@ -36,6 +37,7 @@ def index(request):
     View which returns the index page
     '''
     context=baseContext(request)
+    
     return render(request,'shared/index.html',context)
 
 

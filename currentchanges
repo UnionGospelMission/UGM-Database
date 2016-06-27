@@ -8,8 +8,16 @@ Release #
 			BUILD_TUPLE op code in report builder
 	Changed:
 		get value on days now takes a list of guest ids
+		GROUP2:
+			Install Instructions Updated
+			Added notice that PO system is not being developed
+			Disabled purchaseorders and truckmanagement by default
 	Fixed:
 		Missing session throws error in setbasesite custommiddleware
+		GROUP2:
+			Default port was a string
+			Default settings look for ldap server
+			Truckmanagement link to management typo
    #106 Form Edit Permissions Allow anyone to add/move fields
    #107 GuestFormsCompleted returns multiple objects
 		Dynamic Forms get written blank if no upload selected

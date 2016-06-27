@@ -1,12 +1,16 @@
-*Install dependencies (sudo apt-get install python postgresql python-pip python-twisted python-psycopg2 python-dateutil python-openpyxl authbind python-ldap python2.7-dev pytz git)
+*Install dependencies (sudo apt-get install python postgresql python-pip python-twisted python-psycopg2 python-dateutil python-openpyxl authbind python-ldap python2.7-dev git)
+*Download UGM-Database if you haven't already  (git clone https://github.com/UnionGospelMission/UGM-Database.git <your_directory>)
 *Install Django (pip install git+https://github.com/django/django.git@1.8)
 *Start postgresql server (sudo /etc/init.d/postgresql start)
-*Configure authbind [see the authbind manual for instructions]
-*create database in postgresql (sudo -u <postgresql_user_name> psql
-	CREATE DATABASE <database_name>;
-	CREATE ROLE <database_username> WITH LOGIN SUPERUSER ENCRYPTED PASSWORD '<database_user_password>';
-	\q
-	)
+*Add postgresql to auto start (sudo systemctl enable postgresql@.service)
+*Configure authbind (echo "return 1" | sudo tee /etc/authbind/byport/443 > /dev/null
+					 sudo chmod +x /etc/authbind/byport/443
+					)
+*create database in postgresql (sudo -u <postgresql_user_name> psql #postgresql_user_name is usually postgres
+								CREATE DATABASE <database_name>;
+								CREATE ROLE <database_username> WITH LOGIN SUPERUSER ENCRYPTED PASSWORD '<database_user_password>';
+								\q
+							   )
 *Copy settings.conf to productionsettings.conf (cp settings.conf productionsettings.conf)
 *set database_name, database_username, database_user_password in productionsettings.conf
 *Specify ALLOWED_HOSTS in productionsettings.conf

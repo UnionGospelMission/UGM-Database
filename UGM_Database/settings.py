@@ -44,7 +44,7 @@ TEMPLATE_DEBUG = MYSETTINGS['DEBUG']
 ALLOWED_HOSTS = MYSETTINGS['ALLOWED_HOSTS']
 
 #ldap configuration
-if MYSETTINGS.get("LDAP",'').get("SERVER",''):
+if MYSETTINGS.get("LDAP",{}).get("SERVER",'').replace("your_server",""):
 	import ldap
 	AD_DNS_NAME=MYSETTINGS['LDAP']['SERVER']
 	AD_LDAP_PORT=MYSETTINGS['LDAP']['PORT']
