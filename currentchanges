@@ -22,6 +22,7 @@ Release #
    #106 Form Edit Permissions Allow anyone to add/move fields
    #107 GuestFormsCompleted returns multiple objects
 		Dynamic Forms get written blank if no upload selected
+		Truckmanagement donation comments do not record
 	Removed:
 		
 Release #1.6.20160601.0

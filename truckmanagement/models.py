@@ -118,6 +118,7 @@ class Donation(models.Model):
 	repetition_times = models.SmallIntegerField(blank=True,null=True)
 	parent_donation = models.ForeignKey('self',blank=True,null=True)
 	large_load = models.BooleanField(default=False)
+	comments = models.CharField(max_length=200,blank=True,null=True)
 	class Meta:
 		permissions = (('changefinished_donation','Can Change Finished Donations'),)
 	def __unicode__(self):
