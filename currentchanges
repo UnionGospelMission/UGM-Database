@@ -6,6 +6,7 @@ Release #
 		GROUP1:
 			pop function on SecureDict in report builder
 			BUILD_TUPLE op code in report builder
+		basic python notes in report builder
 	Changed:
 		get value on days now takes a list of guest ids
 		GROUP2:

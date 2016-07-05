@@ -3,6 +3,57 @@ document.ready=function (){
     // Miscellaneous
 	window.total_form = document.getElementsByName('TotalForm')[0];
 	window.editors = {};
+	window.editor_default = `'''Available filter Functions:
+filterValuesOnDay(date,field,value,return_guest_ids[True/False])
+	for returning all guests which had a value on a particular day.
+valueOnDay(date,field=None,guest_id=None,date_value_list=None)
+	for finding the value for a particular guest on a particular day
+	if you use field and guest_id, the database will be queried, else 
+	the list of dates and values you provide will be used.
+GuestData(criteria1=value,criteria2=value)
+	uses the standard django filter system to directly query guestdata
+	which consist of guest, field, value
+GuestTimeData
+	same as GuestData only queries guesttimedatas which consist of 
+	guest, field, value, timestamp
+Guest
+	same as GuestData only queries guest objects, which consist of
+	first_name, middle_name, last_name, ssn, program, picture
+ProgramHistory
+	same as GuestData only queries programhistory objects, which consist
+	of guest, timestamp, programlist
+GuestFormsCompleted
+	same as GuestData only queries guestformscompleted objects, which
+	consist of guest, form, completed
+filterPrograms(table,**kwargs)
+	acts as intermediary to allow filtering guest programs.  Returns
+	table.programs.filter(**kwargs)
+	
+Standard Python functions:
+len, type, parse (from dateutil), str, int, tuple, float, hashmap (dict
+replacement, SecureDict object), sorted, list, iter, dir, relativedelta 
+(from dateutil), range, sum, Q (from django)
+
+
+Callable Attributes:
+
+list.append, QuerySet.filter, QuerySet.first, QuerySet.last, 
+QuerySet.exclude, QuerySet.order_by, QuerySet.prefetch_related, 
+QuerySet.values_list, ValuesListQuerySet.distinct, str.join, str.split,
+datetime.datetime.strftime, datetime.datetime.strptime, 
+SecureDict.getItem, SecureDict.setItem, SecureDict.keys, 
+SecureDict.values, SecureDict.pop
+
+Replacement functions for uncallable attributes:
+
+getDate(date)
+	replacement for date.date().  Returns date.date()
+
+Attribute accessible objects:
+
+list, str, QuerySet, ValuesListQuerySet, ProgramHistory, Guest, 
+GuestTimeData, GuestData, GuestFormsCompleted, Field, datetime.datetime,
+datetime.date, datetime.timedelta, Program, SecureDict'''`
     // Field Select
     if (document.getElementById('loaded_fields').value!=''){
         window.loaded_fields = JSON.parse(document.getElementById('loaded_fields').value);
@@ -450,6 +501,7 @@ function setFunctionName(t){
 					editor.setTheme("ace/theme/monokai");
 					editor.getSession().setMode("ace/mode/python");
 					editor.onBlur=setTarget;
+					editor.setValue(editor_default);
 					editors[String(argument.name)] = editor;
 					argument.name = undefined;
 				}
