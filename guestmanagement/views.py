@@ -2628,7 +2628,7 @@ def manage(request,target_type=None,target_object=None):
             # Guests are tracked by the id field, which needs to have a default added to the post
             if target_type == 'guest':
                 targetid=Guest.objects.all().order_by("-id")
-                if targetid == []:
+                if not targetid:
                     targetid=1
                 else:
                     targetid=targetid[0].id+1
