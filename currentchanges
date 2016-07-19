@@ -26,6 +26,7 @@ Release #
 		Truckmanagement donation comments do not record
 		Default settings have invalid syntax
 		Creating the first guest throws an error
+		Instructions do not download ace editor for the reporting feature
 	Removed:
 		
 Release #1.6.20160601.0

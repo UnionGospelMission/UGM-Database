@@ -1,5 +1,5 @@
 *Install dependencies (sudo apt-get install python postgresql python-pip python-twisted python-psycopg2 python-dateutil authbind python-ldap python2.7-dev git)
-*Download UGM-Database if you haven't already  (git clone https://github.com/UnionGospelMission/UGM-Database.git <your_directory>)
+*Download UGM-Database if you haven't already  (git clone --recursive https://github.com/UnionGospelMission/UGM-Database.git <your_directory>)
 *Install Django (sudo pip install git+https://github.com/django/django.git@1.8)
 *Start postgresql server (sudo /etc/init.d/postgresql start)
 *Add postgresql to auto start (sudo systemctl enable postgresql@.service)

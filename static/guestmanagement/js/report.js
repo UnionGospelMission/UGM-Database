@@ -53,7 +53,9 @@ Attribute accessible objects:
 
 list, str, QuerySet, ValuesListQuerySet, ProgramHistory, Guest, 
 GuestTimeData, GuestData, GuestFormsCompleted, Field, datetime.datetime,
-datetime.date, datetime.timedelta, Program, SecureDict'''`
+datetime.date, datetime.timedelta, Program, SecureDict'''`;
+
+
     // Field Select
     if (document.getElementById('loaded_fields').value!=''){
         window.loaded_fields = JSON.parse(document.getElementById('loaded_fields').value);
@@ -485,6 +487,7 @@ function setFunctionName(t){
             for (var a=2;a<report_functions[i][1].length;a++){
 				if (t.value=='python' && a==2){
 					var argument = t.parentNode.appendChild(document.createElement('div'));
+					argument.innerHTML='<text>If you see this text, have your administrator run "git submodule update --init --recursive"</text>';
 					argument.style.width = '1000px';
 					argument.style.height = '250px';
 				} else {
