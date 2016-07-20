@@ -2167,7 +2167,7 @@ def deduplicateGuestInfo(e,guest,table=GuestData):
             key=i.form.name
             value = 'complete'
         # If data not in holding dict
-        if not c.get(key,False):
+        if c.get(key,None)==None:
             # Update holding dict
             c[key]=i
         elif getattr(c[key],value)==getattr(i,value):
