@@ -394,7 +394,8 @@ class ReportProcessor():
                             datetime.date,
                             datetime.timedelta,
                             Program,
-                            SecureDict
+                            SecureDict,
+                            relativedelta
                            ]
         f=Function('demo',c,allowed_functions.keys())
         s=Sandbox(None,f,allowed_functions.values(),globals=gl,functions=tuple(allowed_functions.values()+class_functions),attributes_accessible=tuple(attribute_access),debug=False)

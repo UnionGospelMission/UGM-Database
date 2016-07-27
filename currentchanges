@@ -7,6 +7,7 @@ Release #
 			pop function on SecureDict in report builder
 			BUILD_TUPLE op code in report builder
 		basic python notes in report builder
+		relative delta attribute access in reportbuilder
 	Changed:
 		get value on days now takes a list of guest ids
 		GROUP2:
