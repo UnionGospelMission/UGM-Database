@@ -1030,6 +1030,7 @@ class ReportProcessor():
                 env.__set_global__('__trace_index__',current_index)
                 for i in range(current_index+1,max(env.__get_global__('__traceback__').keys())+1):
                     env.__get_global__('__traceback__').pop(i)
+                env.parent.parent.update(env.children[0].children[0])
         else:
             return true
 

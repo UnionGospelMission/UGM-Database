@@ -20,6 +20,7 @@ Release #
 			Default port was a string
 			Default settings look for ldap server
 			Truckmanagement link to management typo
+		Report builder if statements do not return variables
    #106 Form Edit Permissions Allow anyone to add/move fields
    #107 GuestFormsCompleted returns multiple objects
 		Dynamic Forms get written blank if no upload selected
