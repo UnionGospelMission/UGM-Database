@@ -8,6 +8,7 @@ Release #
 			BUILD_TUPLE op code in report builder
 		basic python notes in report builder
 		relative delta attribute access in reportbuilder
+		round function to python code in report builder
 	Changed:
 		get value on days now takes a list of guest ids
 		GROUP2:

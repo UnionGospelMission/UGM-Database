@@ -355,6 +355,7 @@ class ReportProcessor():
                                 'list':list,
                                 'iter':iter,
                                 'dir':dir,
+                                'round':round,
                                 'relativedelta':relativedelta,
                                 'getDate':getDate,
                                 'range':lambda x,y: range(x,y),
