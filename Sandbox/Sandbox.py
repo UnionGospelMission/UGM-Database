@@ -98,6 +98,8 @@ class Sandbox(object):
             return getattr(obj, attr)
         if type(obj) in self.attributes_accessible:
             return getattr(obj, attr)
+        if obj.__class__ in self.attributes_accessible:
+            return getattr(obj, attr)
         raise AttributeError("%r attribute access denied" % type(obj))
 
     def storeName(self, name, value):

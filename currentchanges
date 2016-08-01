@@ -31,6 +31,7 @@ Release #
 		Creating the first guest throws an error
 		Instructions do not download ace editor for the reporting feature
 		deduplicateData skips blank entries
+		Attributes Accessible doesn't work for relativedeltas on some systems
 	Removed:
 		
 Release #1.6.20160601.0

@@ -334,9 +334,13 @@ class ReportProcessor():
             return table.program.filter(**kwargs)
         def getDate(date):
             return date.date()
+        def valueOnDay(date,field=None,guest_id=None,date_value_list=None):
+            return self.valueOnDay(env,date,field,guest_id,date_value_list)
+        def filterValuesOnDay(date,field,value,return_guest_ids=None):
+            return self.filterValuesOnDay(env,date,field,value,return_guest_ids)
         allowed_functions = {
-                                'filterValuesOnDay':self.filterValuesOnDay,
-                                'valueOnDay':self.valueOnDay,
+                                'filterValuesOnDay':filterValuesOnDay,
+                                'valueOnDay':valueOnDay,
                                 'GuestData':GuestData.objects.filter,
                                 'GuestTimeData':GuestTimeData.objects.filter,
                                 'Guest':Guest.objects.filter,
