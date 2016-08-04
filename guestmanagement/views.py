@@ -2194,12 +2194,14 @@ def quickfilter(request):
         View for executing one filter against the database and updating multiple records
     '''
     context=baseContext(request)
-    fields = [i for i in Field.objects.all() if testPermission(i,request.user)]
+    perm_list = Permission.objects.filter(users=request.user)
+    program_list = Program.objects.filter(Q(Q(permissions_must_have__in=perm_list)|Q(permissions_must_have__isnull=True)),Q(Q(permissions_may_have__in=perm_list)|Q(permissions_may_have__isnull=True))).distinct()
+    form_list = Form.objects.filter(Q(Q(permissions_must_have__in=perm_list)|Q(permissions_must_have__isnull=True)),Q(Q(permissions_may_have__in=perm_list)|Q(permissions_may_have__isnull=True)),program__in=program_list)
+    fields = [i for i in Field.objects.filter(form__in=form_list) if testPermission(i,request.user)]
     field_dict = {}
     for i in fields:
-        if testPermission(i.form,request.user):
-            field_dict[i.form.name]=field_dict.get(i.form.name,[])
-            field_dict[i.form.name].append(i.name)
+        field_dict[i.form.name]=field_dict.get(i.form.name,[])
+        field_dict[i.form.name].append(i.name)
     context.update({'form_list':json.dumps([i.name for i in Form.objects.all() if testPermission(i,request.user)]),
                     'field_list':json.dumps(field_dict),
                     'query_list':QuickFilter.objects.filter(user=request.user),
@@ -2300,12 +2302,16 @@ def quickfilter(request):
                 html_return.append("date: <input class='datePicker' name='form_date' readonly='true' type='text' /><br />")
                 html_return.append("time: <input class='timePicker' name='form_time' readonly='true' type='text' /><br />")
                 html_return.append('update current record <input type="checkbox" name="current_update" /><br />')
+            guest_data_dict = {i:{} for i in guest_list}
+            guest_datas = GuestData.objects.filter(guest__in=guest_list,field__in=field_list)
+            for eachdata in guest_datas:
+                guest_data_dict[eachdata.guest].update({eachdata.field:eachdata.value})
             
             for eachfield in field_list:
                 if field_types.get(eachfield.field_type,False):
                     for i in guest_list:
                         html_dict[i] = html_dict.get(i,[])
-                        answer = GuestData.objects.get_or_create(guest=i,field=eachfield)[0].value if not eachfield.blank_each_time else ''
+                        answer = guest_data_dict[i].get(eachfield,'') if not eachfield.blank_each_time else ''
                         input_line = ''
                         if eachfield.field_type=='boolean':
                             input_line = '<input name="submit_field_%s" hidden>'%(eachfield.name+"_"+str(i.id),)
@@ -2505,7 +2511,7 @@ def manage(request,target_type=None,target_object=None):
             # Get user Content permissions
             perm_list = Permission.objects.filter(users=request.user)
             if hasattr(base_table,'program'): #and not request.user.is_superuser:
-                program_list = Program.objects.filter(Q(permissions_must_have__in=perm_list)|Q(permissions_may_have__in=perm_list)|Q(permissions_must_have__isnull=True,permissions_may_have__isnull=True)).distinct()
+                program_list = Program.objects.filter(Q(Q(permissions_must_have__in=perm_list)|Q(permissions_must_have__isnull=True)),Q(Q(permissions_may_have__in=perm_list)|Q(permissions_may_have__isnull=True))).distinct()
                 args.append(Q(program__in=program_list))
             # pull in anything owned by the user
             owner_override = []

@@ -17,6 +17,7 @@ Release #
 			Added notice that PO system is not being developed
 			Disabled purchaseorders and truckmanagement by default
 		Removed unnecessary dependencies in Install Instructions
+		Optimized Quickfilter searches
 	Fixed:
 		Missing session throws error in setbasesite custommiddleware
 		GROUP2:
