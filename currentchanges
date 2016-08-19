@@ -10,6 +10,7 @@ Release #
 		relative delta attribute access in reportbuilder
 		round function to python code in report builder
 		support for using certificate chain files
+		reporting simple counts of blank each time checkboxes
 	Changed:
 		get value on days now takes a list of guest ids
 		GROUP2:

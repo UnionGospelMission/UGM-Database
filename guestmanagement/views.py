@@ -577,13 +577,13 @@ class ReportProcessor():
         '''
         return self.booleanMethods(env,boolean_list,first_day_activated=True)
     
-    def countBooleans(self,env,boolean_list):
+    def countBooleans(self,env,boolean_list, blank_each_time_field=False):
         '''
             Function to count how many times a boolean field was activated.<br />
             Arguments: List of timeseries data from the desired boolean field.<br />
             Returns: Number of times boolean activated.
         '''
-        return self.booleanMethods(env,boolean_list)
+        return self.booleanMethods(env,boolean_list,blank_each_time_field=blank_each_time_field)
     
     def countDays(self,env,boolean_list):
         '''
@@ -767,7 +767,7 @@ class ReportProcessor():
         '''
         env['print']('</tr></table>')
 
-    def booleanMethods(self,env,boolean_list,count_days=False,last_day_activated=False,last_day_deactivated=False,first_day_activated=False,start_date=False,end_date=False):
+    def booleanMethods(self,env,boolean_list,count_days=False,last_day_activated=False,last_day_deactivated=False,first_day_activated=False,start_date=False,end_date=False,blank_each_time_field=False):
         '''
             Function for manipulating timedata boolean list.
             The list should be in the form [[date1,true/false],[date2,true/false],...]
@@ -811,8 +811,8 @@ class ReportProcessor():
                 checkout_date = i[0]
                 # append date to active_dates
                 active_dates[-1].append(checkout_date)
-            # If boolean is now active and previous record was not active
-            if i[1] == "checked='checked'" and current[1]==u'':
+            # If boolean is now active and previous record was not active or counting blank_each_time fields
+            if i[1] == "checked='checked'" and (current[1]==u'' or blank_each_time_field):
                 # If not counting days
                 if not count_days:
                     # Increase counter
