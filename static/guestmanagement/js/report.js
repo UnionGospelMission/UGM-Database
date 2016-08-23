@@ -24,10 +24,13 @@ ProgramHistory
 	of guest, timestamp, programlist
 GuestFormsCompleted
 	same as GuestData only queries guestformscompleted objects, which
-	consist of guest, form, completed
+	consist of guest, form, complete
 filterPrograms(table,**kwargs)
 	acts as intermediary to allow filtering guest programs.  Returns
 	table.programs.filter(**kwargs)
+externalFunctions(name,*args)
+	acts as intermediary to allow calling any report builder functions.  
+	Returns output from function.
 	
 Standard Python functions:
 len, type, parse (from dateutil), str, int, tuple, float, hashmap (dict

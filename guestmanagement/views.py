@@ -338,6 +338,10 @@ class ReportProcessor():
             return self.valueOnDay(env,date,field,guest_id,date_value_list)
         def filterValuesOnDay(date,field,value,return_guest_ids=None):
             return self.filterValuesOnDay(env,date,field,value,return_guest_ids)
+        def noFunction(env,*args):
+            return 'Invalid Function'
+        def externalFunction(name,*args):
+            return self.functions.get(name,noFunction)(env,*args)
         allowed_functions = {
                                 'filterValuesOnDay':filterValuesOnDay,
                                 'valueOnDay':valueOnDay,
@@ -365,6 +369,7 @@ class ReportProcessor():
                                 'range':lambda x,y: range(x,y),
                                 'sum':sum,
                                 'Q':Q,
+                                'externalFunction': externalFunction,
         }
         class_functions = [ list.append,
                             QuerySet.filter.im_func,

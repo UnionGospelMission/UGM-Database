@@ -11,6 +11,7 @@ Release #
 		round function to python code in report builder
 		support for using certificate chain files
 		reporting simple counts of blank each time checkboxes
+		access to external functions from python in report builder
 	Changed:
 		get value on days now takes a list of guest ids
 		GROUP2:
