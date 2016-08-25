@@ -27,6 +27,7 @@ Release #
 			Default settings look for ldap server
 			Truckmanagement link to management typo
 		Report builder if statements do not return variables
+		Report Timing out throws incorrect error
    #106 Form Edit Permissions Allow anyone to add/move fields
    #107 GuestFormsCompleted returns multiple objects
 		Dynamic Forms get written blank if no upload selected

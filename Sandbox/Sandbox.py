@@ -5,6 +5,10 @@ from dis import HAVE_ARGUMENT
 from .Function import Function
 from types import MethodType, BuiltinMethodType
 
+class TimeoutError(Exception):
+	def __init__(self, *args, **kwargs):
+		Exception.__init__(self,*args,**kwargs)
+
 def interactiveConsole(a,b=None):
     '''
         Useful function for debugging
