@@ -37,6 +37,7 @@ Release #
 		Instructions do not download ace editor for the reporting feature
 		deduplicateData skips blank entries
 		Attributes Accessible doesn't work for relativedeltas on some systems
+		Creating fields does not warn about apostrophes in dropdown options
 	Removed:
 		
 Release #1.6.20160601.0
