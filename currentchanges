@@ -20,6 +20,7 @@ Release #
 			Disabled purchaseorders and truckmanagement by default
 		Removed unnecessary dependencies in Install Instructions
 		Optimized Quickfilter searches
+		Barcode Search redirects to guest directly
 	Fixed:
 		Missing session throws error in setbasesite custommiddleware
 		GROUP2:

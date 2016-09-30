@@ -2546,6 +2546,8 @@ def manage(request,target_type=None,target_object=None):
             context.update({'object_list':object_list,
                             'table_header_html':mark_safe(table_header_html),
                             })
+            if len(object_list)==1 and request.POST['barcode'] and object_list[0][0][1]:
+                return redirect('/guestmanagement/view/guest/%s/'%object_list[0][1])
         # Whether or not a search has been run
         return render(request,'guestmanagement/manage.html',context)
     # End managing a type but not object
