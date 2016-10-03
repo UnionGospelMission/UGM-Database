@@ -29,6 +29,7 @@ Release #
 			Truckmanagement link to management typo
 		Report builder if statements do not return variables
 		Report Timing out throws incorrect error
+		Barcode Redirect breaks report searching
    #106 Form Edit Permissions Allow anyone to add/move fields
    #107 GuestFormsCompleted returns multiple objects
 		Dynamic Forms get written blank if no upload selected
