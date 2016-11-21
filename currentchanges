@@ -12,6 +12,7 @@ Release #
 		support for using certificate chain files
 		reporting simple counts of blank each time checkboxes
 		access to external functions from python in report builder
+		Ability to view fields on multiple forms *Migration Required
 	Changed:
 		get value on days now takes a list of guest ids
 		GROUP2:

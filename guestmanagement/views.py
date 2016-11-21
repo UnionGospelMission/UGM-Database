@@ -1916,10 +1916,18 @@ def redirectWithNext(request,url):
         a.save()
     return url
 
-def createForm(field_list,user,request=None,second_object=None,error_flags={},session={},edit_past=False):
+def createForm(field_list,user,request=None,second_object=None,error_flags=None,session=None,edit_past=False,extra_fields=None):
     '''
     Builds the html form to be displayed based on a list of fields passed in from requesting view
     '''
+    error_flags = error_flags or {}
+    session = session or {}
+    extra_fields = extra_fields or []
+    if len(extra_fields)>0:
+		extra_header = type("Foo", (object,), {})()
+		extra_header.label = "Extra Fields (For Reference Only)"
+		extra_header.field_type = 'title'
+		extra_fields = [extra_header] + list(extra_fields)
     # Order field_list by "order"
     if not isinstance(field_list,list):
         field_list = field_list.order_by('order')
@@ -1943,7 +1951,7 @@ def createForm(field_list,user,request=None,second_object=None,error_flags={},se
                                     i.label,
                                     ' *' if i.required else '',
                                     field_type_options[i.field_type]%(
-                                        {True:'',False:'Disabled'}[testPermission(i,user,session,second_object=second_object,write=True)],
+                                        {True:'',False:'Disabled'}[testPermission(i,user,session,second_object=second_object,write=True) and not i in extra_fields],
                                         i.name,
                                         i.name,
                                         ''
@@ -1969,8 +1977,8 @@ def createForm(field_list,user,request=None,second_object=None,error_flags={},se
                                         )
                                     )
                                 )
-                                 if i.field_type!='title' and testPrerequisites(i,second_object) else '<p class="formlabel"><strong>%s</strong></p></br>'%i.label
-                                 if i.field_type=='title' else '<ul><li>Field %s prerequisites not satisfied</li></ul>'%i.name for i in field_list if testPermission(i,user)
+                                 if i.field_type!='title' and (not isinstance(i,Field) or testPrerequisites(i,second_object)) else '<p class="formlabel"><strong>%s</strong></p></br>'%i.label
+                                 if i.field_type=='title' else '<ul><li>Field %s prerequisites not satisfied</li></ul>'%i.name for i in list(field_list) + extra_fields if testPermission(i,user)
                             ]
                         )
                     )
@@ -2998,6 +3006,7 @@ def view(request,target_type,target_object,second_object=None):
             return beGone('view form %s'%target_object.id)
         form=''
         field_list = Field.objects.filter(form=target_object)
+        extra_fields = Field.objects.filter(extra_forms=target_object)
         # if there is no second_object, no guest is being associated with this form, therefore any posted data relates to moving fields
         if not second_object:
             write_perm = testPermission(['and','change_form',target_object,target_object],request.user,owner=True)
@@ -3120,14 +3129,14 @@ def view(request,target_type,target_object,second_object=None):
                         return redirect('/guestmanagement/view/guest/%s/'%second_object.id)
                 else:
                     # If required field check failed, recreate form with error messages
-                    form=createForm(field_list,request.user,request,second_object,required_test)
+                    form=createForm(field_list,request.user,request,second_object,required_test,extra_fields=extra_fields)
                     context.update({'required_failed':True})
             # if no form was created from request.POST or no request.POST submitted
             # Create form
             while not form:
                 try:
                     # Try building form
-                    form=createForm(field_list,request.user,second_object=second_object,session=request.session)
+                    form=createForm(field_list,request.user,second_object=second_object,session=request.session,extra_fields=extra_fields)
                 except MultipleObjectsReturned, e:
                     # If guest has more than one datapoint for a field
                     # deduplicate

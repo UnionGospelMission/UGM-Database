@@ -110,6 +110,7 @@ class Field(models.Model):
     name = models.CharField(max_length=200)
     label = models.CharField(max_length=200, blank=True, null=True)
     form = models.ForeignKey(Form, null=True)
+    extra_forms = models.ManyToManyField('Form', null=True, blank=True, related_name='form_extra')
     field_type = models.CharField(choices=(('text_box', 'Text Box'),
                                            ('comment_box', 'Comment Box'),
                                            ('drop_down', 'Drop Down'),
