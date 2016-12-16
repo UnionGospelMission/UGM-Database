@@ -9,3 +9,7 @@ $(function() {
         defaultDate: +0,
     });
 });
+
+function clearDate(t){
+	t.previousSibling.value = '';
+}
