@@ -10,6 +10,7 @@
 {% endblock %}
 {% block content %}
 	{{ view_image }}</br>
+	{% if guest_logged_in %}<a href='/guestmanagement/logout/'>Logout</a>{% endif %}
 	{% if target_type == 'guest' %}
 		<table>
 			<tr><th>Form Name</th></tr>
