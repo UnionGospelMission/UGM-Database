@@ -33,6 +33,7 @@ Release #
 		Report Timing out throws incorrect error
 		Barcode Redirect breaks report searching
    #108 Date pickers cannot be blanked
+   #110 externalFunctions not defined
    #106 Form Edit Permissions Allow anyone to add/move fields
    #107 GuestFormsCompleted returns multiple objects
 		Dynamic Forms get written blank if no upload selected
