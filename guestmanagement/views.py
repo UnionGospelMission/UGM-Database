@@ -340,7 +340,7 @@ class ReportProcessor():
             return self.filterValuesOnDay(env,date,field,value,return_guest_ids)
         def noFunction(env,*args):
             return 'Invalid Function'
-        def externalFunction(name,args):
+        def externalFunction(name,*args):
             return self.functions.get(name,noFunction)(env,*args)
         allowed_functions = {
                                 'filterValuesOnDay':filterValuesOnDay,
