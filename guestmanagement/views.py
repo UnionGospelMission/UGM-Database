@@ -372,6 +372,7 @@ class ReportProcessor():
                                 'externalFunction': externalFunction,
         }
         class_functions = [ list.append,
+							list.pop,
                             QuerySet.filter.im_func,
                             QuerySet.first.im_func,
                             QuerySet.last.im_func,
