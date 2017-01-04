@@ -366,7 +366,7 @@ class ReportProcessor():
                                 'round':round,
                                 'relativedelta':relativedelta,
                                 'getDate':getDate,
-                                'range':lambda x,y: range(x,y),
+                                'range':lambda x,y,z=1: range(x,y,z),
                                 'sum':sum,
                                 'Q':Q,
                                 'externalFunction': externalFunction,

@@ -45,6 +45,7 @@ Release #
 		deduplicateData skips blank entries
 		Attributes Accessible doesn't work for relativedeltas on some systems
 		Creating fields does not warn about apostrophes in dropdown options
+		Report Builder range function does not accept non 1 steps
 	Removed:
 		
 Release #1.6.20160601.0
