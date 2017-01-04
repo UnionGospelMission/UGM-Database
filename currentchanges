@@ -47,6 +47,7 @@ Release #
 		Creating fields does not warn about apostrophes in dropdown options
 		Report Builder range function does not accept non 1 steps
 		Report Builder does not allow popping from list
+		Report Builder does not allow isdigit testing of strings
 	Removed:
 		
 Release #1.6.20160601.0

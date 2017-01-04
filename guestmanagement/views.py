@@ -383,6 +383,7 @@ class ReportProcessor():
                             ValuesListQuerySet.distinct.im_func,
                             str.join,
                             str.split,
+                            str.isdigit,
                             datetime.datetime.strftime,
                             datetime.datetime.strptime,
                             SecureDict.getItem.im_func,
