@@ -24,6 +24,7 @@ Release #
 		Optimized Quickfilter searches
 		Barcode Search redirects to guest directly
 	Fixed:
+		Dropdown lists check "in" instead of "=="
 		Missing session throws error in setbasesite custommiddleware
 		GROUP2:
 			Default port was a string
