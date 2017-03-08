@@ -372,7 +372,7 @@ class ReportProcessor():
                                 'externalFunction': externalFunction,
         }
         class_functions = [ list.append,
-							list.pop,
+                            list.pop,
                             QuerySet.filter.im_func,
                             QuerySet.first.im_func,
                             QuerySet.last.im_func,
@@ -1917,6 +1917,13 @@ def redirectWithNext(request,url):
         a.next_page=''
         a.save()
     return url
+    
+def testListValues(a,i,second_object):
+    value=GuestData.objects.get_or_create(guest=second_object,field=i)[0].value
+    if a.strip() == value:
+        return True
+    values=re.findall(r"'\s*([^']*?)\s*'", value)
+    return a.strip() in values
 
 def createForm(field_list,user,request=None,second_object=None,error_flags=None,session=None,edit_past=False,extra_fields=None):
     '''
@@ -1926,10 +1933,10 @@ def createForm(field_list,user,request=None,second_object=None,error_flags=None,
     session = session or {}
     extra_fields = extra_fields or []
     if len(extra_fields)>0:
-		extra_header = type("Foo", (object,), {})()
-		extra_header.label = "Extra Fields (For Reference Only)"
-		extra_header.field_type = 'title'
-		extra_fields = [extra_header] + list(extra_fields)
+        extra_header = type("Foo", (object,), {})()
+        extra_header.label = "Extra Fields (For Reference Only)"
+        extra_header.field_type = 'title'
+        extra_fields = [extra_header] + list(extra_fields)
     # Order field_list by "order"
     if not isinstance(field_list,list):
         field_list = field_list.order_by('order')
@@ -1970,7 +1977,7 @@ def createForm(field_list,user,request=None,second_object=None,error_flags=None,
                                                 "<option value='%s' %s>%s</option>\n"%(
                                                     a.strip(),
                                                     ''
-                                                        if (i.blank_each_time and not edit_past) else {True:"selected='selected'",False:''}[str(a.strip()) == str(GuestData.objects.get_or_create(guest=second_object,field=i)[0].value)]
+                                                        if (i.blank_each_time and not edit_past) else {True:"selected='selected'",False:''}[testListValues(a,i,second_object)]
                                                         if not request else {True:"selected='selected'",False:''}[a.strip() in request.POST.get(i.name,'')],
                                                     a.strip(),
                                                 )
