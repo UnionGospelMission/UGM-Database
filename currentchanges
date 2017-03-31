@@ -23,6 +23,7 @@ Release #
 		Removed unnecessary dependencies in Install Instructions
 		Optimized Quickfilter searches
 		Barcode Search redirects to guest directly
+		Removed openpyxl import
 	Fixed:
 		Dropdown lists check 'in' instead of '=='
 		Fixed lists options to look inside lists instead of just the string

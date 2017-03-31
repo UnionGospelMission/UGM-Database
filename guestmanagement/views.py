@@ -1,5 +1,5 @@
 from random import randint
-import hashlib,datetime,calendar,json,os,re, itertools,inspect,openpyxl,shutil
+import hashlib,datetime,calendar,json,os,re, itertools,inspect,shutil
 from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from django.core.context_processors import csrf
