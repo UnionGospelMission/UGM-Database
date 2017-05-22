@@ -1803,6 +1803,8 @@ class ReportProcessor():
         # Execute function
         return function(self.Env(env), *code)
 
+class ReportProcessor():
+    pass
 
 # Instantiate ReportProcessor
 report_processor = ReportProcessor()
@@ -2812,6 +2814,7 @@ def manage(request,target_type=None,target_object=None):
                     i.users.add(target_instance.user)
             # Special processing for reports
             if target_type=='report':
+                '''
                 # Turn POST into standard dictionary
                 request_dict = dict(request.POST)
                 # Initialize report code
@@ -2886,7 +2889,7 @@ def manage(request,target_type=None,target_object=None):
                 myobject.variables = json.dumps(user_variables)
                 # Save report code object
                 myobject.save()
-                            
+            '''
             # if user wants to save a report but continue modifying it
             if request.POST.get('save_report',''):
                 # Add the form to the context
@@ -2903,18 +2906,25 @@ def manage(request,target_type=None,target_object=None):
         form = target_type_dict[target_type][0](request.POST or None,instance=target_instance)
     # Special processing for reports
     if target_type == 'report':
-        # Bind current code
-        if target_instance:
-            context.update({'loaded_report':json.dumps(json.loads(target_instance.code)[1]) if target_instance.code else json.dumps([])})
         # Pull all the forms from the database which the user is allowed to see
         all_forms_list = sorted([i.name for i in Form.objects.all() if testPermission(i,request.user)])
         # Pull all fields from the database which the user is allowed to see
         all_field_dict = {i:sorted([[a.name.replace('(',''),a.field_type] for a in Field.objects.filter(form__name=i).distinct() if testPermission(a,request.user)]) for i in all_forms_list}
+        # Put the list of fields and forms into the context
+        context.update({'all_forms_list':all_forms_list,'all_field_dict':json.dumps(all_field_dict)})
+        
+        
+        
+        '''
+        # Bind current code
+        if target_instance:
+            context.update({'loaded_report':json.dumps(json.loads(target_instance.code)[1]) if target_instance.code else json.dumps([])})
         all_field_dict.update({'date':[['date','date']],'guest':[['id','id'],['first_name','text_field'],['middle_name','text_field'],['last_name','text_field'],['ssn','text_field'],['program','list'],['picture','url'],['image_tag','picture']]})
         # Put the list of fields and forms into the context
-        context.update({'all_forms_list':all_forms_list,'all_field_dict':json.dumps(all_field_dict),'available_functions':json.dumps([[i,list(report_processor.functions[i].func_code.co_varnames)[:report_processor.functions[i].func_code.co_argcount]] for i in report_processor.functions.keys()])})
+        context.update({'available_functions':json.dumps([[i,list(report_processor.functions[i].func_code.co_varnames)[:report_processor.functions[i].func_code.co_argcount]] for i in report_processor.functions.keys()])})
         # Put helper variables in context
         context.update({'helper_variables':json.dumps(report_processor.tableVariables.keys())})
+        '''
     # Add the form and instance to the context
     context.update({'form':form.as_p(),'target_object':target_instance or target_object})
     # Serve up the page :)
@@ -3470,10 +3480,4 @@ def editpastform(request,target_guest,target_form,target_guesttimedata=None):
     context.update({'target_guest':target_guest, 'target_form':target_form})
     return render(request,'guestmanagement/edit.html',context)
 
-def reportwiki(request):
-    context = baseContext(request)
-    _doc = [[i,mark_safe(inspect.getdoc(report_processor._functions[i]))] for i in report_processor._functions.keys()]
-    doc = [[i,mark_safe(inspect.getdoc(report_processor.functions[i]))] for i in report_processor.functions.keys()]
-    context.update({'internal_documentation':_doc,'external_documentation':doc})
-    return render(request,'guestmanagement/reportwiki.html',context)
     

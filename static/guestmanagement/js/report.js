@@ -1,8 +1,19 @@
-document.ready=function (){
-    window.debug = false;
-    // Miscellaneous
-	window.total_form = document.getElementsByName('TotalForm')[0];
+'use strict';
+
+document.ready=function () {
+	// Save reference variables
+	window.report_form_div = document.getElementById("report_form");
+	window.report_view_toggle_button = document.getElementById("report_view_toggle");
+	window.user_inputs_div = document.getElementById('user_inputs');
+	window.calculations_div = document.getElementById('calculations');
+	window.layout_div = document.getElementById('layout');
+
+	// Initialize zIndex
+	report_form_div.style.zIndex=-1;
+	
+	// Initialize python editors
 	window.editors = {};
+	window.editorscounter = 0;
 	window.editor_default = `'''Available filter Functions:
 filterValuesOnDay(date,field,value,return_guest_ids[True/False])
 	for returning all guests which had a value on a particular day.
@@ -36,799 +47,664 @@ Standard Python functions:
 len, type, parse (from dateutil), str, int, tuple, float, hashmap (dict
 replacement, SecureDict object), sorted, list, iter, dir, relativedelta 
 (from dateutil), range, sum, Q (from django)
-
-
 Callable Attributes:
-
 list.append, QuerySet.filter, QuerySet.first, QuerySet.last, 
 QuerySet.exclude, QuerySet.order_by, QuerySet.prefetch_related, 
 QuerySet.values_list, ValuesListQuerySet.distinct, str.join, str.split,
 datetime.datetime.strftime, datetime.datetime.strptime, 
 SecureDict.getItem, SecureDict.setItem, SecureDict.keys, 
 SecureDict.values, SecureDict.pop
-
 Replacement functions for uncallable attributes:
-
 getDate(date)
 	replacement for date.date().  Returns date.date()
-
 Attribute accessible objects:
-
 list, str, QuerySet, ValuesListQuerySet, ProgramHistory, Guest, 
 GuestTimeData, GuestData, GuestFormsCompleted, Field, datetime.datetime,
 datetime.date, datetime.timedelta, Program, SecureDict'''`;
+	// Load JSON from server into window
+	window.allowed_fields=JSON.parse(document.getElementById("loaded_fields").value||'{}');
+	window.allowed_forms=Object.keys(allowed_fields);
+	
+	
+	// Load saved report
+	var loaded_report = JSON.parse(document.getElementById("loaded_report").value||'[[],[],[]]');
+	var user_inputs = loaded_report[0]
+	var calculations = loaded_report[1]
+	var layout = loaded_report[2]
+	
+	// Display saved user inputs
+	user_inputs = [["test", "test", "list", "test"],["test1", "test1", "date"]];
+	var this_input = null;
+	for (var idx=0;idx<user_inputs.length;idx++){
+		this_input = user_inputs[idx];
+		addUserInput(...this_input);
+	}
+	addUserInput();
+	
+	// Display saved calculation instructions
+	calculations = [
+					
+					["foreach","variable","list", 
+					 [
+					  ["query",
+					   "my_query",
+					   [
+					    ["field", "Checkin","Checked In","days active between", "date", "date"],
+					    ["guest","","last_name","all"],
+					    ["program","","program","on date","date"]
+					   ],
+					   [
+					    ["and", "field", "Checkin", "Checked In", "=", "true", "on date", "date"],
+					    ["or", "guest", "guest", "last_name", "contains", "something", "current"],
+					    ["and", "program", "program", "program", "contains", "test", "between", "date", "date"]
+					   ],
+					   [
+					    ["3"]
+					   ]
+					  ],
+					  ["set","variable","value"]
+					 ]
+					]
+				   ];
+	for (idx=0;idx<calculations.length;idx++) {
+		addCalculation(calculations[idx]);
+	}
+	addCalculation();
 
-
-    // Field Select
-    if (document.getElementById('loaded_fields').value!=''){
-        window.loaded_fields = JSON.parse(document.getElementById('loaded_fields').value);
-    } else {
-        window.loaded_fields = [];
-    }
-    window.field_viewer = document.getElementById('fields');
-    window.previous_element = undefined;
-    window.previous_element_inserted = undefined;
-    
-    if (document.getElementById('report_functions').value!=''){
-        window.report_functions = JSON.parse(document.getElementById('report_functions').value);
-    } else {
-        window.report_functions = [];
-    }
-    // Report Viewer
-    window.report_viewer = document.getElementById('report_builder');
-    if (document.getElementById('loaded_report').value!=''){
-        var loaded_report = JSON.parse(document.getElementById('loaded_report').value);
-    } else {
-        var loaded_report = [];
-    }
-    for (var i=0;i<loaded_report.length;i++){
-        newRow(loaded_report[i].shift(),loaded_report[i]);
-    }
-    newRow();
-    // Variable Select
-    if (document.getElementById('helper_variables').value!=''){
-        window.helper_variables = JSON.parse(document.getElementById('helper_variables').value);
-    } else {
-        window.helper_variables = [];
-    }
-    changeReturnVariable();
-	// Set global onfocus
-	var focusHandler = function(event) {
-		if (previous_element_inserted){
-			previous_element = undefined;
-			previous_element_inserted = undefined;
-		}
-	};
-	document.body.addEventListener('focus', focusHandler, true);
+	for (idx=0;idx<layout.length;idx++) {
+		addLayout("",layout[idx]);
+	}
+	addLayout(10);
+	
 }
 
+// -----
+// User Input Functions
+// -----
 
-// Report Viewer Functions
-
-function insertRow(row_num){
-    if (! row_num){
-        row_num = prompt("Insert Where?", "");
-    }
-    if (Number(row_num) || (Number(row_num)==0 && row_num!=null)){
-        row_num = Number(row_num);
-        var new_row = newRow(undefined,undefined,true);
-        report_viewer.insertBefore(new_row,report_viewer.children[row_num+1]);
-        while (new_row){
-            new_row.childNodes[0].nodeValue = leadingZeros(row_num);
-            new_row.line_number = row_num;
-            for (var i=0;i<new_row.children.length;i++){
-				if (new_row.children[i].name){
-					new_row.children[i].name = 'code'+String(row_num)+'-'+String(i);
-				} else if (new_row.children[i].id) {
-					var editor = editors[new_row.children[i].id];
-					editors['code'+String(row_num)+'-'+String(i)] = editor;
-					new_row.children[i].id = 'code'+String(row_num)+'-'+String(i);
-				}
-            }
-            new_row = new_row.nextSibling;
-            row_num += 1;
-        }
-    }
-    indentRows();
-}
-
-function indentRows(){
-    var indent_level = 0;
-    for (var i=0;i<report_viewer.children.length;i++){
-        report_viewer.children[i].style.marginLeft = String(indent_level * 10)+"px";
-        switch (report_viewer.children[i].children[0].value){
-            case 'query':
-            case 'list':
-            case 'sum':
-            case 'count':
-            case 'display':
-            case 'if':
-                indent_level += 1;
-                break;
-            case 'end':
-                indent_level -= 1;
-                report_viewer.children[i].style.marginLeft = String(indent_level * 10)+"px";
-                break;
-        }
-    }
-    return indent_level
-}
-
-
-function newRow(type,values,insert){
-    if (! window.last_row) {
-        window.last_row = 0;
-    }
-    if (! insert){
-        var new_row = report_viewer.appendChild(document.createElement('div'));
-    } else {
-        new_row = document.createElement('div');
-    }
-    new_row.line_number = window.last_row;
-        new_row.appendChild(document.createTextNode(leadingZeros(new_row.line_number)));
-        var new_type = new_row.appendChild(document.createElement('select'));
-            new_type.appendChild(new Option('',''));
-            new_type.appendChild(new Option('count','count'));
-            new_type.appendChild(new Option('sum','sum'));
-            new_type.appendChild(new Option('text','text'));
-            new_type.appendChild(new Option('newline','newline'));
-            new_type.appendChild(new Option('list','list'));
-            new_type.appendChild(new Option('query','query'));
-            new_type.appendChild(new Option('if','if'));
-            new_type.appendChild(new Option('and','and'));
-            new_type.appendChild(new Option('or','or'));
-            new_type.appendChild(new Option('display','display'));
-            new_type.appendChild(new Option('function','function'));
-            new_type.appendChild(new Option('extrafield','extrafield'));
-            new_type.appendChild(new Option('end','end'));
-            new_type.appendChild(new Option('set','set'));
-            new_type.appendChild(new Option('user input','user input'));
-            new_type.appendChild(new Option('begin table','begin table'));
-            new_type.appendChild(new Option('end table','end table'));
-            new_type.appendChild(new Option('link','link'));
-            new_type.appendChild(new Option('calendar','calendar'));
-            new_type.appendChild(new Option('section break','section break'));
-            new_type.appendChild(new Option('comment','comment'));
-            new_type.setAttribute('title','Select Row Type');
-            if (type){
-                new_type.value = type;
-                typeChange(new_type,true);
-            } else {
-                new_type.value = '';
-            }
-            new_type.name = 'code' + String(new_row.line_number) + '-0';
-            new_type.onchange = typeChange;
-    if (values){
-        for (var i=0;i<values.length;i++){
-            try {
-                if (new_type.parentNode.children[i+1].type=='checkbox'){
-					new_type.parentNode.children[i+1].checked = values[i];
-				} else if (new_type.parentNode.children[i+1].tagName=='DIV'){
-					editors[String(new_type.parentNode.children[i+1].id)].setValue(values[i]);
-                } else {
-                    new_type.parentNode.children[i+1].value = values[i];
-                }
-                if (i+1==1 && new_type.value=='function'){
-                    setFunctionName(new_type.parentNode.children[i+1]);
-                }
-            }
-            catch (err){
-
-            }
-        }
-    }
-
-    window.last_row++;
-    if (insert){
-        return new_row;
-    }
-    indentRows();
-}
-
-function setTarget() {
-	if (previous_element_inserted){
-		previous_element_inserted = false;
-	} else {
-		window.previous_element = this;
+// Function to show/hide extra validation box
+function testValidation (t,idx) {
+	if (t.value=="list" && !t.nextSibling) {
+		var new_element = document.createElement("INPUT");
+		t.parentElement.appendChild(new_element);
+	} else if (t.nextSibling) {
+		t.parentElement.removeChild(t.nextSibling);
 	}
 }
 
-function typeChange(t,single){
-    if (t instanceof Event) {
-        t=this;
-    }
-    while (t.nextSibling){
-        t.parentNode.removeChild(t.nextSibling);
-    }
-    t.onclick=alertName;
-    switch (t.previous_value){
-        case 'query':
-        case 'list':
-        case 'set':
-        case 'function':
-        case 'user input':
-            changeReturnVariable();
-            break;
-    }
-    if (t.value != ''){
-        var row = t.parentNode;
-        var name_offset = 0;
-        switch (t.value){
-			case 'section break':
-				var text = document.createTextNode('---------------------------------------------------------------------------');
-					row.appendChild(text);
-				break;
-            case 'text':
-            case 'comment':
-				if (t.value == 'text'){
-					var bold = row.appendChild(document.createElement('select'));
-						bold.appendChild(new Option('none','none'));
-						bold.appendChild(new Option('h1','h1'));
-						bold.appendChild(new Option('h2','h2'));
-						bold.appendChild(new Option('h3','h3'));
-						bold.appendChild(new Option('h4','h4'));
-						bold.appendChild(new Option('h5','h5'));
-						bold.value = 'none';
-						bold.name = 'code'+row.line_number+'-1';
-						bold.setAttribute('title','Pick text bold level');
-						bold.onclick=alertName;
-				}
+// Function to control the addition of new user input lines
+function addUserInput (name,description,value,criteria) {
+	name = name || "";
+	description = description || "";
+	value = value || "";
+	criteria = criteria || "";
+	var user_input_div = document.getElementById("user_inputs");
+	if (name.type=="change") {
+		if (user_input_div.lastChild.children[2].value != "") {
+			addUserInput();
+		}
+		return ;
+	}
+	var new_element = null;
+	var new_div = document.createElement("DIV");
+	var new_option = null;
 
-                var value = row.appendChild(document.createElement('textarea'));
-					value.rows = '1';
-					value.wrap='soft';
-					value.style.height = '17px';
-					if (t.value=='comment'){
-						value.style.width = '500px';
-						value.style.color = 'green';
-						value.name = 'code'+row.line_number+'-1';
-					} else {
-						value.name = 'code'+row.line_number+'-2';
-					}
-                    value.setAttribute('title','Enter Text to Display');
-                    value.onclick=alertName;
-                    value.onblur = setTarget;
-                break;
+	new_div.appendChild(createButton("^",function(){user_input_div.insertBefore(new_div,new_div.previousSibling);}));
+	new_div.appendChild(createButton("v",function(){user_input_div.insertBefore(new_div,new_div.nextSibling.nextSibling);}));
 
-            case 'list':
-            case 'query':
-                name_offset = 3;
-                var list_type = row.appendChild(document.createElement('select'));
-                    list_type.appendChild(new Option('fields','fields'));
-                    list_type.appendChild(new Option('numbers','numbers'));
-                    list_type.name = 'code'+row.line_number+'-1';
-                    list_type.setAttribute('title','Pick List Type');
-                    list_type.onchange = changeListType;
-                    list_type.onclick=alertName;
-                var list_return = row.appendChild(document.createElement('input'));
-                    list_return.name = 'code'+row.line_number+'-2';
-                    list_return.setAttribute('title','Set List Variable Name');
-                    list_return.onblur = setTarget;
-                    list_return.onchange = changeReturnVariable;
-                    list_return.onclick=alertName;
-                var sort_by = row.appendChild(document.createElement('input'));
-                    sort_by.name = 'code'+row.line_number+'-3';
-                    sort_by.setAttribute('title','Set Sort By');
-                    sort_by.onblur = setTarget;
-                    sort_by.onclick=alertName;
-                if (t.value=='list'){
-                    var num_per_row = row.appendChild(document.createElement('input'));
-                        num_per_row.name = 'code'+row.line_number+'-4';
-                        num_per_row.setAttribute('title','Number of Items Per Row');
-                        num_per_row.onclick=alertName;
-                        num_per_row.onblur = setTarget;
-                    var rows_per_page = row.appendChild(document.createElement('input'));
-                        rows_per_page.name = 'code'+row.line_number+'-5';
-                        rows_per_page.setAttribute('title','Number of Rows Per Page');
-                        rows_per_page.onclick=alertName;
-                        rows_per_page.onblur = setTarget;
-                    var row_separator = row.appendChild(document.createElement('input'));
-                        row_separator.name = 'code'+row.line_number+'-6';
-                        row_separator.setAttribute('title','Row Separator');
-                        row_separator.onblur = setTarget;
-                        row_separator.onclick=alertName;
-                        name_offset = 6;
-                    }
-            case 'extrafield':
-            case 'display':
-            case 'count':
-            case 'sum':
-                var display_field = row.appendChild(document.createElement('input'));
-                    display_field.name = 'code'+row.line_number+'-'+String(name_offset+1);
-                    display_field.setAttribute('title','Pick Field to Return');
-                    display_field.onblur = setTarget;
-                    display_field.onclick=alertName;
-                if (t.value=='display'){
-                    var separator = row.appendChild(document.createElement('input'));
-                        separator.name = 'code'+row.line_number+'-'+String(name_offset+2);
-                        separator.setAttribute('title','Display Separator');
-                        name_offset+=1;
-                        separator.onclick=alertName;
-                        separator.onblur = setTarget;
-                }
-                var timeseries = row.appendChild(document.createElement('input'));
-                    timeseries.type = 'checkbox';
-                    timeseries.name = 'code'+row.line_number+'-'+String(name_offset+2);
-                    timeseries.setAttribute('title','Return Time Series');
-                    timeseries.onclick=alertName;
-                    
-                if (! single && (' list sum count display query'.search(t.previous_value)<1 && ' list sum count display query'.search(t.value)>-1)){
-                    insertRow(row.line_number+1);
-                    row.nextSibling.children[0].value = 'and';
-                    typeChange(row.nextSibling.children[0]);
-                    insertRow(row.line_number+2);
-                    row.nextSibling.nextSibling.children[0].value = 'end';
-                    typeChange(row.nextSibling.nextSibling.children[0]);
-                }
-                indentRows();
-                break;
+	new_element = document.createElement("INPUT");
+	new_element.value = name;
+	new_element.addEventListener("change",addUserInput);
+	new_div.appendChild(new_element);
 
-            case 'and':
-            case 'or':
-            case 'if':
-                var operator = row.appendChild(document.createElement('select'));
-                    operator.appendChild(new Option('',''));
-                    operator.appendChild(new Option('=','='));
-                    operator.appendChild(new Option('<>','<>'));
-                    operator.appendChild(new Option('>','>'));
-                    operator.appendChild(new Option('>=','>='));
-                    operator.appendChild(new Option('<','<'));
-                    operator.appendChild(new Option('<=','<='));
-                    operator.appendChild(new Option('contains','contains'));
-                    operator.appendChild(new Option('in','in'));
-                    operator.value = '';
-                    operator.name = 'code'+row.line_number+'-1';
-                    operator.setAttribute('title','Pick Operator');
-                    operator.onchange = changeOperator;
-                    operator.onclick=alertName;
+	new_element = document.createElement("INPUT");
+	new_element.value = description;
+	new_div.appendChild(new_element);
 
-                var value = row.appendChild(document.createElement('input'));
-                    value.name = 'code'+row.line_number+'-2';
-                    value.onblur = setTarget;
-                    value.setAttribute('title','Pick Operator First');
-                    value.onclick=alertName;
+	new_element = document.createElement("SELECT");
+	
+	new_option = new Option("none", "none", value == "none");
+	new_element.add(new_option);
+	
+	new_option = new Option("date", "date", value == "date");
+	new_element.add(new_option);
+	
+	new_option = new Option("list", "list", value == "list");
+	new_element.add(new_option);
+	
+	new_element.addEventListener("change",function(){testValidation(this,idx)});
+	new_div.appendChild(new_element);
 
-                var field = row.appendChild(document.createElement('input'));
-                    field.name = 'code'+row.line_number+'-3';
-                    field.onblur = setTarget;
-                    field.setAttribute('title','Pick Field');
-                    field.onclick=alertName;
-                var timeseries = row.appendChild(document.createElement('input'));
-                    timeseries.type = 'checkbox';
-                    timeseries.name = 'code'+row.line_number+'-4';
-                    timeseries.setAttribute('title','Return Time Series');
-                    timeseries.onclick=alertName;
-                break;
-            
-            case 'function':
-                var function_name = row.appendChild(document.createElement('select'));
-                for (var i=0;i<report_functions.length;i++){
-                    function_name.appendChild(new Option(report_functions[i][0],report_functions[i][0]));
-                }
-                    function_name.name = 'code'+row.line_number+'-1';
-                    function_name.setAttribute('title','Pick Function');
-                    function_name.onchange = setFunctionName;
-                    function_name.onclick=alertName;
-                var function_return = row.appendChild(document.createElement('input'));
-                    function_return.name = 'code'+row.line_number+'-2';
-                    function_return.setAttribute('title','Set List Variable');
-                    function_return.onchange = changeReturnVariable;
-                    function_return.onclick=alertName;
-                    function_return.onblur = setTarget;
-                setFunctionName(function_name);
-                break;
+	if (value == "list") {
+		new_element = document.createElement("INPUT");
+		new_element.value = criteria;
+		new_div.appendChild(new_element);
+	}
 
-            case 'set':
-            case 'calendar':
-            case 'user input':
-                var name = row.appendChild(document.createElement('input'));
-                    name.name = 'code'+row.line_number+'-1';
-                    name.setAttribute('title','Set Name');
-                    name.onchange = changeReturnVariable;
-                    name.onblur = setTarget;
-                    name.onclick=alertName;
-                var dropdown = row.appendChild(document.createElement('input'));
-					dropdown.name = 'code'+row.line_number+'-2';
-                    dropdown.setAttribute('title','Comma Separated Options');
-                    dropdown.onclick=alertName;
-                if (t.value=='set'){
-                        dropdown.setAttribute('title','Set Value');
-                        dropdown.onblur=setTarget;
-                }
-                if (t.value=='calendar'){
-                        dropdown.setAttribute('title','Comment List');
-                        dropdown.onblur=setTarget;
-                        name.setAttribute('title','Date List');
-                        name.onblur=setTarget;
-                }
-                break;
+	
+	user_inputs_div.appendChild(new_div);
 
-            case 'begin table':
-                var name = row.appendChild(document.createElement('input'));
-                    name.name = 'code'+row.line_number+'-1';
-                    name.setAttribute('title','Comma Separated Row Headers');
-                    name.onclick=alertName;
-                break;
-            
-            case 'link':
-				var guest_id = row.appendChild(document.createElement('input'));
-					guest_id.name = 'code'+row.line_number+'-1';
-					guest_id.setAttribute('title','Guest ID');
-                    guest_id.onclick=alertName;
-                    guest_id.onblur=setTarget;
-				var form_id = row.appendChild(document.createElement('input'));
-					form_id.name = 'code'+row.line_number+'-2';
-					form_id.setAttribute('title','Form ID');
-                    form_id.onclick=alertName;
-                    form_id.onblur=setTarget;
-				var text = row.appendChild(document.createElement('input'));
-					text.name = 'code'+row.line_number+'-3';
-					text.setAttribute('title','Display Text');
-                    text.onclick=alertName;
-                    text.onblur=setTarget;
-				break;
-            
-        }
-    }
-    t.previous_value = t.value;
-    if (! t.parentNode.nextSibling && ! single){
-        newRow();
-    }
-    indentRows();
+
 }
 
-function setFunctionName(t){
-    if (t instanceof Event) {
-        t=this;
-    }
-    var variable_name = t.nextSibling;
-    while (variable_name.nextSibling){
-        variable_name.parentNode.removeChild(variable_name.nextSibling);
-    }
-    for (var i=0;i<report_functions.length;i++){
-        if (report_functions[i][0]==t.value){
-            for (var a=2;a<report_functions[i][1].length;a++){
-				if (t.value=='python' && a==2){
-					var argument = t.parentNode.appendChild(document.createElement('div'));
-					argument.innerHTML='<text>If you see this text, have your administrator run "git submodule update --init --recursive"</text>';
-					argument.style.width = '1000px';
-					argument.style.height = '250px';
-				} else {
-					var argument = t.parentNode.appendChild(document.createElement('input'));
-				}
-                argument.name = 'code'+t.parentNode.line_number+'-'+String(a+1);
-                editors[String(argument.name)] = false;
-                argument.setAttribute('title',report_functions[i][1][a]);
-                argument.onclick=alertName;
-                argument.onblur=setTarget;
-                if (t.value=='python' && a==2){
-					argument.id=String(argument.name);
-					var editor = ace.edit(argument.id);
-					editor.setTheme("ace/theme/monokai");
-					editor.getSession().setMode("ace/mode/python");
-					editor.onBlur=setTarget;
-					editor.setValue(editor_default);
-					editors[String(argument.name)] = editor;
-					argument.name = undefined;
-				}
-            }
-            break;
-        }
-    }
+// -----
+// Calculation Functions
+// -----
+
+// Function to register calculation functions
+
+function availableMethods (name,target_div) {
+	
+	if (target_div) {
+		for (var i=target_div.children.length-1;i>3;i--) {
+			target_div.removeChild(target_div.children[i]);
+		}
+	}
+	
+	// Define available methods
+	var methods = {
+		"" : empty,
+		"query" : _query,
+		"set" : _set,
+		"foreach" : _foreach,
+		"python" : python,
+	}
+	
+	if (name==undefined) {
+		return Object.keys(methods);
+	} else {
+		return methods[name];
+	}
 }
 
-function changeReturnVariable(){
-    var var_list = window.helper_variables;
-    for (var i=0;i<report_viewer.children.length;i++){
-        var return_name = '';
-        if (report_viewer.children[i].children.length > 1){
-			var target_box = undefined;
-            switch (report_viewer.children[i].children[0].value){
-                case 'query':
-                case 'list':
-                case 'function':
-                    target_box = report_viewer.children[i].children[2];
-                    break;
-                case 'user input':
-                case 'set':
-                    report_viewer.children[i].children[1].value = report_viewer.children[i].children[1].value.split(' ').join('_');
-                    return_name = report_viewer.children[i].children[1].value;
-                    break;
-            }
-			if (target_box){
-				 target_box.value = target_box.value.trim().split(' ').join('_')
-                 return_name = target_box.value;
+// Calculation Function Definitions
+
+function empty (trash) {}
+
+function _query (target_div,instruction){
+	// instruction = [name, return_variable, [[form 1, field 1, timeframe, date], [form 2, field 2, timeframe, date], ...], [criteria 1, criteria 2, ...]]
+	
+	var return_variable = document.createElement("INPUT");
+	return_variable.addEventListener("change",function () {return_variable.value=return_variable.value.replace(" ","_");});
+	if (instruction) {
+		return_variable.value = instruction[1] || "";
+	}
+	target_div.appendChild(return_variable);
+	
+	var margin = getMargins(target_div);
+
+	var select_title = document.createElement("DIV");
+	select_title.innerHTML = "SELECT";
+	select_title.style.margin = margin;
+	target_div.appendChild(select_title);
+	
+	var select_div = document.createElement("DIV");
+	select_div.style.margin = margin;
+
+	target_div.appendChild(createButton("Add Field",function(){queryAddSelect(select_div)},margin));
+
+	var field_div = null;
+	var current_instruction = null;
+	if (instruction) {
+		for (var i=0;i<instruction[2].length;i++) {
+			current_instruction = instruction[2][i];
+			queryAddSelect(select_div, ...current_instruction);
+		}
+	}
+	queryAddSelect(select_div);
+	
+	target_div.appendChild(select_div);
+	
+	var where_title = document.createElement("DIV");
+	where_title.innerHTML = "WHERE";
+	where_title.style.margin = margin;
+	target_div.appendChild(where_title);
+	
+	var where_div = document.createElement("DIV");
+	where_div.style.margin = margin;
+	
+	target_div.appendChild(createButton("Add Criteria",function(){queryAddWhere(where_div)},margin));
+	
+	if (instruction) {
+		for (var i=0;i<instruction[3].length;i++) {
+			current_instruction = instruction[3][i];
+			queryAddWhere(where_div, ...current_instruction);
+		}
+	}
+	queryAddWhere(where_div);
+	
+	target_div.appendChild(where_div);
+	
+	var extra_title = document.createElement("DIV");
+	extra_title.innerHTML = "EXTRAS";
+	extra_title.style.margin = margin;
+	target_div.appendChild(extra_title);
+	
+	var extra_div = document.createElement("DIV");
+	extra_div.style.margin = getMargins(where_div);
+	
+	extra_div.appendChild(document.createTextNode("ORDER BY"));
+	var order_by = document.createElement("INPUT");
+	order_by.style.width = "30px";
+	if (instruction) {
+		order_by.value = instruction[4][0];
+	}
+	extra_div.appendChild(order_by);
+	
+	target_div.appendChild(extra_div);
+
+	var end_title = document.createElement("DIV");
+	end_title.innerHTML = "END QUERY";
+	end_title.style.margin = target_div.style.margin;
+	target_div.appendChild(end_title);
+
+	
+}
+
+function queryAddWhere (target_div, conjunction, type, form, field, operator, value, specialtype, special1, special2) {
+	value = value || "";
+	var field_div = document.createElement("DIV");
+	field_div.handle = "criteria";
+	
+	field_div.appendChild(createButton("^",function(){target_div.insertBefore(field_div,field_div.previousSibling);}));
+	field_div.appendChild(createButton("v",function(){target_div.insertBefore(field_div,field_div.nextSibling.nextSibling);}));
+	
+	field_div.appendChild(conjunctionSelect(conjunction));
+
+	var type_select = fieldTypeSelect(type);
+	field_div.appendChild(type_select);
+	var form_select = formSelect(type_select,form);
+	field_div.appendChild(form_select);
+	var field_select = fieldSelect(form_select, field);
+	field_div.appendChild(field_select);
+	
+	field_div.appendChild(operatorSelect(operator));
+
+	var value_input = document.createElement("INPUT");
+	value_input.value = value;
+	field_div.appendChild(value_input);
+	var return_type = returnTypeSelect(field_select, specialtype);
+	field_div.appendChild(return_type);
+	testReturnType(return_type, special1, special2);
+	
+	target_div.appendChild(field_div);
+	
+	
+}
+
+function queryAddSelect (target_div, type, form, field, rtype, rargument1, rargument2) {
+	var field_div = document.createElement("DIV");
+	field_div.handle = "select";
+
+	field_div.appendChild(createButton("^",function(){target_div.insertBefore(field_div,field_div.previousSibling);}));
+	field_div.appendChild(createButton("v",function(){target_div.insertBefore(field_div,field_div.nextSibling.nextSibling);}));
+
+
+	var type_select = fieldTypeSelect(type);
+	field_div.appendChild(type_select);
+	var form_select = formSelect(type_select,form);
+	field_div.appendChild(form_select);
+	var field_select = fieldSelect(form_select, field);
+	field_div.appendChild(field_select);
+	var return_type = returnTypeSelect(field_select,rtype);
+	field_div.appendChild(return_type);
+	testReturnType(return_type, rargument1, rargument2);
+
+	target_div.appendChild(field_div);
+}
+
+function testReturnType (t, val1, val2) {
+	clearSpecialInputs(t.parentNode,"return_type_special");
+	if (t.value=="on date") {
+		var select_date = document.createElement("INPUT");
+		select_date.handle = "return_type_special";
+		select_date.value = val1 || "";
+		t.parentNode.insertBefore(select_date,t.nextSibling);
+	} else if (t.value=="days active between") {
+		var select_date = document.createElement("INPUT");
+		select_date.handle = "return_type_special";
+		select_date.value = val1 || "";
+		t.parentNode.insertBefore(select_date,t.nextSibling);
+		var select_date1 = document.createElement("INPUT");
+		select_date1.handle = "return_type_special";
+		select_date1.value = val2 || "";
+		t.parentNode.insertBefore(select_date1,select_date.nextSibling);
+	}
+}
+
+function python (target_div,instruction) {
+	var return_variable = document.createElement("INPUT");
+	return_variable.addEventListener("change",function () {return_variable.value=return_variable.value.replace(" ","_");});
+	if (instruction) {
+		return_variable.value = instruction[1] || "";
+	}
+	target_div.appendChild(return_variable);
+
+	var argument = document.createElement('DIV');
+	argument.innerHTML='<text>If you see this text, have your administrator run "git submodule update --init --recursive"</text>';
+	argument.style.width = '1000px';
+	argument.style.height = '250px';
+	argument.id = "Python"+editorscounter;
+	editorscounter ++;
+    editors[String(argument.id)] = false;
+	target_div.appendChild(argument);
+	var editor = ace.edit(argument.id);
+	editor.setTheme("ace/theme/monokai");
+	editor.getSession().setMode("ace/mode/python");
+	editor.setValue(editor_default);
+	editors[String(argument.id)] = editor;
+}
+
+function _set (target_div,instruction){
+	// instruction = [name, return_variable, value]
+	var return_variable = document.createElement("INPUT");
+	return_variable.addEventListener("change",function () {return_variable.value=return_variable.value.replace(" ","_");});
+	if (instruction) {
+		return_variable.value = instruction[1] || "";
+	}
+	target_div.appendChild(return_variable);
+	var value = document.createElement("INPUT");
+	if (instruction) {
+		value.value = instruction[2] || "";
+	}
+	target_div.appendChild(value);
+	var type = document.createElement("SELECT");
+	var option = new Option("list","list","list" == instruction[3]);
+	type.appendChild(option);
+	option = new Option("str","str","str" == instruction[3]);
+	type.appendChild(option);
+	option = new Option("int","int","int" == instruction[3]);
+	type.appendChild(option);
+	option = new Option("float","float","float" == instruction[3]);
+	type.appendChild(option);
+	option = new Option("date","date","date" == instruction[3]);
+	type.appendChild(option);
+	option = new Option("range","range","range" == instruction[3]);
+	type.appendChild(option);
+	target_div.appendChild(type);
+	
+}
+
+function _foreach (target_div,instruction){
+	// instruction = [name, iteration_variable, list, [instruction 1, instruction 2, ...]]
+	var return_variable = document.createElement("INPUT");
+	return_variable.addEventListener("change",function () {return_variable.value=return_variable.value.replace(" ","_");});
+	if (instruction) {
+		return_variable.value = instruction[1] || "";
+	}
+	target_div.appendChild(return_variable);
+	var list = document.createElement("INPUT");
+	if (instruction) {
+		list.value = instruction[2] || "";
+	}
+	target_div.appendChild(list);
+	
+	var foreach_div = document.createElement("DIV");
+	if (instruction) {
+		for (var i=0;i<instruction[3].length;i++) {
+			addCalculation(instruction[3][i],foreach_div);
+		}
+	}
+	addCalculation("",foreach_div);
+	target_div.appendChild(foreach_div);
+}
+
+// Function to control adding new calculation lines
+function addCalculation (instruction, parent_div, next_div, del_div) {
+	instruction = instruction || [];
+	parent_div = parent_div || calculations_div;
+	if (instruction.type=="change") {
+		parent_div = this.parentNode.parentNode;
+		if (parent_div.children[parent_div.children.length-1].children[3].value!="") {
+			addCalculation("", parent_div);
+		}
+		return ;
+	}
+	
+	if (del_div) {
+		parent_div.removeChild(del_div);
+	}
+	var new_div = document.createElement("DIV");
+	new_div.appendChild(createButton("+",function(){addCalculation("",parent_div,new_div)}));
+	new_div.appendChild(createButton("^",function(){parent_div.insertBefore(new_div,new_div.previousSibling);}));
+	new_div.appendChild(createButton("v",function(){parent_div.insertBefore(new_div,new_div.nextSibling.nextSibling);}));
+	if (parent_div!=calculations_div) {
+		new_div.style.margin = getMargins(parent_div);
+	}
+	
+	var name = instruction[0] || "";
+	var all_method_names = availableMethods();
+	
+	var name_select = document.createElement("SELECT");
+	name_select.addEventListener("change",addCalculation);
+	name_select.addEventListener("change",function () {availableMethods(name_select.value,new_div)(new_div);});
+	
+	var new_option = null;
+	var this_option = null;
+	for (var i=0;i<all_method_names.length;i++) {
+		this_option = all_method_names[i];
+		new_option = new Option(this_option, this_option, this_option == name);
+		name_select.add(new_option);
+	}
+	
+	new_div.appendChild(name_select);
+	
+	if (next_div) {
+		parent_div.insertBefore(new_div,next_div);
+	} else {
+		parent_div.appendChild(new_div);
+	}
+	if (name) {
+		availableMethods(name)(new_div, instruction);
+	}
+}
+// -----
+// Layout Functions
+// -----
+
+// Function to layout grid
+
+
+
+
+// -----
+// System Functions
+// -----
+function toggleReportView () {
+	report_form_div.style.zIndex=String(Number(report_form_div.style.zIndex)*-1);
+	if (report_form_div.style.zIndex<0) {
+		report_view_toggle_button.value = "Show Builder";
+	} else {
+		report_view_toggle_button.value = "Show Overview";
+	}
+}
+
+function getMargins (target_div) {
+	var margin = target_div.style.margin || "1px 1px 1px 0px";
+	margin = margin.split(" ")[3];
+	margin = Number(margin.substring(0,margin.length-2))+10;
+	margin = "1px 1px 1px "+margin+"px";
+	return margin;
+}
+
+function createButton (value, func, margin) {
+	margin = margin || "0px 0px 0px 0px";
+	var add_button = document.createElement("INPUT");
+	add_button.type="button";
+	add_button.value = value;
+	add_button.style.margin = margin;
+	add_button.addEventListener("click",func);
+	return add_button;
+}
+
+function findSubElementByHandle (target_div,handle) {
+	var el = null;
+	target_div = target_div || {"children":0};
+	for (var i=0;i<target_div.children.length;i++) {
+		if (target_div.children[i].handle == handle) {
+			el = target_div.children[i];
+			break;
+		}
+	}
+	return el;
+}
+
+function clearSpecialInputs (target_div,handle) {
+	for (var i=target_div.children.length-1;i>-1;i--) {
+		if (target_div.children[i].handle == handle) {
+			target_div.removeChild(target_div.children[i]);
+		}
+	}
+}
+
+
+
+function fieldTypeSelect (type) {
+	var field_type_select = document.createElement("SELECT");
+	field_type_select.handle = "field_type_select";
+	var new_option = new Option("field", "field", "field"==type);
+	field_type_select.appendChild(new_option);
+	new_option = new Option("guest", "guest", "guest"==type);
+	field_type_select.appendChild(new_option);
+	new_option = new Option("program", "program", "program"==type);
+	field_type_select.appendChild(new_option);
+	field_type_select.addEventListener("change",function () {
+		formSelect(field_type_select);
+		fieldSelect(findSubElementByHandle(field_type_select.parentNode,"form_select"));
+		returnTypeSelect(findSubElementByHandle(field_type_select.parentNode,"field_select"));
+		testReturnType(findSubElementByHandle(field_type_select.parentNode,"return_type_select"));
+	});
+	return field_type_select;
+}
+
+function formSelect (field_type_select, form) {
+	var parent_div = field_type_select.parentNode;
+	var type_options = {"field":[""].concat(allowed_forms), "guest":["guest"], "program":["program"]};
+	var form_select = findSubElementByHandle(parent_div,"form_select") || document.createElement("SELECT");
+	form_select.handle = "form_select";
+	form_select.options.length = 0;
+	var name = null;
+	var chosen_forms = type_options[field_type_select.value];
+	var new_option = null;
+	for (var i=0;i<chosen_forms.length;i++) {
+		name = chosen_forms[i];
+		new_option = new Option(name, name, name==form);
+		form_select.appendChild(new_option);
+	}
+	form_select.addEventListener("change",function () {fieldSelect(form_select);});
+
+	return form_select;
+}
+
+function fieldSelect (form_select,field) {
+	var field_select = findSubElementByHandle(form_select.parentNode,"field_select") || document.createElement("SELECT");
+	field_select.handle = "field_select";
+	
+	field_select.options.length=0;
+	var new_option = new Option("", "");
+	field_select.appendChild(new_option);
+	if (form_select.value) {
+		var field_options = allowed_fields[form_select.value] || {"guest":[["last_name",""],["first_name",""],["middle_name",""],["ssn",""],["picture",""]]}[form_select.value] || [["program",""]];
+	} else {
+		var field_options = [];
+	}
+	if (field_options) {
+		for (var i=0;i<field_options.length;i++) {
+			name = field_options[i][0];
+			new_option = new Option(name, name, name==field);
+			field_select.appendChild(new_option);
+		}
+	}
+	field_select.addEventListener("change",function () {returnTypeSelect(field_select);testReturnType(findSubElementByHandle(field_select.parentNode,"return_type_select"));});
+	return field_select;
+}
+
+function returnTypeSelect (field_select, type) {
+	var options_dict = {"criteria":["current","on date","any","all","none"]};
+	var options_list = options_dict[field_select.parentNode.handle] || ["current","all","on date"];
+	var return_type_select = findSubElementByHandle(field_select.parentNode,"return_type_select") || document.createElement("SELECT");
+	return_type_select.handle="return_type_select";
+
+	return_type_select.options.length = 0;
+	var new_option = null;
+	var option = null;
+	for (var i=0;i<options_list.length;i++) {
+		option = options_list[i];
+		new_option = new Option(option, option, option==type);
+		return_type_select.appendChild(new_option);
+	}
+	
+	var field_type_select = findSubElementByHandle(field_select.parentNode,"field_type_select") || "";
+	field_type_select = field_type_select.value;
+	
+	var form = findSubElementByHandle(field_select.parentNode,"form_select") || "";
+	form = allowed_fields[form.value];
+	var field_type = null;
+	if (field_type_select == "field" && form) {
+		var field_tuple = null;
+		for (var i=0;i<form.length;i++) {
+			field_tuple = form[i];
+			if (field_tuple[0] == field_select.value) {
+				field_type = field_tuple[1];
+				break;
 			}
-        }
-        return_name = return_name.split('!').join('');
-        if (return_name !='' && var_list.indexOf(return_name)==-1 && return_name.indexOf('::')==-1 && return_name.indexOf('$')==-1){
-            var_list.push(return_name);
-        }
-    }
-    var function_select = document.getElementById('function_select');
-    function_select.removeChild(function_select.children[1]);
-    var var_names = function_select.appendChild(document.createElement('ul'));
-        var_names.className += ' variable_list';
-    for (var i=0;i<var_list.length;i++){
-        var child = document.createTextNode(var_list[i]);
-        var list_element = var_names.appendChild(document.createElement('li'));
-        list_element.onclick = insertVariable;
-        list_element.appendChild(child);
-    }
-}
-
-function insertVariable(){
-    if (! previous_element){
-        alert('Click where you want a variable inserted, then click your variable again');
-        return;
-    }
-	previous_element.focus();
-	if (previous_element.name!=undefined){
-		if (previous_element.parentNode.children[0].value=='text'){
-			previous_element.value += '{{ $' + this.innerHTML + ' }}';
-		} else {
-			previous_element.value += ' $' + this.innerHTML;
-			previous_element = undefined;
-			previous_element_inserted = true;
 		}
-	} else {
-		previous_element.insert(this.innerHTML);
+		if (field_type == "boolean") {
+			new_option = new Option("first activated", "first activated", "first activated"==type);
+			return_type_select.appendChild(new_option);
+			new_option = new Option("last activated", "last activated", "last activated"==type);
+			return_type_select.appendChild(new_option);
+			new_option = new Option("first deactivated", "first deactivated", "first deactivated"==type);
+			return_type_select.appendChild(new_option);
+			new_option = new Option("last deactivated", "last deactivated", "last deactivated"==type);
+			return_type_select.appendChild(new_option);
+			new_option = new Option("days active", "days active", "days active"==type);
+			return_type_select.appendChild(new_option);
+			new_option = new Option("times activated", "times activated", "times activated"==type);
+			return_type_select.appendChild(new_option);
+			new_option = new Option("days active between", "days active between", "days active between"==type);
+			return_type_select.appendChild(new_option);
+		}
+	} else if (field_type_select == "guest") {
+		clearSpecialInputs(field_select.parentNode,"return_type_special");
+		return_type_select.options.length = 0;
+		var new_option = new Option("current", "current", "current"==type);
+		return_type_select.appendChild(new_option);
 	}
+	return_type_select.addEventListener("change",function () {testReturnType(return_type_select);});
+	return return_type_select;
 }
 
-function changeListType(){
-    if (this.value=='numbers'){
-        var from = '';
-        var to = '';
-        from = prompt('Number Range from','');
-        if (from==null){
-            this.value = 'fields';
-            return;
-        }
-        to = prompt('Number Range to','');
-        if (to==null){
-            this.value = 'fields';
-            return;
-        }
-        switch (this.parentNode.children[0].value){
-            case 'list':
-                this.parentNode.children[7].value = String(from)+':'+String(to);
-                break;
-            case 'query':
-                this.parentNode.children[4].value = String(from)+':'+String(to);
-        }
-    } else {
-        switch (this.parentNode.children[0].value){
-            case 'list':
-                this.parentNode.children[7].value = '';
-                break;
-            case 'query':
-                this.parentNode.children[4].value = '';
-        }
-    }
+function conjunctionSelect (conjunction) {
+	var new_select = document.createElement("SELECT");
+	var new_option = new Option("","");
+	new_select.appendChild(new_option);
+	new_option = new Option("and","and", "and" == conjunction);
+	new_select.appendChild(new_option);
+	new_option = new Option("or","or", "or" == conjunction);
+	new_select.appendChild(new_option);
+	return new_select;
 }
 
-function changeOperator(){
-    switch (this.value){
-        case '':
-            this.nextSibling.setAttribute('title','Pick Operator First');
-            break;
-        case '=':
-            this.nextSibling.setAttribute('title','Equals What?');
-            break;
-        case '<>':
-            this.nextSibling.setAttribute('title','Not Equals What?');
-            break;
-        case '>':
-            this.nextSibling.setAttribute('title','Greater Than What?');
-            break;
-        case '<':
-            this.nextSibling.setAttribute('title','Less Than What?');
-            break;
-        case '>=':
-            this.nextSibling.setAttribute('title','Greater Than or Equal to What?');
-            break;
-        case '<=':
-            this.nextSibling.setAttribute('title','Less Than or Equal to What?');
-            break;
-        case 'in':
-            this.nextSibling.setAttribute('title','is in what?');
-            break;
-        case 'contains':
-            this.nextSibling.setAttribute('title','Contains What?');
-            break;
-    }
-
-}
-
-
-// Field Select Functions
-
-function selectForm(t) {
-    field_viewer.removeChild(field_viewer.children[1]);
-    window.form_name = t.innerHTML;
-    var selected_form = loaded_fields[t.innerHTML];
-    var new_field_list = field_viewer.appendChild(document.createElement('table'));
-    var new_header = new_field_list.createTHead();
-    var header_row = new_header.insertRow();
-    var header_cell = header_row.insertCell();
-    header_cell.appendChild(document.createTextNode('Field Name'));
-    header_cell.className += ' field_list_header';
-    var header_cell = header_row.insertCell();
-    header_cell.appendChild(document.createTextNode('Field Type'));
-    header_cell.className += ' field_list_header';
-    for (var i=0;i<selected_form.length;i++){
-        var new_row = new_field_list.insertRow();
-        var new_cell = new_row.insertCell();
-        new_cell.appendChild(document.createTextNode(selected_form[i][0]));
-        new_cell.onclick = insertField;
-        var new_cell = new_row.insertCell();
-        new_cell.appendChild(document.createTextNode(selected_form[i][1]));
-    }
-}
-
-function insertField(){
-    if (! previous_element){
-        alert('Click where you want a field inserted, then click your field again');
-        return;
-    }
-	previous_element.focus();
-	if (previous_element.name!=undefined){
-		var prepend = 'field.';
-		if (form_name=='guest'){
-			prepend = 'guest.';
-		}
-		if (form_name=='date'){
-			prepend = 'date.';
-		}
-		previous_element.value = prepend + this.innerHTML;
-		previous_element = undefined;
-		previous_element_inserted = true;
-	} else {
-		switch (form_name){
-			case 'guest':
-				previous_element.insert('guest__'+this.innerHTML+'=');
-				break;
-			case 'date':
-				previous_element.insert('date__?=');
-				break;
-			default:
-				previous_element.insert('field__name="'+this.innerHTML+'"');
-				break;
-		}
-	}
-}
-
-// Function Select
-
-function addOperator(t) {
-    if (! previous_element){
-        alert('Click where you want an operator inserted, then click your operator again');
-        return;
-    }
-    var value = '';
-    var insert = '';
-    switch (t.innerHTML){
-        case 'Equals':
-            value = prompt("Equals What?", "");
-            insert = '= ';
-            break;
-        case 'Greater Than':
-            value = prompt("Greater Than What?", "");
-            insert = '> ';
-            break;
-        case 'Less Than':
-            value = prompt("Less Than What?", "");
-            insert = '< ';
-            break;
-        case 'Greater Than or Equals':
-            value = prompt("Greater Than or Equal to What?", "");
-            insert = '>= ';
-            break;
-        case 'Less Than or Equals':
-            value = prompt("Less Than or Equal to What?", "");
-            insert = '<= ';
-            break;
-        case 'And':
-            insert = ' & ';
-            break;
-        case 'Or':
-            insert = ' | ';
-            break;
-        case 'Field Change':
-            insert = ' :: ';
-            break;
-    }
-    previous_element.value += insert + value;
-}
-
-// Miscellaneous
-
-function processReport(t) {
-    if (indentRows()!=0){
-        alert('Report Not Valid');
-        return;
-    }
-    for (var i=0;i<report_viewer.children.length;i++){
-        var row = report_viewer.children[i];
-        for (var a=0;a<row.children.length;a++){
-            if (row.children[a].type=='checkbox'){
-                var empty = document.createElement('input');
-                empty.name = row.children[a].name;
-                empty.style.display = 'none';
-                total_form.insertBefore(empty,total_form.children[0]);
-            }
-        }
-    }
-    for (var key in editors){
-		if (editors[key] && document.getElementById(key)){
-			var code = total_form.appendChild(document.createElement('textarea'));
-			code.style.display = 'none';
-			code.name = key;
-			code.value = editors[key].getSession().getValue();
-		}
-	}
-    if (t.value=='Submit and Continue Editing'){
-        var new_input = total_form.appendChild(document.createElement('input'));
-        new_input.style.display = 'none';
-        new_input.name = 'save_report';
-        new_input.value = 'True';
-    }
-    total_form.submit();
-}
-
-function toggleReportView() {
-    var report_title = document.getElementById('id_name').value;
-    if (report_title==''){
-        alert('Report needs a name!');
-        return
-    }
-    var report_form = document.getElementById('report_form');
-    var standard_form = document.getElementById('standard_form');
-    if (report_form.style.zIndex=='-1' || report_form.style.zIndex==''){
-        report_form.style.zIndex='1';
-        document.getElementById('report_view_toggle').value = 'Report Information';
-        document.getElementById('insert_row').style.display = 'inline';
-        document.getElementById('report_title').innerHTML = '<h1>Working on report</h1><br /><h1>' + document.getElementById('id_name').value + '</h1>';
-        document.getElementById('menu').style.zIndex='-150';
-    } else {
-        report_form.style.zIndex='-1';
-        document.getElementById('report_view_toggle').value = 'Report Builder';
-        document.getElementById('insert_row').style.display = 'none';
-        document.getElementById('menu').style.zIndex='150';
-    }
-}
-
-function leadingZeros(number){
-    var retval = "0000" + String(number);
-    return retval.substr(retval.length-4);
-}
-
-function alertName(){
-    if (debug){
-        console.log(this.name);
-    }
-}
-
-function runReport(t){
-    var input = document.getElementsByTagName('input');
-    if (input.length>0){
-        t.href = t.href.split("?")[0] + "?"+input[0].name+'='+input[0].value;
-        for (var i=1;i<input.length;i++){
-            t.href+='&'+input[i].name+'='+input[i].value;
-        }
-    }
-    var select = document.getElementsByTagName('select');
-    if (select.length>0){
-		var i=0;
-		if (input.length==0){
-			t.href = t.href.split("?")[0] + "?"+select[0].name+'='+select[0].value;
-			i=1;
-		}
-        for (i;i<select.length;i++){
-            t.href+='&'+select[i].name+'='+select[i].value;
-        }
-    }
-    t.style.display = 'none';
-    //alert(document.getElementsByName('variable__test')[0].value);
+function operatorSelect (operator) {
+	var new_select = document.createElement("SELECT");
+	var new_option = new Option("","");
+	new_select.appendChild(new_option);
+	new_option = new Option("=","=", "=" == operator);
+	new_select.appendChild(new_option);
+	new_option = new Option("<>","<>", "<>" == operator);
+	new_select.appendChild(new_option);
+	new_option = new Option(">=",">=", ">=" == operator);
+	new_select.appendChild(new_option);
+	new_option = new Option("<=","<=", "<=" == operator);
+	new_select.appendChild(new_option);
+	new_option = new Option(">",">", ">" == operator);
+	new_select.appendChild(new_option);
+	new_option = new Option("<","<", "<" == operator);
+	new_select.appendChild(new_option);
+	new_option = new Option("in","in", "in" == operator);
+	new_select.appendChild(new_option);
+	new_option = new Option("contains","contains", "contains" == operator);
+	new_select.appendChild(new_option);
+	return new_select;
 }

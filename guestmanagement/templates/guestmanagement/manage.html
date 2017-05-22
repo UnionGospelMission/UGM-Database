@@ -83,15 +83,12 @@
         <div class='form_container'>
             <form action='.' method='post' autocomplete="off" enctype="multipart/form-data" name='TotalForm'>
                 {% if target_type == 'report' %}
-                    <input type='button' value='Report Builder' onclick="toggleReportView()" id="report_view_toggle" />
+                    <input type='button' value='Show Builder' onclick="toggleReportView()" id="report_view_toggle" />
                     <input type='button' value='Submit' id='search' onclick='processReport(this)' />
                     <input type='button' value='Submit and Continue Editing' onclick='processReport(this)' />
                     <input type='button' value='Insert Row' onclick='insertRow()' id="insert_row" />
                 {% endif %}
                 <div id="standard_form">
-					{% if target_type == 'report' %}
-						<a href='/guestmanagement/reportwiki/'>Report Builder wiki</a><br />
-					{% endif %}
 					{% csrf_token %}
 					{{ form }}
                 </div>
@@ -120,7 +117,16 @@
                                 <table></table>
                             </div>
                         </div>
-                        <div id='report_builder' style="background-color:{{ report_builder_background }}"><div><h1>Build Report</h1></div></div>
+                        <div id='report_builder' style="background-color:{{ report_builder_background }}"><div><h1>Build Report</h1></div>
+							<h5>User Inputs</h5><br />
+							<pre>      Name		       Description	       Validation</pre>
+							
+							<div id='user_inputs'></div>
+							<h5>Calculations</h5>
+							<div id='calculations'></div>
+							<h5>Layout</h5>
+							<div id='layout'></div>
+                        </div>
                         <div id='function_select' style="background-color:{{ report_functionselect_background }}">
                             <h1>Defined Variables</h1>
                             <ul>

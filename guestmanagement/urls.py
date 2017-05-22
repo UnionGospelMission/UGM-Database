@@ -18,5 +18,4 @@ urlpatterns = [
         url(r'^edit/(?P<target_guest>.+)/(?P<target_form>.+)/(?P<target_guesttimedata>.+)/$',views.editpastform,name='edit'),
         url(r'^edit/(?P<target_guest>.+)/(?P<target_form>.+)/$',views.editpastform,name='edit'),
         url(r'^quickfilter/$',views.quickfilter,name='filter'),
-        url(r'^reportwiki/$',views.reportwiki,name='wiki'),
 ]
